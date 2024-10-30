@@ -40,20 +40,20 @@ class DescriptorMMD:
     def _disc(self, descriptors1, descriptors2):
         comparison = np.expand_dims(descriptors1, 1) - np.expand_dims(descriptors2, 0)
 
-        if isinstance(self._kernel_param):
+        if isinstance(self._kernel_param, np.ndarray):
             if self._kernel_param.ndim != 1:
                 raise ValueError(
                     f"The parameter `kernel_param` parameter must be a scalar or 1-dimensional. Got {self._kernel_param.ndim} dimensions."
                 )
             comparison = np.expand_dims(comparison, -1)
 
+        comparison = np.abs(comparison).sum(axis=2)
         if self._kernel == "gaussian_tv":
             comparison = np.exp(
-                (np.abs(comparison).sum(axis=2) / 2) ** 2
-                / (2 * self._kernel_param**2)
+                -((comparison / 2) ** 2) / (2 * self._kernel_param**2)
             )
         elif self._kernel == "laplace":
-            comparison = np.exp(self._kernel_param * np.abs(comparison).sum(axis=2))
+            comparison = np.exp(-self._kernel_param * comparison)
         else:
             raise ValueError(
                 f"Kernel '{self._kernel}' is invalid, expected 'gaussian_tv' or 'laplace'."

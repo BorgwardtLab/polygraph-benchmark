@@ -17,7 +17,7 @@ def _edge_list_reindexed(graph: nx.Graph):
         idx += 1
 
     edges = []
-    for u, v in G.edges():
+    for u, v in graph.edges():
         edges.append((id2idx[str(u)], id2idx[str(v)]))
     return edges
 
