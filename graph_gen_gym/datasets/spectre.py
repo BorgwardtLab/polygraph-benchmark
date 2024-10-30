@@ -11,7 +11,10 @@ import torch_geometric
 from scipy.stats import chi2
 from torch_geometric.data import Batch, Data
 
-from graph_gen_gym.datasets.graph_storage_dataset import GraphStorage, InMemoryDataset
+from graph_gen_gym.datasets.graph_storage_dataset import (
+    GraphStorage,
+    GraphStorageDataset,
+)
 from graph_gen_gym.datasets.utils import (
     load_and_verify_splits,
     torch_hash,
@@ -46,7 +49,7 @@ def _spectre_link_to_storage(url):
     }
 
 
-class _SpectreDataset(InMemoryDataset):
+class _SpectreDataset(GraphStorageDataset):
     def __init__(self, split: str):
         try:
             whole_data = load_and_verify_splits(self.identifier, self.hash)
@@ -134,7 +137,7 @@ class SBMGraphDataset(_SpectreDataset):
         return p > 0.9  # p value < 10 %
 
 
-class ProteinGraphDataset(InMemoryDataset):
+class ProteinGraphDataset(GraphStorageDataset):
     @property
     def url(self):
         pass

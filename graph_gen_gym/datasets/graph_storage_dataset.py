@@ -143,7 +143,7 @@ class GraphStorage(BaseModel):
         return self.num_graphs
 
 
-class InMemoryDataset(AbstractDataset):
+class GraphStorageDataset(AbstractDataset):
     def __init__(self, data_store: GraphStorage):
         super().__init__()
         self._data_store = data_store
