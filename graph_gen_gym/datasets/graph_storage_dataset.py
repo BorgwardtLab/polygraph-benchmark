@@ -11,6 +11,14 @@ from torch_geometric.utils import cumsum
 from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 
 
+class IndexingInfo(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    node_slices: torch.Tensor
+    edge_slices: torch.Tensor
+    inc: torch.Tensor
+
+
 class GraphStorage(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -20,9 +28,7 @@ class GraphStorage(BaseModel):
     edge_attr: Optional[torch.Tensor] = None
     node_attr: Optional[torch.Tensor] = None
     graph_attr: Optional[torch.Tensor] = None
-    node_slices: Optional[torch.Tensor] = None
-    edge_slices: Optional[torch.Tensor] = None
-    inc: Optional[torch.Tensor] = None
+    indexing_info: Optional[IndexingInfo] = None
     description: Optional[str] = None
     extra_data: Any = None  # Any additional primitive ddata
 
@@ -38,7 +44,9 @@ class GraphStorage(BaseModel):
         return True
 
     @staticmethod
-    def from_pyg_batch(batch: Batch, compute_slices: bool = False) -> "GraphStorage":
+    def from_pyg_batch(
+        batch: Batch, compute_indexing_info: bool = False
+    ) -> "GraphStorage":
         result = GraphStorage(
             batch=batch.batch,
             edge_index=batch.edge_index,
@@ -47,35 +55,13 @@ class GraphStorage(BaseModel):
             graph_attr=batch.graph_attr if hasattr(batch, "graph_attr") else None,
             num_graphs=batch.num_graphs,
         )
-        if compute_slices:
-            result.compute_slices()
+        if compute_indexing_info:
+            result.compute_indexing_info()
         return result
 
-    @property
-    def has_slice_info(self):
-        has_all_info = (
-            self.node_slices is not None
-            and self.edge_slices is not None
-            and self.inc is not None
-        )
-        has_some_info = (
-            self.node_slices is not None
-            or self.edge_slices is not None
-            or self.inc is not None
-        )
-        if has_some_info and not has_all_info:
-            raise ValueError(
-                "If any of `node_slices`, `edge_slices`, `inc` are set, all must be set."
-            )
-        return has_all_info
-
-    def compute_slices(self):
-        if (
-            self.node_slices is not None
-            or self.edge_slices is not None
-            or self.inc is not None
-        ):
-            raise
+    def compute_indexing_info(self):
+        if self.indexing_info is not None:
+            raise RuntimeError("Indexing info already computed")
 
         # We first need to ensure that self.batch starts with 0 and is contiguously increasing
         if self.batch[0] != 0:
@@ -92,17 +78,13 @@ class GraphStorage(BaseModel):
                 f"The value of InMemoryBatch.num_graphs ({self.num_graphs}) does not match the number of graphs indicated by InMemoryBatch.batch ({len(num_nodes_per_graph)})"
             )
 
-        self.inc = cumsum(num_nodes_per_graph)
-        self.node_slices = torch.stack([self.inc[:-1], self.inc[1:]], axis=1)
-        assert len(self.node_slices) == self.num_graphs
+        inc = cumsum(num_nodes_per_graph)
+        node_slices = torch.stack([inc[:-1], inc[1:]], axis=1)
+        assert len(node_slices) == self.num_graphs
 
         # Now compute edge slices
-        edge_to_graph_a = (
-            torch.searchsorted(self.inc, self.edge_index[0], right=True) - 1
-        )
-        edge_to_graph_b = (
-            torch.searchsorted(self.inc, self.edge_index[1], right=True) - 1
-        )
+        edge_to_graph_a = torch.searchsorted(inc, self.edge_index[0], right=True) - 1
+        edge_to_graph_b = torch.searchsorted(inc, self.edge_index[1], right=True) - 1
 
         if (edge_to_graph_a != edge_to_graph_b).any():
             raise RuntimeError
@@ -116,13 +98,16 @@ class GraphStorage(BaseModel):
         num_edges_per_graph = torch.bincount(edge_to_graph)
         assert len(num_edges_per_graph) == self.num_graphs
         edge_inc = cumsum(num_edges_per_graph)
-        self.edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], axis=1)
-        assert len(self.edge_slices) == self.num_graphs
+        edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], axis=1)
+        assert len(edge_slices) == self.num_graphs
+        self.indexing_info = IndexingInfo(
+            node_slices=node_slices, inc=inc, edge_slices=edge_slices
+        )
 
     def get_example(self, idx):
-        node_left, node_right = self.node_slices[idx].tolist()
-        edge_left, edge_right = self.edge_slices[idx].tolist()
-        node_offset = self.inc[idx]
+        node_left, node_right = self.indexing_info.node_slices[idx].tolist()
+        edge_left, edge_right = self.indexing_info.edge_slices[idx].tolist()
+        node_offset = self.indexing_info.inc[idx]
         edge_index = self.edge_index[..., edge_left:edge_right] - node_offset
         edge_attr = (
             None if self.edge_attr is None else self.edge_attr[edge_left:edge_right]

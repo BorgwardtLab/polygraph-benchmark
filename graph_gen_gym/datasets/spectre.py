@@ -44,7 +44,9 @@ def _spectre_link_to_storage(url):
             data_lists[split].append(Data(edge_index=edge_index, num_nodes=len(adj)))
 
     return {
-        key: GraphStorage.from_pyg_batch(Batch.from_data_list(lst), compute_slices=True)
+        key: GraphStorage.from_pyg_batch(
+            Batch.from_data_list(lst), compute_indexing_info=True
+        )
         for key, lst in data_lists.items()
     }
 
@@ -68,7 +70,7 @@ class PlanarGraphDataset(_SpectreDataset):
 
     @property
     def hash(self):
-        return "201a8757063adcebef92cbd684b16381"
+        return "c9a96c31fb513c15bc42c6a0b01d830e"
 
     def is_valid(self, graph):
         if isinstance(graph, nx.Graph):
