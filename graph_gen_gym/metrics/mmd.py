@@ -20,10 +20,12 @@ class DescriptorMMD:
         descriptor_fn: Callable[[nx.Graph], np.ndarray],
         kernel: Literal["gaussian_tv", "laplace"] = "gaussian_tv",
         kernel_param: Union[float, np.ndarray] = 1.0,
+        zero_padding: bool = False,
     ):
         self._descriptor_fn = descriptor_fn
         self._kernel_param = kernel_param
         self._kernel = kernel
+        self._zero_padding = zero_padding
         self._reference_descriptions = self._get_batch_description(
             reference_graphs.to_nx()
         )
@@ -35,9 +37,38 @@ class DescriptorMMD:
         )
 
     def _get_batch_description(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
-        return np.stack([self._descriptor_fn(graph) for graph in graphs])
+        descriptions = [self._descriptor_fn(graph) for graph in graphs]
+        if self._zero_padding:
+            max_length = max(len(descr) for descr in descriptions)
+            descriptions = [
+                np.concatenate((descr, np.zeros(max_length - len(descr))))
+                for descr in descriptions
+            ]
+        return np.stack(descriptions)
 
     def _disc(self, descriptors1, descriptors2):
+        assert descriptors1.ndim == 2 and descriptors2.ndim == 2
+        if self._zero_padding:
+            max_length = max(descriptors1.shape[1], descriptors2.shape[1])
+            descriptors1 = np.concatenate(
+                (
+                    descriptors1,
+                    np.zeros(
+                        (descriptors1.shape[0], max_length - descriptors1.shape[1])
+                    ),
+                ),
+                axis=1,
+            )
+            descriptors2 = np.concatenate(
+                (
+                    descriptors2,
+                    np.zeros(
+                        (descriptors2.shape[0], max_length - descriptors2.shape[1])
+                    ),
+                ),
+                axis=1,
+            )
+
         comparison = np.expand_dims(descriptors1, 1) - np.expand_dims(descriptors2, 0)
 
         if isinstance(self._kernel_param, np.ndarray):
@@ -80,6 +111,7 @@ class SpectreDegMMD(DescriptorMMD):
             descriptor_fn=degree_descriptor,
             kernel="gaussian_tv",
             kernel_param=1.0,
+            zero_padding=True,
         )
 
 

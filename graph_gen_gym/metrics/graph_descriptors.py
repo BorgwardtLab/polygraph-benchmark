@@ -64,4 +64,4 @@ def clustering_descriptor(graph: nx.Graph, bins: int) -> np.ndarray:
 
 
 def spectral_descriptor(graph: nx.Graph) -> np.ndarray:
-    pas
+    pass
