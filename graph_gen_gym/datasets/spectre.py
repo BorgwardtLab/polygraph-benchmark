@@ -87,7 +87,7 @@ class SBMGraphDataset(_SpectreDataset):
 
     @property
     def hash(self):
-        return "c205d5c6337a1eb3c41047433bc4a1c7"
+        return "2a1b79e12163d3ea26d49db41e7822ff"
 
     def is_valid(self, graph):
         import graph_tool.all as gt

@@ -1,8 +1,10 @@
+from collections import namedtuple
 from functools import partial
-from typing import Callable, Iterable, Literal, Union
+from typing import Callable, Iterable, Literal, Tuple, Union
 
 import networkx as nx
 import numpy as np
+from scipy import stats
 
 from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 from graph_gen_gym.metrics.graph_descriptors import (
@@ -46,8 +48,12 @@ class DescriptorMMD:
             ]
         return np.stack(descriptions)
 
-    def _disc(self, descriptors1, descriptors2):
+    def _pad_to_match(
+        self, descriptors1, descriptors2
+    ) -> Tuple[np.ndarray, np.ndarray]:
         assert descriptors1.ndim == 2 and descriptors2.ndim == 2
+        if descriptors1.shape[1] == descriptors2.shape[1]:
+            return descriptors1, descriptors2
         if self._zero_padding:
             max_length = max(descriptors1.shape[1], descriptors2.shape[1])
             descriptors1 = np.concatenate(
@@ -68,7 +74,13 @@ class DescriptorMMD:
                 ),
                 axis=1,
             )
+            return descriptors1, descriptors2
+        raise ValueError(
+            "Dimensions of descriptors does not match but `zero_padding` was not set to `True`."
+        )
 
+    def _disc(self, descriptors1, descriptors2):
+        descriptors1, descriptors2 = self._pad_to_match(descriptors1, descriptors2)
         comparison = np.expand_dims(descriptors1, 1) - np.expand_dims(descriptors2, 0)
 
         if isinstance(self._kernel_param, np.ndarray):
@@ -102,6 +114,37 @@ class DescriptorMMD:
             + self._reference_vs_reference
             - 2 * generated_vs_reference
         )
+
+
+class BootStrapMMDTest(DescriptorMMD):
+    """TODO: Here we are  performing the test with the biased MMD estimate, while the papers usually use the unbiased one. Are we allowed to do this?"""
+
+    def _mmd(self, desc1, desc2):
+        return (
+            self._disc(desc1, desc1)
+            + self._disc(desc2, desc2)
+            - 2 * self._disc(desc1, desc2)
+        )
+
+    def compute(self, generated_graphs: Iterable[nx.Graph], num_samples: int = 1000):
+        descriptions = self._get_batch_description(generated_graphs)
+        gen_desc, ref_desc = self._pad_to_match(
+            descriptions, self._reference_descriptions
+        )
+        n = len(gen_desc)
+        if len(gen_desc) != len(ref_desc):
+            raise ValueError
+        realized_mmd = self._mmd(gen_desc, ref_desc)
+        mmd_samples = []
+        agg_desc = np.concatenate((gen_desc, ref_desc), axis=0)
+        for _ in range(num_samples):
+            np.random.shuffle(agg_desc)
+            desc1, desc2 = agg_desc[:n], agg_desc[n:]
+            assert len(desc1) == len(desc2)
+            mmd_samples.append(self._mmd(desc1, desc2))
+        mmd_samples = np.array(mmd_samples)
+        q = stats.percentileofscore(mmd_samples, realized_mmd, "strict") / 100
+        return 1 - q
 
 
 class SpectreDegMMD(DescriptorMMD):
