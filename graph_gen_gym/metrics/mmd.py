@@ -123,7 +123,7 @@ class DescriptorMMD:
         )
 
 
-class BootStrapMMDTest(DescriptorMMD):
+class BootStrapMMDTest:
     def __init__(
         self,
         reference_graphs: AbstractDataset,
