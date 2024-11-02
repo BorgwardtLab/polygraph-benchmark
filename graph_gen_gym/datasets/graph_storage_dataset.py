@@ -2,6 +2,7 @@
 
 from typing import Any, List, Optional
 
+import numpy as np
 import torch
 from pydantic import BaseModel, ConfigDict
 from torch_geometric.data import Batch, Data
@@ -130,15 +131,18 @@ class GraphStorage(BaseModel):
 class ShardedGraphStorage(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     storages: List[GraphStorage]
-    agg_graph_count: Optional[List] = None
+    agg_graph_count: Optional[torch.Tensor] = None
 
     def get_example(self, idx):
         if self.agg_graph_count is None:
             self.agg_graph_count = cumsum(
                 torch.Tensor([storage.num_graphs for storage in self.storages])
-            ).tolist()
+            )
 
         # Binary search for idx
+        shard_idx = torch.searchsorted(self.agg_graph_count, idx, right=True) + 1
+        local_idx = idx - self.agg_graph_count[shard_idx]
+        return self.storages[shard_idx].get_example(local_idx)
 
 
 class GraphStorageDataset(AbstractDataset):
