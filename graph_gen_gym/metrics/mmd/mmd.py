@@ -69,7 +69,7 @@ class DescriptorMMD2:
         )
 
 
-class SpectreDegMMD(DescriptorMMD2):
+class DegreeMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: AbstractDataset):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -79,7 +79,7 @@ class SpectreDegMMD(DescriptorMMD2):
         )
 
 
-class SpectreSpectralMMD(DescriptorMMD2):
+class SpectralMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: AbstractDataset):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -88,7 +88,7 @@ class SpectreSpectralMMD(DescriptorMMD2):
         )
 
 
-class SpectreOrbitMMD(DescriptorMMD2):
+class OrbitMM2(DescriptorMMD2):
     def __init__(self, reference_graphs: AbstractDataset):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -97,7 +97,7 @@ class SpectreOrbitMMD(DescriptorMMD2):
         )
 
 
-class SpectreClusteringMMD(DescriptorMMD2):
+class ClusteringMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: AbstractDataset):
         super().__init__(
             reference_graphs=reference_graphs,
