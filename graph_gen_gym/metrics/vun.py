@@ -48,10 +48,10 @@ class _GraphSet:
     def __add__(self, other: "_GraphSet") -> "_GraphSet":
         return _GraphSet(self.nx_graphs + other.nx_graphs)
 
-    def _node_match(self, n1: Dict[str, Any], n2: Dict[str, Any]):
+    def _node_match(self, n1: Dict[str, Any], n2: Dict[str, Any]) -> bool:
         return all(n1[key] == n2[key] for key in self._node_attrs)
 
-    def _edge_match(self, e1: Dict[str, Any], e2: Dict[str, Any]):
+    def _edge_match(self, e1: Dict[str, Any], e2: Dict[str, Any]) -> bool:
         return all(e1[key] == e2[key] for key in self._edge_attrs)
 
     def _graph_fingerprint(self, g: nx.Graph) -> str:
