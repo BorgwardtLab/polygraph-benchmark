@@ -125,15 +125,14 @@ def mmd_ustat_var(kxx: np.ndarray, kyy: np.ndarray, kxy: np.ndarray):
         * 1
         / n
         / (n - 1)
-        * np.sum((Kxd + Kyd - Kxyd - Kxyd.T) ** 2, axis=(0, 1))
+        * np.sum((Kxd + Kyd - Kxyd - np.swapaxes(Kxyd, 0, 1)) ** 2, axis=(0, 1))
     )
 
     #   varEst = varEst + varEst2nd;
     varEst = varEst1st + varEst2nd
 
     #   %use only 2nd order term if variance estimate negative
-    if varEst < 0:
-        varEst = varEst2nd
+    varEst = np.where(varEst < 0, varEst2nd, varEst)
 
     return varEst
 
