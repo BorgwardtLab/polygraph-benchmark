@@ -1,5 +1,5 @@
 from collections import defaultdict, namedtuple
-from typing import Callable, DefaultDict, Dict, Iterable, List, Optional
+from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Optional
 
 import joblib
 import networkx as nx
@@ -9,8 +9,15 @@ from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 
 
 class _GraphSet:
-    def __init__(self, nx_graphs: Optional[Iterable[nx.Graph]] = None):
+    def __init__(
+        self,
+        nx_graphs: Optional[Iterable[nx.Graph]] = None,
+        node_attrs: Optional[List[str]] = None,
+        edge_attrs: Optional[List[str]] = None,
+    ):
         self.nx_graphs = [] if nx_graphs is None else list(nx_graphs)
+        self._node_attrs = node_attrs if node_attrs is not None else []
+        self._edge_attrs = edge_attrs if edge_attrs is not None else []
         self._hash_set = self._compute_hash_set(self.nx_graphs)
 
     def add_from(self, graph_iter: Iterable[nx.Graph]) -> None:
@@ -29,30 +36,44 @@ class _GraphSet:
             self.nx_graphs[idx] for idx in self._hash_set[fingerprint]
         ]
         for h in potentially_isomorphic:
-            if nx.is_isomorphic(g, h):
+            if nx.is_isomorphic(
+                g,
+                h,
+                node_match=self._node_match if len(self._node_attrs) > 0 else None,
+                edge_match=self._edge_match if len(self._edge_attrs) > 0 else None,
+            ):
                 return True
         return False
 
     def __add__(self, other: "_GraphSet") -> "_GraphSet":
         return _GraphSet(self.nx_graphs + other.nx_graphs)
 
-    @staticmethod
-    def _graph_fingerprint(g: nx.Graph) -> str:
+    def _node_match(self, n1: Dict[str, Any], n2: Dict[str, Any]):
+        return all(n1[key] == n2[key] for key in self._node_attrs)
+
+    def _edge_match(self, e1: Dict[str, Any], e2: Dict[str, Any]):
+        return all(e1[key] == e2[key] for key in self._edge_attrs)
+
+    def _graph_fingerprint(self, g: nx.Graph) -> str:
         nodes = list(g.nodes)
         triangle_counts = nx.triangles(g, nodes)
         degrees = [item[1] for item in g.degree(nodes)]
+        node_attrs = [
+            tuple(g.node[node][key] for key in self._node_attrs) for node in nodes
+        ]
         fingerprint = tuple(
             sorted(
                 [
-                    joblib.hash((deg, triangle))
-                    for deg, triangle in zip(degrees, triangle_counts)
+                    joblib.hash((attr, deg, triangle))
+                    for attr, deg, triangle in zip(node_attrs, degrees, triangle_counts)
                 ]
             )
         )
         return fingerprint
 
-    @staticmethod
-    def _compute_hash_set(nx_graphs: List[nx.Graph]) -> DefaultDict[str, List[int]]:
+    def _compute_hash_set(
+        self, nx_graphs: List[nx.Graph]
+    ) -> DefaultDict[str, List[int]]:
         hash_set = defaultdict(list)
         for idx, g in enumerate(nx_graphs):
             hash_set[_GraphSet._graph_fingerprint(g)].append(idx)
