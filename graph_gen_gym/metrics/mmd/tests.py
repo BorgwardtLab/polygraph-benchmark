@@ -151,7 +151,9 @@ class OptimizedPValue:
         full_test_gram = self._kernel(agg_test_desc, agg_test_desc)
         assert full_test_gram.ndim == 3
         full_test_gram = full_test_gram[..., optimal_kernel_idx]
-        mmd_samples = _sample_from_null_distribution(full_test_gram, 1000, "ustat")
+        mmd_samples = _sample_from_null_distribution(
+            full_test_gram, num_bootstrap_samples, "ustat"
+        )
         assert mmd_samples.ndim == 1, mmd_samples.shape
         realized_mmd2 = mmd_from_gram(
             full_test_gram[:n, :n],
