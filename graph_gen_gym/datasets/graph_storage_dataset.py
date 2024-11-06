@@ -1,10 +1,10 @@
 """Implementation of `AbstractDataset` via efficiently and safely serializable sparse graph representation."""
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from torch_geometric.data import Batch, Data
 from torch_geometric.utils import cumsum
 
@@ -25,9 +25,9 @@ class GraphStorage(BaseModel):
     batch: torch.Tensor
     edge_index: torch.Tensor
     num_graphs: int
-    edge_attr: Optional[torch.Tensor] = None
-    node_attr: Optional[torch.Tensor] = None
-    graph_attr: Optional[torch.Tensor] = None
+    edge_attr: Dict[str, torch.Tensor] = Field(default_factory=dict)
+    node_attr: Dict[str, torch.Tensor] = Field(default_factory=dict)
+    graph_attr: Dict[str, torch.Tensor] = Field(default_factory=dict)
     indexing_info: Optional[IndexingInfo] = None
     description: Optional[str] = None
     extra_data: Any = None  # Any additional primitive ddata
@@ -45,14 +45,20 @@ class GraphStorage(BaseModel):
 
     @staticmethod
     def from_pyg_batch(
-        batch: Batch, compute_indexing_info: bool = False
+        batch: Batch,
+        compute_indexing_info: bool = False,
+        edge_attrs: Optional[List[str]] = None,
+        node_attrs: Optional[List[str]] = None,
     ) -> "GraphStorage":
         result = GraphStorage(
             batch=batch.batch,
             edge_index=batch.edge_index,
-            edge_attr=batch.edge_attr if hasattr(batch, "edge_attr") else None,
-            node_attr=batch.x if hasattr(batch, "x") else None,
-            graph_attr=batch.graph_attr if hasattr(batch, "graph_attr") else None,
+            edge_attr={key: getattr(batch, key) for key in edge_attrs}
+            if edge_attrs is not None
+            else {},
+            node_attr={key: getattr(batch, key) for key in node_attrs}
+            if node_attrs is not None
+            else {},
             num_graphs=batch.num_graphs,
         )
         if compute_indexing_info:
@@ -109,19 +115,19 @@ class GraphStorage(BaseModel):
         edge_left, edge_right = self.indexing_info.edge_slices[idx].tolist()
         node_offset = self.indexing_info.inc[idx]
         edge_index = self.edge_index[..., edge_left:edge_right] - node_offset
-        edge_attr = (
-            None if self.edge_attr is None else self.edge_attr[edge_left:edge_right]
-        )
-        node_attr = (
-            None if self.node_attr is None else self.node_attr[node_left:node_right]
-        )
-        graph_attr = None if self.graph_attr is None else self.graph_attr[idx]
+        edge_attrs = {
+            key: val[edge_left:edge_right] for key, val in self.edge_attr.items()
+        }
+        node_attrs = {
+            key: val[node_left:node_right] for key, val in self.node_attr.items()
+        }
+        graph_attrs = {key: val[idx] for key, val in self.graph_attr.items()}
         return Data(
             edge_index=edge_index,
-            node_attr=node_attr,
-            edge_attr=edge_attr,
-            graph_attr=graph_attr,
             num_nodes=node_right - node_left,
+            **node_attrs,
+            **edge_attrs,
+            **graph_attrs,
         )
 
     def __len__(self):

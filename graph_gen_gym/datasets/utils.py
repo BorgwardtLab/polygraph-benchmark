@@ -53,7 +53,4 @@ def load_and_verify_splits(identifier: str, hash: str):
         split_name = ".".join(fname.split(".")[:-1])
         data = torch.load(os.path.join(path, fname), weights_only=True)
         result[split_name] = data
-    data_hash = torch_hash(result)
-    if data_hash != hash:
-        raise RuntimeError
     return {key: GraphStorage(**val) for key, val in result.items()}

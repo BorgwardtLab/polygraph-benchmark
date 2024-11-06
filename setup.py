@@ -27,5 +27,14 @@ setup(
     version="0.1",
     packages=["graph_gen_gym"],
     cmdclass={"build_ext": CMakeBuild},
-    install_requires=[],  # Add your Python dependencies here
+    install_requires=[
+        "numpy",
+        "torch",
+        "torch_geometric",
+        "scipy",
+        "pydantic",
+        "networkx",
+        "joblib",
+        "appdirs",
+    ],  # Add your Python dependencies here
 )

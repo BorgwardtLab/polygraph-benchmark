@@ -82,7 +82,7 @@ class BootStrapMMDTest:
         return 1 - q
 
 
-class MaximallyPowerfulMMDTest:
+class OptimizedPValue:
     def __init__(
         self,
         val_graphs: AbstractDataset,
@@ -105,7 +105,7 @@ class MaximallyPowerfulMMDTest:
         self,
         generated_val: Iterable[nx.Graph],
         generated_test: Iterable[nx.Graph],
-        confidence_interval: float = 0.95,
+        num_bootstrap_samples: int = 500,
     ):
         descriptions_genval = _get_batch_description(
             generated_val, self._descriptor_fn, self._zero_padding
@@ -120,24 +120,23 @@ class MaximallyPowerfulMMDTest:
         agg_val_desc = np.concatenate([desc1, desc2], axis=0)
         full_val_gram = self._kernel(agg_val_desc, agg_val_desc)
         assert full_val_gram.ndim == 3
-        mmd_samples = _sample_from_null_distribution(full_val_gram, 1000, "ustat")
+        mmd_samples = _sample_from_null_distribution(
+            full_val_gram, num_bootstrap_samples, "ustat"
+        )
         assert mmd_samples.ndim == 2
-        threshold = np.quantile(mmd_samples, confidence_interval, axis=0)
-        assert threshold.ndim == 1 and len(threshold) == mmd_samples.shape[1]
         realized_mmd2 = mmd_from_gram(
             full_val_gram[:n, :n],
             full_val_gram[n:, n:],
             full_val_gram[:n, n:],
             variant="ustat",
         )
-        realized_variance = mmd_ustat_var(
-            full_val_gram[:n, :n], full_val_gram[n:, n:], full_val_gram[:n, n:]
+        assert (
+            realized_mmd2.ndim == 1 and realized_mmd2.shape[0] == mmd_samples.shape[1]
         )
-        objective = realized_mmd2 / np.sqrt(realized_variance) - threshold / (
-            n * np.sqrt(realized_variance)
+        q = np.sum(mmd_samples < np.expand_dims(realized_mmd2, axis=0), axis=0) / len(
+            mmd_samples
         )
-        assert objective.ndim == 1
-        optimal_kernel_idx = np.argmax(objective)
+        optimal_kernel_idx = np.argmax(q)
 
         # Now, we can compute a p-value with the optimal kernel
         descriptions_gentest = _get_batch_description(
@@ -160,6 +159,5 @@ class MaximallyPowerfulMMDTest:
             full_test_gram[:n, n:],
             variant="ustat",
         )
-        print(realized_mmd2)
         q = stats.percentileofscore(mmd_samples, realized_mmd2, "strict") / 100
         return 1 - q
