@@ -121,7 +121,11 @@ class OptimizedPValue:
         realized_mmd2, mmd_samples = _realized_mmd_and_samples(
             desc1, desc2, kernel=self._kernel, num_samples=num_bootstrap_samples
         )
-        assert mmd_samples.ndim == 2 and realized_mmd2.ndim == 1
+        assert (
+            mmd_samples.ndim == 2
+            and realized_mmd2.ndim == 1
+            and realized_mmd2.shape[0] == mmd_samples.shape[1]
+        )
         q = np.sum(mmd_samples < np.expand_dims(realized_mmd2, axis=0), axis=0) / len(
             mmd_samples
         )
