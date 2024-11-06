@@ -2,7 +2,6 @@ from typing import Callable, Iterable, Literal
 
 import networkx as nx
 import numpy as np
-from scipy import stats
 
 from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel
@@ -10,7 +9,6 @@ from graph_gen_gym.metrics.mmd.utils import (
     _get_batch_description,
     _pad_arrays,
     mmd_from_gram,
-    mmd_ustat_var,
 )
 
 
@@ -38,6 +36,23 @@ def _sample_from_null_distribution(
     return mmd_samples
 
 
+def _realized_mmd_and_samples(
+    desc1: np.ndarray, desc2: np.ndarray, kernel: Callable, num_samples: int
+):
+    assert len(desc1) == len(desc2)
+    n = len(desc1)
+    agg_desc = np.concatenate([desc1, desc2], axis=0)
+    full_val_gram = kernel(agg_desc, agg_desc)
+    mmd_samples = _sample_from_null_distribution(full_val_gram, num_samples, "ustat")
+    realized_mmd2 = mmd_from_gram(
+        full_val_gram[:n, :n],
+        full_val_gram[n:, n:],
+        full_val_gram[:n, n:],
+        variant="ustat",
+    )
+    return realized_mmd2, mmd_samples
+
+
 class BootStrapMMDTest:
     def __init__(
         self,
@@ -63,22 +78,12 @@ class BootStrapMMDTest:
         gen_desc, ref_desc = _pad_arrays(
             descriptions, self._reference_descriptions, self._zero_padding
         )
-        n = len(gen_desc)
-        if len(gen_desc) != len(ref_desc):
-            raise ValueError
-        agg_desc = np.concatenate([gen_desc, ref_desc], axis=0)
-        full_gram_matrix = self._kernel(agg_desc, agg_desc)
-        realized_mmd = mmd_from_gram(
-            full_gram_matrix[:n, :n],
-            full_gram_matrix[n:, n:],
-            full_gram_matrix[:n, n:],
-            variant="ustat",
+        realized_mmd, mmd_samples = _realized_mmd_and_samples(
+            gen_desc, ref_desc, self._kernel, num_samples
         )
-        mmd_samples = _sample_from_null_distribution(
-            full_gram_matrix, n_samples=num_samples, variant="ustat"
-        )
+        assert realized_mmd.ndim == 0 and mmd_samples.ndim == 1
 
-        q = stats.percentileofscore(mmd_samples, realized_mmd, "strict") / 100
+        q = np.sum(mmd_samples < realized_mmd) / len(mmd_samples)
         return 1 - q
 
 
@@ -113,26 +118,10 @@ class OptimizedPValue:
         desc1, desc2 = _pad_arrays(
             descriptions_genval, self._val_descriptions, self._zero_padding
         )
-
-        # We first find the optimal kernel to maximize test power
-        assert len(desc1) == len(desc2)
-        n = len(desc1)
-        agg_val_desc = np.concatenate([desc1, desc2], axis=0)
-        full_val_gram = self._kernel(agg_val_desc, agg_val_desc)
-        assert full_val_gram.ndim == 3
-        mmd_samples = _sample_from_null_distribution(
-            full_val_gram, num_bootstrap_samples, "ustat"
+        realized_mmd2, mmd_samples = _realized_mmd_and_samples(
+            desc1, desc2, kernel=self._kernel, num_samples=num_bootstrap_samples
         )
-        assert mmd_samples.ndim == 2
-        realized_mmd2 = mmd_from_gram(
-            full_val_gram[:n, :n],
-            full_val_gram[n:, n:],
-            full_val_gram[:n, n:],
-            variant="ustat",
-        )
-        assert (
-            realized_mmd2.ndim == 1 and realized_mmd2.shape[0] == mmd_samples.shape[1]
-        )
+        assert mmd_samples.ndim == 2 and realized_mmd2.ndim == 1
         q = np.sum(mmd_samples < np.expand_dims(realized_mmd2, axis=0), axis=0) / len(
             mmd_samples
         )
@@ -145,21 +134,12 @@ class OptimizedPValue:
         desc1, desc2 = _pad_arrays(
             descriptions_gentest, self._test_descriptions, self._zero_padding
         )
-        assert len(desc1) == len(desc2)
-        n = len(desc1)
-        agg_test_desc = np.concatenate([desc1, desc2], axis=0)
-        full_test_gram = self._kernel(agg_test_desc, agg_test_desc)
-        assert full_test_gram.ndim == 3
-        full_test_gram = full_test_gram[..., optimal_kernel_idx]
-        mmd_samples = _sample_from_null_distribution(
-            full_test_gram, num_bootstrap_samples, "ustat"
+        realized_mmd2, mmd_samples = _realized_mmd_and_samples(
+            desc1,
+            desc2,
+            kernel=lambda a, b: self._kernel(a, b)[..., optimal_kernel_idx],
+            num_samples=num_bootstrap_samples,
         )
-        assert mmd_samples.ndim == 1, mmd_samples.shape
-        realized_mmd2 = mmd_from_gram(
-            full_test_gram[:n, :n],
-            full_test_gram[n:, n:],
-            full_test_gram[:n, n:],
-            variant="ustat",
-        )
-        q = stats.percentileofscore(mmd_samples, realized_mmd2, "strict") / 100
+        assert mmd_samples.ndim == 1 and realized_mmd2.ndim == 0
+        q = np.sum(mmd_samples < realized_mmd2) / len(mmd_samples)
         return 1 - q
