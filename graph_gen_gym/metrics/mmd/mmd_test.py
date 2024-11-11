@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 
 from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel
-from graph_gen_gym.metrics.mmd.utils import mmd_from_gram
+from graph_gen_gym.metrics.mmd.utils import full_gram_from_blocks, mmd_from_gram
 
 
 def _sample_from_null_distribution(
@@ -57,13 +57,9 @@ class BootStrapMMDTest:
         ref_vs_gen = self._kernel(self._reference_descriptions, descriptions)
         full_gram_matrix = np.zeros((2 * self._num_graphs, 2 * self._num_graphs))
 
-        full_gram_matrix[: self._num_graphs, : self._num_graphs] = self._ref_vs_ref
-        full_gram_matrix[: self._num_graphs, self._num_graphs :] = ref_vs_gen
-        full_gram_matrix[self._num_graphs :, : self._num_graphs] = np.swapaxes(
-            ref_vs_gen, 0, 1
+        full_gram_matrix = full_gram_from_blocks(
+            self._ref_vs_ref, ref_vs_gen, gen_vs_gen
         )
-        full_gram_matrix[self._num_graphs :, self._num_graphs :] = gen_vs_gen
-        assert (full_gram_matrix == full_gram_matrix.T).all()
 
         realized_mmd = mmd_from_gram(
             self._ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat"

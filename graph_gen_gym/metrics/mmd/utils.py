@@ -1,6 +1,5 @@
-from typing import Callable, Iterable, Literal, Tuple
+from typing import Literal
 
-import networkx as nx
 import numpy as np
 
 
@@ -33,6 +32,22 @@ def mmd_from_gram(
         raise ValueError
 
     return xvx + yvy - 2 * xvy
+
+
+def full_gram_from_blocks(kxx, kxy, kyy):
+    n, _, *residual_shape = kxx.shape
+    m = kyy.shape[0]
+    assert kyy.shape == (m, m, *residual_shape), (kxx.shape, kyy.shape)
+    assert kxy.shape == (n, m, *residual_shape)
+
+    full_gram_matrix = np.zeros((n + m, n + m, *residual_shape))
+
+    full_gram_matrix[:n, :n] = kxx
+    full_gram_matrix[:n, n:] = kxy
+    full_gram_matrix[n:, :n] = np.swapaxes(kxy, 0, 1)
+    full_gram_matrix[n:, n:] = kyy
+    assert (full_gram_matrix == np.swapaxes(full_gram_matrix, 0, 1)).all()
+    return full_gram_matrix
 
 
 def _multi_dim_diag(x, axis1=0, axis2=1):
