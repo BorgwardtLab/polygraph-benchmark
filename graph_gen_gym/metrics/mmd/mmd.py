@@ -69,6 +69,13 @@ class DescriptorMMD2:
         )
 
 
+class MaxDescriptorMMD2(DescriptorMMD2):
+    def compute(self, generated_graphs: Iterable[nx.Graph]):
+        multi_kernel_result = super().compute(generated_graphs)
+        assert multi_kernel_result.ndim == 1
+        return np.max(multi_kernel_result)
+
+
 class DegreeMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: AbstractDataset):
         super().__init__(

@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Callable, Iterable, Literal
 
 import networkx as nx
