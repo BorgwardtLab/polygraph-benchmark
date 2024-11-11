@@ -76,7 +76,7 @@ class ClassifierTest:
             samples.append(test_correct)
 
         accuracies = np.array(samples) / self._num_graphs
-        mean_acc, std_acc = np.mean(accuracies), np.std(accuracies)
+        mean_acc = np.mean(accuracies)
         low, high = (
             np.quantile(accuracies, 0.05),
             np.quantile(accuracies, 0.95),
