@@ -1,16 +1,10 @@
-from functools import partial
-from typing import Callable, Iterable, Literal
+from typing import Collection, Literal
 
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel
-from graph_gen_gym.metrics.mmd.utils import (
-    _get_batch_description,
-    _pad_arrays,
-    mmd_from_gram,
-)
+from graph_gen_gym.metrics.mmd.utils import mmd_from_gram
 
 
 def _sample_from_null_distribution(
@@ -37,50 +31,45 @@ def _sample_from_null_distribution(
     return mmd_samples
 
 
-def _realized_mmd_and_samples(
-    desc1: np.ndarray, desc2: np.ndarray, kernel: Callable, num_samples: int
-):
-    assert len(desc1) == len(desc2)
-    n = len(desc1)
-    agg_desc = np.concatenate([desc1, desc2], axis=0)
-    full_val_gram = kernel(agg_desc, agg_desc)
-    mmd_samples = _sample_from_null_distribution(full_val_gram, num_samples, "ustat")
-    realized_mmd2 = mmd_from_gram(
-        full_val_gram[:n, :n],
-        full_val_gram[n:, n:],
-        full_val_gram[:n, n:],
-        variant="ustat",
-    )
-    return realized_mmd2, mmd_samples
-
-
 class BootStrapMMDTest:
     def __init__(
         self,
-        reference_graphs: AbstractDataset,
-        descriptor_fn: Callable[[nx.Graph], np.ndarray],
+        reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
-        zero_padding: bool = False,
     ):
-        self._descriptor_fn = descriptor_fn
-        self._kernel = kernel
-        self._zero_padding = zero_padding
-        self._reference_descriptions = _get_batch_description(
-            reference_graphs.to_nx(), self._descriptor_fn, self._zero_padding
-        )
-        assert self._reference_descriptions.ndim == 2 and len(
-            self._reference_descriptions
-        ) == len(reference_graphs)
+        if kernel.num_kernels > 1:
+            raise ValueError(
+                "Can only perform hypothesis test with a single kernel at a time"
+            )
 
-    def compute(self, generated_graphs: Iterable[nx.Graph], num_samples: int = 1000):
-        descriptions = _get_batch_description(
-            generated_graphs, self._descriptor_fn, self._zero_padding
+        self._kernel = kernel
+        self._reference_descriptions = self._kernel.featurize(reference_graphs)
+        self._ref_vs_ref = self._kernel(
+            self._reference_descriptions, self._reference_descriptions
         )
-        gen_desc, ref_desc = _pad_arrays(
-            descriptions, self._reference_descriptions, self._zero_padding
+        self._num_graphs = len(reference_graphs)
+
+    def compute(self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000):
+        assert len(generated_graphs) == self._num_graphs
+        descriptions = self._kernel.featurize(generated_graphs)
+
+        gen_vs_gen = self._kernel(descriptions, descriptions)
+        ref_vs_gen = self._kernel(self._reference_descriptions, descriptions)
+        full_gram_matrix = np.zeros((2 * self._num_graphs, 2 * self._num_graphs))
+
+        full_gram_matrix[: self._num_graphs, : self._num_graphs] = self._ref_vs_ref
+        full_gram_matrix[: self._num_graphs, self._num_graphs :] = ref_vs_gen
+        full_gram_matrix[self._num_graphs :, : self._num_graphs] = np.swapaxes(
+            ref_vs_gen, 0, 1
         )
-        realized_mmd, mmd_samples = _realized_mmd_and_samples(
-            gen_desc, ref_desc, self._kernel, num_samples
+        full_gram_matrix[self._num_graphs :, self._num_graphs :] = gen_vs_gen
+        assert (full_gram_matrix == full_gram_matrix.T).all()
+
+        realized_mmd = mmd_from_gram(
+            self._ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat"
+        )
+        mmd_samples = _sample_from_null_distribution(
+            full_gram_matrix, n_samples=num_samples, variant="ustat"
         )
         assert realized_mmd.ndim == 0 and mmd_samples.ndim == 1
 

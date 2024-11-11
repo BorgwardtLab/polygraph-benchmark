@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import Any, Callable, Iterable, List, Union
 
+import networkx as nx
 import numpy as np
+
+GraphDescriptorFn = Callable[[Iterable[nx.Graph]], np.ndarray]
 
 
 class DescriptorKernel(ABC):
+    def __init__(self, descriptor_fn: GraphDescriptorFn):
+        self._descriptor_fn = descriptor_fn
+
     @abstractmethod
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def gram(self, x: Any, y: Any) -> np.ndarray:
         ...
 
     @abstractmethod
@@ -18,10 +24,11 @@ class DescriptorKernel(ABC):
     def num_kernels(self) -> int:
         ...
 
-    def __call__(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        assert x.ndim == 2 and y.ndim == 2
+    def featurize(self, graphs: Iterable[nx.Graph]) -> Any:
+        return self._descriptor_fn(graphs)
+
+    def __call__(self, x: Any, y: Any) -> np.ndarray:
         kxy = self.gram(x, y)
-        assert kxy.shape[0] == len(x) and kxy.shape[1] == len(y)
         if self.num_kernels > 1:
             assert kxy.ndim == 3 and kxy.shape[2] == self.num_kernels, kxy.shape
         else:
@@ -36,8 +43,15 @@ class StackedKernel(DescriptorKernel):
         self._num_kernels = np.sum(self._kernel_count)
         self._cumsum_num_kernels = np.cumsum(self._kernel_count) - self._kernel_count
 
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        results = [kernel(x, y) for kernel in self._kernel]
+    def featurize(self, graphs: Iterable[nx.Graph]) -> List:
+        return [kernel.featurize(graphs) for kernel in self._kernels]
+
+    def gram(self, x: List, y: List) -> np.ndarray:
+        assert len(x) == len(y) and len(x) == len(self._kernels)
+        results = [
+            kernel(feat_x, feat_y)
+            for kernel, feat_x, feat_y in zip(self._kernels, x, y)
+        ]
         results = [
             np.expand_dims(result, axis=-1) if result.ndim == 2 else result
             for result in results
@@ -49,24 +63,25 @@ class StackedKernel(DescriptorKernel):
         return self._num_kernels
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
-        idx1 = np.searchsorted(self._cumsum_num_kernels, side="left") - 1
+        idx1 = np.searchsorted(self._cumsum_num_kernels, idx, side="left") - 1
         idx2 = idx - self._cumsum_num_kernels[idx1]
-        return self._kernelsp[idx1].get_subkernel(idx2)
+        return self._kernels[idx1].get_subkernel(idx2)
 
 
 class LaplaceKernel(DescriptorKernel):
-    def __init__(self, lbd: Union[float, np.ndarray]):
+    def __init__(self, descriptor_fn: GraphDescriptorFn, lbd: Union[float, np.ndarray]):
+        super().__init__(descriptor_fn)
         self.lbd = lbd
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert isinstance(self.lbd, np.ndarray)
-        return LaplaceKernel(self.lbd[idx])
+        return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
     @property
     def num_kernels(self) -> int:
         if isinstance(self.lbd, np.ndarray):
             assert self.lbd.ndim == 1
-            return self.lbd.size()
+            return self.lbd.size
         return 1
 
     def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -88,18 +103,19 @@ class LaplaceKernel(DescriptorKernel):
 
 
 class GaussianTV(DescriptorKernel):
-    def __init__(self, bw: Union[float, np.ndarray]):
+    def __init__(self, descriptor_fn: GraphDescriptorFn, bw: Union[float, np.ndarray]):
+        super().__init__(descriptor_fn)
         self.bw = bw
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert isinstance(self.bw, np.ndarray)
-        return GaussianTV(self.bw[idx])
+        return GaussianTV(self._descriptor_fn, self.bw[idx])
 
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
             assert self.bw.ndim == 1
-            return self.bw.size()
+            return self.bw.size
         return 1
 
     def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -121,18 +137,21 @@ class GaussianTV(DescriptorKernel):
 
 
 class RBFKernel(DescriptorKernel):
-    def __init__(self, bw: Union[float, np.ndarray]) -> None:
+    def __init__(
+        self, descriptor_fn: GraphDescriptorFn, bw: Union[float, np.ndarray]
+    ) -> None:
+        super().__init__(descriptor_fn)
         self.bw = bw
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert isinstance(self.bw, np.ndarray)
-        return RBFKernel(self.bw[idx])
+        return RBFKernel(self._descriptor_fn, self.bw[idx])
 
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
             assert self.bw.ndim == 1
-            return self.bw.size()
+            return self.bw.size
         return 1
 
     def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -160,7 +179,7 @@ class LinearKernel(DescriptorKernel):
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert idx == 0
-        return LinearKernel()
+        return LinearKernel(self._descriptor_fn)
 
     def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         return x @ y.T

@@ -1,5 +1,4 @@
 import os
-from dataclasses import asdict
 from typing import Dict
 
 import joblib
@@ -27,7 +26,11 @@ def torch_hash(data):
 
 
 def identifier_to_path(identifier: str):
-    cache_dir = user_cache_dir(f"graph_gen_gym-{__version__}", "MPIB-MLSB")
+    cache_dir = os.environ.get("GRAPH_GEN_GYM_CACHE_DIR")
+    if cache_dir is None:
+        cache_dir = user_cache_dir(f"graph_gen_gym-{__version__}", "MPIB-MLSB")
+    else:
+        cache_dir = os.path.join(cache_dir, str(__version__))
     os.makedirs(cache_dir, exist_ok=True)
     return os.path.join(cache_dir, identifier)
 

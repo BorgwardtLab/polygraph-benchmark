@@ -2,6 +2,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Iterable
 
 import networkx as nx
 import numpy as np
@@ -22,7 +23,7 @@ def _edge_list_reindexed(graph: nx.Graph):
     return edges
 
 
-def orbit_descriptor(graph: nx.Graph) -> np.ndarray:
+def _orbit_descriptor(graph: nx.Graph) -> np.ndarray:
     tmp, fname = tempfile.mkstemp()
     try:
         os.close(tmp)
@@ -50,18 +51,43 @@ def orbit_descriptor(graph: nx.Graph) -> np.ndarray:
     return node_orbit_counts.sum(axis=0) / graph.number_of_nodes()
 
 
-def degree_descriptor(graph: nx.Graph) -> np.ndarray:
-    hist = np.array(nx.degree_histogram(graph))
-    return hist / hist.sum()
+class DegreeHistogram:
+    def __init__(self, max_degree: int):
+        self._max_degree = max_degree
+
+    def __call__(self, graphs: Iterable[nx.Graph]):
+        hists = [nx.degree_histogram(graph) for graph in graphs]
+        hists = [
+            np.concatenate([hist, np.zeros(self._max_degree - len(hist))], axis=0)
+            for hist in hists
+        ]
+        hists = np.stack(hists, axis=0)
+        return hists / hists.sum(axis=1, keepdims=True)
 
 
-def clustering_descriptor(graph: nx.Graph, bins: int) -> np.ndarray:
-    clustering_coeffs_list = list(nx.clustering(graph).values())
-    hist, _ = np.histogram(
-        clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False
-    )
-    return hist / hist.sum()
+class ClusteringHistogram:
+    def __init__(self, bins: int):
+        self._num_bins = bins
+
+    def __call__(self, graphs: Iterable[nx.Graph]):
+        all_clustering_coeffs = [
+            list(nx.clustering(graph).values()) for graph in graphs
+        ]
+        hists = [
+            np.histogram(
+                clustering_coeffs, bins=self._num_bins, range=(0.0, 1.0), density=False
+            )[0]
+            for clustering_coeffs in all_clustering_coeffs
+        ]
+        hists = np.stack(hists, axis=0)
+        return hists / hists.sum(axis=1, keepdims=True)
 
 
-def spectral_descriptor(graph: nx.Graph) -> np.ndarray:
-    pass
+class OrbitCounts:
+    def __init__(self, num_processes: int = 0):
+        if num_processes > 0:
+            raise NotImplementedError
+
+    def __call__(self, graphs: Iterable[nx.Graph]):
+        descriptors = [_orbit_descriptor(graph) for graph in graphs]
+        return np.stack(descriptors, axis=0)
