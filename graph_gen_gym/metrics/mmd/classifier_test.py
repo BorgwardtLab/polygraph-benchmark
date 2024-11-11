@@ -3,13 +3,12 @@ from typing import Collection
 
 import networkx as nx
 import numpy as np
+from scipy.stats import binomtest
 
 from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel
 from graph_gen_gym.metrics.mmd.utils import full_gram_from_blocks
 
-AccuracyInterval = namedtuple(
-    "AccuracyInterval", ["mean", "std", "median", "low", "high"]
-)
+AccuracyInterval = namedtuple("AccuracyInterval", ["mean", "low", "high", "pval"])
 
 
 class ClassifierTest:
@@ -66,21 +65,21 @@ class ClassifierTest:
             train_vs_val = full_gram[train_indices][:, val_indices]
             val_pred = self._compute_labels(train_vs_val, train_labels)
             assert val_pred.ndim == 2
-            accuracy = np.mean(val_pred == np.expand_dims(val_labels, 1), axis=0)
-            optimal_idx = np.argmax(accuracy)
+            val_correct = np.sum(val_pred == np.expand_dims(val_labels, 1), axis=0)
+            optimal_idx = np.argmax(val_correct)
 
             train_vs_test = full_gram[train_indices][:, test_indices][..., optimal_idx]
             test_pred = self._compute_labels(train_vs_test, train_labels)
+            assert len(test_pred) == self._num_graphs
             assert test_pred.ndim == 1
-            test_acc = np.mean(test_pred == test_labels)
-            samples.append(test_acc)
+            test_correct = np.sum(test_pred == test_labels)
+            samples.append(test_correct)
 
-        mean_acc, std_acc = np.mean(samples), np.std(samples)
-        low, median, high = (
-            np.quantile(samples, 0.05),
-            np.quantile(samples, 0.5),
-            np.quantile(samples, 0.95),
+        accuracies = np.array(samples) / self._num_graphs
+        mean_acc, std_acc = np.mean(accuracies), np.std(accuracies)
+        low, high = (
+            np.quantile(accuracies, 0.05),
+            np.quantile(accuracies, 0.95),
         )
-        return AccuracyInterval(
-            mean=mean_acc, std=std_acc, low=low, high=high, median=median
-        )
+        pval = binomtest(k=samples[0], n=self._num_graphs, alternative="greater").pvalue
+        return AccuracyInterval(mean=mean_acc, low=low, high=high, pval=pval)
