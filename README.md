@@ -2,7 +2,7 @@
 # Installation
 For now, you can install the package in editable mode
 
-`pip install -e .`
+`pip install -e ".[dev]"`
 
 This will also install orca and (unpinned) dependencies.
 
