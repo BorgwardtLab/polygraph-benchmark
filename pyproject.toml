@@ -26,7 +26,8 @@ dev = [
     "hydra-core",
     "pyprojroot",
     "ipython",
-    "ruff"
+    "ruff",
+    "pre-commit"
 ]
 
 [tool.pytest.ini_options]
