@@ -1,4 +1,4 @@
-from graph_gen_gym.metrics.mmd.classifier_test import ClassifierTest
+from graph_gen_gym.metrics.mmd.classifier_test import ClassifierTest, AccuracyInterval
 from graph_gen_gym.metrics.mmd.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
