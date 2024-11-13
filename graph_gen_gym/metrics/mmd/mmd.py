@@ -7,7 +7,7 @@ import numpy as np
 
 from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 from graph_gen_gym.metrics.mmd.graph_descriptors import ClusteringHistogram, OrbitCounts
-from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel, GaussianTV
+from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel, GaussianTV, StackedKernel
 from graph_gen_gym.metrics.mmd.utils import mmd_from_gram, mmd_ustat_var
 
 MMDInterval = namedtuple("MMDInterval", ["ustat", "std"])
@@ -46,11 +46,18 @@ class DescriptorMMD2:
 
 
 class MaxDescriptorMMD2(DescriptorMMD2):
+    """
+    Compute the maximal MMD across different kernel choices.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not isinstance(self._kernel, StackedKernel):
+            raise ValueError(f"Kernel must be a {StackedKernel.__name__}")
+
     def compute(
         self, generated_graphs: Iterable[nx.Graph]
     ) -> Tuple[float, DescriptorKernel]:
         multi_kernel_result = super().compute(generated_graphs)
-        assert multi_kernel_result.ndim == 1
         idx = np.argmax(multi_kernel_result)
         return multi_kernel_result[idx], self._kernel.get_subkernel(idx)
 

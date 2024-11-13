@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 from scipy.stats import binomtest
 
-from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel
+from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel, StackedKernel
 from graph_gen_gym.metrics.mmd.utils import full_gram_from_blocks
 
 AccuracyInterval = namedtuple("AccuracyInterval", ["mean", "low", "high", "pval"])
@@ -17,8 +17,12 @@ class ClassifierTest:
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
     ):
-        assert kernel.num_kernels > 1
         self._kernel = kernel
+        if not isinstance(self._kernel, StackedKernel):
+            # We don't need validation to find the optimal kernel in this case
+            self._validate = False
+        else:
+            self._validate = True
         self._reference_desc = self._kernel.featurize(reference_graphs)
         self._ref_vs_ref = self._kernel(self._reference_desc, self._reference_desc)
         self._num_graphs = len(reference_graphs)
@@ -32,6 +36,9 @@ class ClassifierTest:
         ).sum() == train_labels.shape[0]
         pos_block = train_vs_eval[train_labels == 1]
         neg_block = train_labels[train_labels == 0]
+        # Compute mean difference between positive and negative examples
+        # This is a simple linear classifier that assigns class based on whether
+        # the kernel similarity to positive examples is higher than to negative examples
         result = pos_block.mean(axis=0) - neg_block.mean(axis=0)
         return result > 0
 
@@ -56,19 +63,21 @@ class ClassifierTest:
                 labels[: self._num_graphs],
                 labels[: self._num_graphs],
             )
-            train_indices, val_indices = (
-                train_indices[:num_val],
-                train_indices[num_val:],
-            )
-            train_labels, val_labels = train_labels[:num_val], train_labels[num_val:]
+            if self._validate:
+                train_indices, val_indices = (
+                    train_indices[:num_val],
+                    train_indices[num_val:],
+                )
+                train_labels, val_labels = train_labels[:num_val], train_labels[num_val:]
 
-            train_vs_val = full_gram[train_indices][:, val_indices]
-            val_pred = self._compute_labels(train_vs_val, train_labels)
-            assert val_pred.ndim == 2
-            val_correct = np.sum(val_pred == np.expand_dims(val_labels, 1), axis=0)
-            optimal_idx = np.argmax(val_correct)
-
-            train_vs_test = full_gram[train_indices][:, test_indices][..., optimal_idx]
+                train_vs_val = full_gram[train_indices][:, val_indices]
+                val_pred = self._compute_labels(train_vs_val, train_labels)
+                assert val_pred.ndim == 2, f"Kernel must be a {StackedKernel.__name__}"
+                val_correct = np.sum(val_pred == np.expand_dims(val_labels, 1), axis=0)
+                optimal_idx = np.argmax(val_correct)
+                train_vs_test = full_gram[train_indices][:, test_indices][..., optimal_idx]
+            else:
+                train_vs_test = full_gram[train_indices][:, test_indices]
             test_pred = self._compute_labels(train_vs_test, train_labels)
             assert len(test_pred) == self._num_graphs
             assert test_pred.ndim == 1
