@@ -6,7 +6,11 @@ import numpy as np
 
 from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 from graph_gen_gym.metrics.mmd.graph_descriptors import ClusteringHistogram, OrbitCounts
-from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel, GaussianTV, StackedKernel
+from graph_gen_gym.metrics.mmd.kernels import (
+    DescriptorKernel,
+    GaussianTV,
+    StackedKernel,
+)
 from graph_gen_gym.metrics.mmd.utils import mmd_from_gram, mmd_ustat_var
 
 MMDInterval = namedtuple("MMDInterval", ["ustat", "std"])
@@ -34,6 +38,9 @@ class DescriptorMMD2:
         gen_vs_gen = self._kernel(descriptions, descriptions)
         gen_vs_ref = self._kernel(descriptions, self._reference_descriptions)
         if self._variant == "ustat-var":
+            assert (
+                self._kernel.num_kernels == 1
+            ), "Only single kernel supported for USTAT-VAR"
             mmd = mmd_from_gram(
                 gen_vs_gen, self._ref_vs_ref, gen_vs_ref, variant="ustat"
             )
@@ -48,6 +55,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
     """
     Compute the maximal MMD across different kernel choices.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not isinstance(self._kernel, StackedKernel):

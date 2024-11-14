@@ -18,6 +18,7 @@ dependencies = [
     "networkx",
     "joblib",
     "appdirs",
+    "loguru",
 ]
 
 [project.optional-dependencies]
