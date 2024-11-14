@@ -65,88 +65,76 @@ def _dot(x, y, axis=0):
     return (x * y).sum(axis=axis)
 
 
-def mmd_ustat_var(kxx: np.ndarray, kyy: np.ndarray, kxy: np.ndarray):
+def fall_fact(n, length):
+    """
+    Compute the falling factorial of n of length k.
+    """
+    return np.prod(np.arange(n, n - length, -1))
+
+
+def mmd_ustat_var(kxx: np.ndarray, kxy: np.ndarray, kyy: np.ndarray) -> np.ndarray:
+    """
+    Compute the unbiased MMD variance using the second version of the formula.
+    Eq 5 of https://arxiv.org/abs/1906.02104
+
+    Args:
+        kxx: Kernel matrix between first sample and itself. Shape (m, m).
+        kxy: Kernel matrix between first and second sample. Shape (m, n).
+        kyy: Kernel matrix between second sample and itself. Shape (n, n).
+
+    Returns:
+        float: The unbiased MMD variance estimate.
+    """
     m = kxx.shape[0]
     n = kyy.shape[0]
 
-    Kxd = kxx - _multi_dim_diag(kxx, axis1=0, axis2=1)
-    Kyd = kyy - _multi_dim_diag(kyy, axis1=0, axis2=1)
-    if kxx.ndim == 2:
-        v = np.zeros(11)
-    else:
-        assert kxx.ndim == 3
-        v = np.zeros((11, kxx.shape[2]))
+    ones_m = np.ones(m)
+    ones_n = np.ones(n)
 
-    Kxd_sum = np.sum(Kxd, axis=(0, 1))
-    Kyd_sum = np.sum(Kyd, axis=(0, 1))
-    Kxy_sum = np.sum(kxy, axis=(0, 1))
-    Kxy2_sum = np.sum(kxy**2, axis=(0, 1))
-    Kxd0_red = np.sum(Kxd, 1)
-    Kyd0_red = np.sum(Kyd, 1)
-    Kxy1 = np.sum(kxy, 1)
-    Kyx1 = np.sum(kxy, 0)
+    m_2 = fall_fact(m, 2)  # (m)₂
+    n_4 = fall_fact(n, 4)  # (n)₄
+    n_3 = fall_fact(n, 3)  # (n)₃
 
-    #  varEst = 1/m/(m-1)/(m-2)    * ( sum(Kxd,1)*sum(Kxd,2) - sum(sum(Kxd.^2)))  ...
-    v[0] = (
-        1.0
-        / m
-        / (m - 1)
-        / (m - 2)
-        * (_dot(Kxd0_red, Kxd0_red, axis=0) - np.sum(Kxd**2, axis=(0, 1)))
-    )
-    #           -  (  1/m/(m-1)   *  sum(sum(Kxd))  )^2 ...
-    v[1] = -((1.0 / m / (m - 1) * Kxd_sum) ** 2)
-    #           -  2/m/(m-1)/n     *  sum(Kxd,1) * sum(Kxy,2)  ...
-    v[2] = -2.0 / m / (m - 1) / n * _dot(Kxd0_red, Kxy1, axis=0)
-    #           +  2/m^2/(m-1)/n   * sum(sum(Kxd))*sum(sum(Kxy)) ...
-    v[3] = 2.0 / (m**2) / (m - 1) / n * Kxd_sum * Kxy_sum
-    #           +  1/(n)/(n-1)/(n-2) * ( sum(Kyd,1)*sum(Kyd,2) - sum(sum(Kyd.^2)))  ...
-    v[4] = (
-        1.0
-        / n
-        / (n - 1)
-        / (n - 2)
-        * (_dot(Kyd0_red, Kyd0_red, axis=0) - np.sum(Kyd**2, axis=(0, 1)))
-    )
-    #           -  ( 1/n/(n-1)   * sum(sum(Kyd))  )^2	...
-    v[5] = -((1.0 / n / (n - 1) * Kyd_sum) ** 2)
-    #           -  2/n/(n-1)/m     * sum(Kyd,1) * sum(Kxy',2)  ...
-    v[6] = -2.0 / n / (n - 1) / m * _dot(Kyd0_red, Kyx1, axis=0)
-
-    #           +  2/n^2/(n-1)/m  * sum(sum(Kyd))*sum(sum(Kxy)) ...
-    v[7] = 2.0 / (n**2) / (n - 1) / m * Kyd_sum * Kxy_sum
-    #           +  1/n/(n-1)/m   * ( sum(Kxy',1)*sum(Kxy,2) -sum(sum(Kxy.^2))  ) ...
-    v[8] = 1.0 / n / (n - 1) / m * (_dot(Kxy1, Kxy1, axis=0) - Kxy2_sum)
-    #           - 2*(1/n/m        * sum(sum(Kxy))  )^2 ...
-    v[9] = -2.0 * (1.0 / n / m * Kxy_sum) ** 2
-    #           +   1/m/(m-1)/n   *  ( sum(Kxy,1)*sum(Kxy',2) - sum(sum(Kxy.^2)))  ;
-    v[10] = 1.0 / m / (m - 1) / n * (_dot(Kyx1, Kyx1, axis=0) - Kxy2_sum)
-
-    # %additional low order correction made to some terms compared with ICLR submission
-    # %these corrections are of the same order as the 2nd order term and will
-    # %be unimportant far from the null.
-
-    #   %Eq. 13 p. 11 ICLR 2016. This uses ONLY first order term
-    #   varEst = 4*(m-2)/m/(m-1) *  varEst  ;
-    varEst1st = 4.0 * (m - 2) / m / (m - 1) * np.sum(v, axis=0)
-
-    Kxyd = kxy - _multi_dim_diag(kxy, axis1=0, axis2=1)
-    #   %Eq. 13 p. 11 ICLR 2016: correction by adding 2nd order term
-    #   varEst2nd = 2/m/(m-1) * 1/n/(n-1) * sum(sum( (Kxd + Kyd - Kxyd - Kxyd').^2 ));
-    varEst2nd = (
-        2.0
-        / m
-        / (m - 1)
-        * 1
-        / n
-        / (n - 1)
-        * np.sum((Kxd + Kyd - Kxyd - np.swapaxes(Kxyd, 0, 1)) ** 2, axis=(0, 1))
+    # First term
+    term1 = (4 * (m * n + m - 2 * n) / (m_2 * n_4)) * (
+        np.linalg.norm(kxx @ ones_n) ** 2 + np.linalg.norm(kyy @ ones_n) ** 2
     )
 
-    #   varEst = varEst + varEst2nd;
-    varEst = varEst1st + varEst2nd
+    # Second term
+    term2 = -(2 * (2 * m - n) / (m * n * (m - 1) * (n - 2) * (n - 3))) * (
+        np.linalg.norm(kxx, "fro") ** 2 + np.linalg.norm(kyy, "fro") ** 2
+    )
 
-    #   %use only 2nd order term if variance estimate negative
-    varEst = np.where(varEst < 0, varEst2nd, varEst)
+    # Third term
+    term3 = (4 * (m * n + m - 2 * n - 1) / (m_2 * n**2 * (n - 1) ** 2)) * (
+        np.linalg.norm(kxy @ ones_n) ** 2 + np.linalg.norm(kxy.T @ ones_m) ** 2
+    )
 
-    return varEst
+    # Fourth term
+    term4 = (
+        -(4 * (2 * m - n - 2) / (m_2 * n * (n - 1) ** 2))
+        * np.linalg.norm(kxy, "fro") ** 2
+    )
+
+    # Fifth term
+    term5 = -(2 * (2 * m - 3) / (m_2 * n_4)) * (
+        (ones_m.T @ kxx @ ones_n) ** 2 + (ones_m.T @ kyy @ ones_n) ** 2
+    )
+
+    # Sixth term
+    term6 = (
+        -(4 * (2 * m - 3) / (m_2 * n**2 * (n - 1) ** 2))
+        * (ones_m.T @ kxy @ ones_n) ** 2
+    )
+
+    # Seventh term
+    term7 = -(8 / (m * n_3)) * (
+        ones_m.T @ kxx @ kxy @ ones_n + ones_m.T @ kyy @ kxy.T @ ones_n
+    )
+
+    # Eighth term
+    term8 = (8 / (m * n * n_3)) * (
+        (ones_m.T @ kxx @ ones_n + ones_m.T @ kyy @ ones_n) * (ones_m.T @ kxy @ ones_n)
+    )
+
+    return np.array(term1 + term2 + term3 + term4 + term5 + term6 + term7 + term8)
