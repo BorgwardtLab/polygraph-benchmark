@@ -1,13 +1,11 @@
 import numpy as np
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
-from graph_gen_gym.metrics.mmd import DescriptorMMD2, MaxDescriptorMMD2
-from graph_gen_gym.metrics.mmd import OrbitCounts, DegreeHistogram, ClusteringHistogram
-from graph_gen_gym.metrics.mmd import RBFKernel, LinearKernel, LaplaceKernel, StackedKernel
-from graph_gen_gym.metrics.mmd import BootStrapMMDTest
-from graph_gen_gym.metrics.mmd import ClassifierTest, AccuracyInterval
+from graph_gen_gym.metrics.mmd.mmd import DescriptorMMD2, MaxDescriptorMMD2
+from graph_gen_gym.metrics.mmd.graph_descriptors import OrbitCounts, DegreeHistogram, ClusteringHistogram
+from graph_gen_gym.metrics.mmd.kernels import RBFKernel, LinearKernel, LaplaceKernel, StackedKernel
+from graph_gen_gym.metrics.mmd.mmd_test import BootStrapMMDTest
+from graph_gen_gym.metrics.mmd.classifier_test import ClassifierTest, AccuracyInterval
 
-import hydra
-from pyprojroot import here
 
 import pytest
 

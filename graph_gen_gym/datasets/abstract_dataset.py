@@ -1,11 +1,8 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Optional
 
 import networkx as nx
-import torch
-from torch_geometric.data import Batch, Data
-from torch_geometric.utils import cumsum, to_networkx
+from torch_geometric.data import Data
+from torch_geometric.utils import to_networkx
 
 
 class AbstractDataset(ABC):

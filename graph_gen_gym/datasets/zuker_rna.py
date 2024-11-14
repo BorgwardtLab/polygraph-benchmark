@@ -124,7 +124,6 @@ def is_valid(graph: nx.Graph, check_pairing: bool = True):
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
     import networkx as nx
     from torch_geometric.utils import to_networkx
 

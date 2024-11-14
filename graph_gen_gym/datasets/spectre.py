@@ -17,7 +17,6 @@ from graph_gen_gym.datasets.graph_storage_dataset import (
 )
 from graph_gen_gym.datasets.utils import (
     load_and_verify_splits,
-    torch_hash,
     write_splits_to_cache,
 )
 

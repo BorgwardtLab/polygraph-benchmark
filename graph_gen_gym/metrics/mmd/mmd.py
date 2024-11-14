@@ -1,5 +1,4 @@
 from collections import namedtuple
-from functools import partial
 from typing import Iterable, Literal, Tuple
 
 import networkx as nx
