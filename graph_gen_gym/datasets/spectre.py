@@ -3,6 +3,7 @@ import tempfile
 import urllib
 import warnings
 from collections import defaultdict
+from typing import List
 
 import networkx as nx
 import numpy as np
@@ -15,10 +16,7 @@ from graph_gen_gym.datasets.graph_storage_dataset import (
     GraphStorage,
     GraphStorageDataset,
 )
-from graph_gen_gym.datasets.utils import (
-    load_and_verify_splits,
-    write_splits_to_cache,
-)
+from graph_gen_gym.datasets.utils import load_and_verify_splits, write_splits_to_cache
 
 
 def _spectre_link_to_storage(url):
@@ -75,6 +73,10 @@ class PlanarGraphDataset(_SpectreDataset):
         if isinstance(graph, nx.Graph):
             return nx.is_connected(graph) and nx.is_planar(graph)
         raise TypeError
+
+    def sample(self, n_samples: int, replace: bool = False) -> List[GraphStorage]:
+        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
+        return self[idx_to_sample]
 
 
 class SBMGraphDataset(_SpectreDataset):
