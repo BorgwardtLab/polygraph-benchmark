@@ -1,6 +1,6 @@
 """Implementation of `AbstractDataset` via efficiently and safely serializable sparse graph representation."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
@@ -109,7 +109,7 @@ class GraphStorage(BaseModel):
             node_slices=node_slices, inc=inc, edge_slices=edge_slices
         )
 
-    def get_example(self, idx):
+    def get_example(self, idx: int) -> Data:
         node_left, node_right = self.indexing_info.node_slices[idx].tolist()
         edge_left, edge_right = self.indexing_info.edge_slices[idx].tolist()
         node_offset = self.indexing_info.inc[idx]
@@ -155,8 +155,12 @@ class GraphStorageDataset(AbstractDataset):
         super().__init__()
         self._data_store = data_store
 
-    def __getitem__(self, idx):
-        return self._data_store.get_example(idx)
+    def __getitem__(
+        self, idx: Union[int, List[int]]
+    ) -> Union[GraphStorage, List[GraphStorage]]:
+        if isinstance(idx, int):
+            return self._data_store.get_example(idx)
+        return [self._data_store.get_example(i) for i in idx]
 
     def __len__(self):
         return len(self._data_store)
