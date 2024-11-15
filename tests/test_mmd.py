@@ -3,10 +3,8 @@ import pytest
 import torch
 from torch_geometric.data import Batch
 
-from graph_gen_gym.datasets.graph_storage_dataset import (
-    GraphStorage,
-    GraphStorageDataset,
-)
+from graph_gen_gym.datasets.dataset import GraphDataset
+from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
 from graph_gen_gym.metrics.mmd.classifier_test import AccuracyInterval, ClassifierTest
 from graph_gen_gym.metrics.mmd.graph_descriptors import (
@@ -136,13 +134,13 @@ def test_variance_computation_correctness(datasets, linear_kernel):
         idx_to_sample = torch.randperm(len(planar))[:n_samples]
         planar_samples = planar[idx_to_sample]
         sbm_samples = sbm[idx_to_sample]
-        planar_subset = GraphStorageDataset(
-            GraphStorage.from_pyg_batch(
+        planar_subset = GraphDataset(
+            Graph.from_pyg_batch(
                 Batch.from_data_list(planar_samples), compute_indexing_info=True
             )
         )
-        sbm_subset = GraphStorageDataset(
-            GraphStorage.from_pyg_batch(
+        sbm_subset = GraphDataset(
+            Graph.from_pyg_batch(
                 Batch.from_data_list(sbm_samples), compute_indexing_info=True
             )
         )

@@ -6,7 +6,7 @@ import torch
 from appdirs import user_cache_dir
 
 from graph_gen_gym import __version__
-from graph_gen_gym.datasets.graph_storage_dataset import GraphStorage
+from graph_gen_gym.datasets.graph import Graph
 
 
 def _torch_to_hashable(data):
@@ -35,7 +35,7 @@ def identifier_to_path(identifier: str):
     return os.path.join(cache_dir, identifier)
 
 
-def write_splits_to_cache(data: Dict[str, GraphStorage], identifier: str):
+def write_splits_to_cache(data: Dict[str, Graph], identifier: str):
     path = identifier_to_path(identifier)
     if os.path.exists(path):
         raise FileExistsError(f"Tried to write data to {path}, but path already exists")
@@ -56,4 +56,4 @@ def load_and_verify_splits(identifier: str, hash: str):
         split_name = ".".join(fname.split(".")[:-1])
         data = torch.load(os.path.join(path, fname), weights_only=True)
         result[split_name] = data
-    return {key: GraphStorage(**val) for key, val in result.items()}
+    return {key: Graph(**val) for key, val in result.items()}

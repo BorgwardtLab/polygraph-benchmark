@@ -1,13 +1,14 @@
-"""Implementation of `AbstractDataset` via efficiently and safely serializable sparse graph representation."""
+# -*- coding: utf-8 -*-
+"""graph.py
 
-from typing import Any, Dict, List, Optional, Union
+Implementation of Graphs base classes.
+"""
+from typing import Any, Dict, List, Optional
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 from torch_geometric.data import Batch, Data
 from torch_geometric.utils import cumsum
-
-from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
 
 
 class IndexingInfo(BaseModel):
@@ -18,7 +19,7 @@ class IndexingInfo(BaseModel):
     inc: torch.Tensor
 
 
-class GraphStorage(BaseModel):
+class Graph(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     batch: torch.Tensor
@@ -48,8 +49,8 @@ class GraphStorage(BaseModel):
         compute_indexing_info: bool = False,
         edge_attrs: Optional[List[str]] = None,
         node_attrs: Optional[List[str]] = None,
-    ) -> "GraphStorage":
-        result = GraphStorage(
+    ) -> "Graph":
+        result = Graph(
             batch=batch.batch,
             edge_index=batch.edge_index,
             edge_attr={key: getattr(batch, key) for key in edge_attrs}
@@ -133,9 +134,9 @@ class GraphStorage(BaseModel):
         return self.num_graphs
 
 
-class ShardedGraphStorage(BaseModel):
+class ShardedGraph(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    storages: List[GraphStorage]
+    storages: List[Graph]
     agg_graph_count: Optional[torch.Tensor] = None
 
     def get_example(self, idx):
@@ -148,19 +149,3 @@ class ShardedGraphStorage(BaseModel):
         shard_idx = torch.searchsorted(self.agg_graph_count, idx, right=True) + 1
         local_idx = idx - self.agg_graph_count[shard_idx]
         return self.storages[shard_idx].get_example(local_idx)
-
-
-class GraphStorageDataset(AbstractDataset):
-    def __init__(self, data_store: GraphStorage):
-        super().__init__()
-        self._data_store = data_store
-
-    def __getitem__(
-        self, idx: Union[int, List[int]]
-    ) -> Union[GraphStorage, List[GraphStorage]]:
-        if isinstance(idx, int):
-            return self._data_store.get_example(idx)
-        return [self._data_store.get_example(i) for i in idx]
-
-    def __len__(self):
-        return len(self._data_store)

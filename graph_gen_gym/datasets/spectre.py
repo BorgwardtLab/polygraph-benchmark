@@ -12,10 +12,8 @@ import torch_geometric
 from scipy.stats import chi2
 from torch_geometric.data import Batch, Data
 
-from graph_gen_gym.datasets.graph_storage_dataset import (
-    GraphStorage,
-    GraphStorageDataset,
-)
+from graph_gen_gym.datasets.dataset import GraphDataset
+from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.utils import load_and_verify_splits, write_splits_to_cache
 
 
@@ -41,14 +39,12 @@ def _spectre_link_to_storage(url):
             data_lists[split].append(Data(edge_index=edge_index, num_nodes=len(adj)))
 
     return {
-        key: GraphStorage.from_pyg_batch(
-            Batch.from_data_list(lst), compute_indexing_info=True
-        )
+        key: Graph.from_pyg_batch(Batch.from_data_list(lst), compute_indexing_info=True)
         for key, lst in data_lists.items()
     }
 
 
-class _SpectreDataset(GraphStorageDataset):
+class _SpectreDataset(GraphDataset):
     def __init__(self, split: str):
         try:
             whole_data = load_and_verify_splits(self.identifier, self.hash)
@@ -74,7 +70,7 @@ class PlanarGraphDataset(_SpectreDataset):
             return nx.is_connected(graph) and nx.is_planar(graph)
         raise TypeError
 
-    def sample(self, n_samples: int, replace: bool = False) -> List[GraphStorage]:
+    def sample(self, n_samples: int, replace: bool = False) -> List[Graph]:
         idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
         return self[idx_to_sample]
 
@@ -140,7 +136,7 @@ class SBMGraphDataset(_SpectreDataset):
         return p > 0.9  # p value < 10 %
 
 
-class ProteinGraphDataset(GraphStorageDataset):
+class ProteinGraphDataset(GraphDataset):
     @property
     def url(self):
         pass
