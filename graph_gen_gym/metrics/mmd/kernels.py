@@ -3,6 +3,7 @@ from typing import Any, Callable, Iterable, List, Union
 
 import networkx as nx
 import numpy as np
+from scipy.sparse import csr_array
 
 GraphDescriptorFn = Callable[[Iterable[nx.Graph]], np.ndarray]
 
@@ -181,5 +182,11 @@ class LinearKernel(DescriptorKernel):
         assert idx == 0
         return LinearKernel(self._descriptor_fn)
 
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        return x @ y.T
+    def gram(
+        self, x: Union[np.ndarray, csr_array], y: Union[np.ndarray, csr_array]
+    ) -> np.ndarray:
+        assert x.ndim == 2 and y.ndim == 2
+        result = x @ y.transpose()
+        if isinstance(result, np.ndarray):
+            return result
+        return result.toarray()

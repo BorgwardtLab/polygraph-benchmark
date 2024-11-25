@@ -6,6 +6,7 @@ from typing import Iterable
 
 import networkx as nx
 import numpy as np
+from scipy.sparse import csr_array
 
 import graph_gen_gym
 
@@ -63,6 +64,22 @@ class DegreeHistogram:
         ]
         hists = np.stack(hists, axis=0)
         return hists / hists.sum(axis=1, keepdims=True)
+
+
+class SparseDegreeHistogram:
+    def __call__(self, graphs: Iterable[nx.Graph]) -> csr_array:
+        hists = [
+            np.array(nx.degree_histogram(graph)) / graph.number_of_nodes()
+            for graph in graphs
+        ]
+        index = [np.nonzero(hist)[0] for hist in hists]
+        data = [hist[idx] for hist, idx in zip(hists, index)]
+        ptr = np.zeros(len(index) + 1)
+        ptr[1:] = np.cumsum([len(idx) for idx in index])
+        result = csr_array(
+            (np.concatenate(data), np.concatenate(index), ptr), (len(graphs), 1_000_000)
+        )
+        return result
 
 
 class ClusteringHistogram:
