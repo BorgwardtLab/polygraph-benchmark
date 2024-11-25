@@ -13,7 +13,8 @@ from graph_gen_gym.metrics.mmd.kernels import (
 )
 from graph_gen_gym.metrics.mmd.utils import mmd_from_gram, mmd_ustat_var
 
-MMDInterval = namedtuple("MMDInterval", ["ustat", "std"])
+MMDWithVariance = namedtuple("MMDWithVariance", ["ustat", "std"])
+MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
 
 
 class DescriptorMMD2:
@@ -45,7 +46,7 @@ class DescriptorMMD2:
                 gen_vs_gen, self._ref_vs_ref, gen_vs_ref, variant="ustat"
             )
             var = mmd_ustat_var(gen_vs_gen, self._ref_vs_ref, gen_vs_ref)
-            return MMDInterval(ustat=mmd, std=np.sqrt(var))
+            return MMDWithVariance(ustat=mmd, std=np.sqrt(var))
         return mmd_from_gram(
             gen_vs_gen, self._ref_vs_ref, gen_vs_ref, variant=self._variant
         )
@@ -67,6 +68,62 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         multi_kernel_result = super().compute(generated_graphs)
         idx = np.argmax(multi_kernel_result)
         return multi_kernel_result[idx], self._kernel.get_subkernel(idx)
+
+
+class DescriptorMMD2Intereval:
+    def __init__(
+        self,
+        reference_graphs: Iterable[nx.Graph],
+        kernel: DescriptorKernel,
+        variant: Literal["biased", "umve", "ustat"] = "biased",
+    ):
+        self._kernel = kernel
+        self._variant = variant
+        self._reference_descriptions = self._kernel.featurize(reference_graphs)
+
+        self._ref_vs_ref = self._kernel(
+            self._reference_descriptions, self._reference_descriptions
+        )
+
+    def compute(
+        self,
+        generated_graphs: Iterable[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: float = 0.95,
+    ) -> MMDInterval:
+        descriptions = self._kernel.featurize(
+            generated_graphs,
+        )
+        gen_vs_gen = self._kernel(descriptions, descriptions)
+        gen_vs_ref = self._kernel(descriptions, self._reference_descriptions)
+        mmd_samples = []
+        for _ in range(num_samples):
+            ref_idxs = np.random.choice(
+                len(self._ref_vs_ref), size=subsample_size, replace=False
+            )
+            gen_idxs = np.random.choice(
+                len(gen_vs_gen), size=subsample_size, replace=False
+            )
+            sub_ref_vs_ref = self._ref_vs_ref[ref_idxs][:, ref_idxs]
+            sub_gen_vs_gen = gen_vs_gen[gen_idxs][:, gen_idxs]
+            sub_gen_vs_ref = gen_vs_ref[gen_idxs][:, ref_idxs]
+            mmd_samples.append(
+                mmd_from_gram(
+                    sub_gen_vs_gen,
+                    sub_ref_vs_ref,
+                    sub_gen_vs_ref,
+                    variant=self._variant,
+                )
+            )
+
+        mmd_samples = np.array(mmd_samples)
+        low, high = np.quantile(mmd_samples, (1 - coverage) / 2, axis=0), np.quantile(
+            mmd_samples, coverage + (1 - coverage) / 2, axis=0
+        )
+        avg = np.mean(mmd_samples, axis=0)
+        std = np.std(mmd_samples, axis=0)
+        return MMDInterval(mean=avg, std=std, low=low, high=high)
 
 
 class OrbitMM2(DescriptorMMD2):

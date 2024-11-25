@@ -49,6 +49,7 @@ class Graph(BaseModel):
         compute_indexing_info: bool = False,
         edge_attrs: Optional[List[str]] = None,
         node_attrs: Optional[List[str]] = None,
+        graph_attrs: Optional[List[str]] = None,
     ) -> "Graph":
         result = Graph(
             batch=batch.batch,
@@ -60,6 +61,9 @@ class Graph(BaseModel):
             if node_attrs is not None
             else {},
             num_graphs=batch.num_graphs,
+            graph_attr={key: getattr(batch, key) for key in graph_attrs}
+            if graph_attrs is not None
+            else {},
         )
         if compute_indexing_info:
             result.compute_indexing_info()
@@ -138,14 +142,30 @@ class ShardedGraph(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     storages: List[Graph]
     agg_graph_count: Optional[torch.Tensor] = None
+    num_graphs: Optional[int] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        self.agg_graph_count = cumsum(
+            torch.Tensor([storage.num_graphs for storage in self.storages]).to(
+                torch.int64
+            )
+        )
+        self.num_graphs = sum(storage.num_graphs for storage in self.storages)
 
     def get_example(self, idx):
-        if self.agg_graph_count is None:
-            self.agg_graph_count = cumsum(
-                torch.Tensor([storage.num_graphs for storage in self.storages])
-            )
+        if idx < 0 or idx >= self.num_graphs:
+            raise IndexError
 
         # Binary search for idx
-        shard_idx = torch.searchsorted(self.agg_graph_count, idx, right=True) + 1
+        shard_idx = torch.searchsorted(self.agg_graph_count, idx, right=True) - 1
         local_idx = idx - self.agg_graph_count[shard_idx]
+        assert local_idx >= 0
         return self.storages[shard_idx].get_example(local_idx)
+
+    @staticmethod
+    def from_shard_files(shards: List[str]):
+        all_shards = []
+        for shard_path in shards:
+            shard_data = torch.load(shard_path, weights_only=True, mmap=True)
+            all_shards.append(Graph(**shard_data))
+        return ShardedGraph(storages=all_shards)

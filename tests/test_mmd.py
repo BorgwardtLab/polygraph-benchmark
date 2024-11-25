@@ -18,7 +18,11 @@ from graph_gen_gym.metrics.mmd.kernels import (
     RBFKernel,
     StackedKernel,
 )
-from graph_gen_gym.metrics.mmd.mmd import DescriptorMMD2, MaxDescriptorMMD2, MMDInterval
+from graph_gen_gym.metrics.mmd.mmd import (
+    DescriptorMMD2,
+    MaxDescriptorMMD2,
+    MMDWithVariance,
+)
 from graph_gen_gym.metrics.mmd.test import BootStrapMMDTest
 
 
@@ -71,7 +75,7 @@ def test_mmd_computation_ustat_var(datasets, linear_kernel):
     planar, sbm = datasets
     mmd = DescriptorMMD2(sbm.to_nx(), linear_kernel, variant="ustat-var")
     result = mmd.compute(planar.to_nx())
-    assert isinstance(result, MMDInterval)
+    assert isinstance(result, MMDWithVariance)
     assert hasattr(result, "ustat")
     assert hasattr(result, "std")
 
@@ -146,5 +150,5 @@ def test_variance_computation_correctness(datasets, linear_kernel):
         )
         mmd = DescriptorMMD2(planar_subset.to_nx(), linear_kernel, variant="ustat-var")
         result = mmd.compute(sbm_subset.to_nx())
-        assert isinstance(result, MMDInterval)
+        assert isinstance(result, MMDWithVariance)
         assert hasattr(result, "std")

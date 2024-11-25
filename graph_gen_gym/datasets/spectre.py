@@ -1,8 +1,3 @@
-import os
-import tempfile
-import urllib
-import warnings
-from collections import defaultdict
 from typing import List
 
 import networkx as nx
@@ -10,62 +5,26 @@ import numpy as np
 import torch
 import torch_geometric
 from scipy.stats import chi2
-from torch_geometric.data import Batch, Data
 
-from graph_gen_gym.datasets.dataset import GraphDataset
+from graph_gen_gym.datasets.dataset import OnlineGraphDataset
 from graph_gen_gym.datasets.graph import Graph
-from graph_gen_gym.datasets.utils import load_and_verify_splits, write_splits_to_cache
 
 
-def _spectre_link_to_storage(url):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fpath = os.path.join(tmpdir, "data.pt")
-        urllib.request.urlretrieve(url, fpath)
-        adjs, _, _, _, _, _, _, _ = torch.load(fpath, weights_only=True)
-    assert isinstance(adjs, list)
-    test_len = int(round(len(adjs) * 0.2))
-    train_len = int(round((len(adjs) - test_len) * 0.8))
-    val_len = len(adjs) - train_len - test_len
-    train, val, test = torch.utils.data.random_split(
-        adjs,
-        [train_len, val_len, test_len],
-        generator=torch.Generator().manual_seed(1234),
-    )
-    split_adjs = {"train": train, "val": val, "test": test}
-    data_lists = defaultdict(list)
-    for split, adjs in split_adjs.items():
-        for adj in adjs:
-            edge_index, _ = torch_geometric.utils.dense_to_sparse(adj)
-            data_lists[split].append(Data(edge_index=edge_index, num_nodes=len(adj)))
-
-    return {
-        key: Graph.from_pyg_batch(Batch.from_data_list(lst), compute_indexing_info=True)
-        for key, lst in data_lists.items()
+class PlanarGraphDataset(OnlineGraphDataset):
+    _URL_FOR_SPLIT = {
+        "train": "https://datashare.biochem.mpg.de/s/f3kXPP4LICWKbBx/download",
+        "val": "https://datashare.biochem.mpg.de/s/CN2zeY8EvIlUxN6/download",
+        "test": "https://datashare.biochem.mpg.de/s/DNwtgo3mlOErxHX/download",
     }
 
-
-class _SpectreDataset(GraphDataset):
-    def __init__(self, split: str):
-        try:
-            whole_data = load_and_verify_splits(self.identifier, self.hash)
-        except FileNotFoundError:
-            warnings.warn("Downloading dataset...")
-            whole_data = _spectre_link_to_storage(self.url)
-            write_splits_to_cache(whole_data, self.identifier)
-
-        super().__init__(data_store=whole_data[split])
-
-
-class PlanarGraphDataset(_SpectreDataset):
-    @property
-    def url(self):
-        return "https://github.com/KarolisMart/SPECTRE/raw/refs/heads/main/data/planar_64_200.pt"
+    def url_for_split(self, split: str):
+        return self._URL_FOR_SPLIT[split]
 
     @property
-    def hash(self):
-        return "c9a96c31fb513c15bc42c6a0b01d830e"
+    def identifier(self):
+        return "spectre_planar"
 
-    def is_valid(self, graph):
+    def is_valid(self, graph: nx.Graph) -> bool:
         if isinstance(graph, nx.Graph):
             return nx.is_connected(graph) and nx.is_planar(graph)
         raise TypeError
@@ -75,18 +34,21 @@ class PlanarGraphDataset(_SpectreDataset):
         return self[idx_to_sample]
 
 
-class SBMGraphDataset(_SpectreDataset):
-    @property
-    def url(self):
-        return (
-            "https://github.com/KarolisMart/SPECTRE/raw/refs/heads/main/data/sbm_200.pt"
-        )
+class SBMGraphDataset(OnlineGraphDataset):
+    _URL_FOR_SPLIT = {
+        "train": "https://datashare.biochem.mpg.de/s/INpX2k7JHjdfWaa/download",
+        "val": "https://datashare.biochem.mpg.de/s/SwuNNa1RvCIJAg8/download",
+        "test": "https://datashare.biochem.mpg.de/s/DwEdatPuPZ60Bpd/download",
+    }
+
+    def url_for_split(self, split: str):
+        return self._URL_FOR_SPLIT[split]
 
     @property
-    def hash(self):
-        return "2a1b79e12163d3ea26d49db41e7822ff"
+    def identifier(self):
+        return "spectre_sbm"
 
-    def is_valid(self, graph):
+    def is_valid(self, graph: nx.Graph) -> bool:
         import graph_tool.all as gt
 
         adj = nx.adjacency_matrix(graph).toarray()
@@ -134,9 +96,3 @@ class SBMGraphDataset(_SpectreDataset):
         p = 1 - chi2.cdf(abs(W), 1)
         p = p.mean()
         return p > 0.9  # p value < 10 %
-
-
-class ProteinGraphDataset(GraphDataset):
-    @property
-    def url(self):
-        pass

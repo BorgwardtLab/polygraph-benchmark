@@ -1,28 +1,11 @@
 import os
-from typing import Dict
+import urllib
 
-import joblib
 import torch
 from appdirs import user_cache_dir
 
 from graph_gen_gym import __version__
 from graph_gen_gym.datasets.graph import Graph
-
-
-def _torch_to_hashable(data):
-    if isinstance(data, torch.Tensor):
-        return data.cpu().numpy()
-    if isinstance(data, dict):
-        return {key: _torch_to_hashable(val) for key, val in data.items()}
-    if isinstance(data, (tuple, list)):
-        return tuple(_torch_to_hashable(item) for item in data)
-    if data is None or isinstance(data, (int, float, str)):
-        return data
-    raise ValueError
-
-
-def torch_hash(data):
-    return joblib.hash(_torch_to_hashable(data))
 
 
 def identifier_to_path(identifier: str):
@@ -35,25 +18,30 @@ def identifier_to_path(identifier: str):
     return os.path.join(cache_dir, identifier)
 
 
-def write_splits_to_cache(data: Dict[str, Graph], identifier: str):
+def download_to_cache(url: str, identifier: str, split: str = "data"):
     path = identifier_to_path(identifier)
+    os.makedirs(path, exist_ok=True)
+    path = os.path.join(path, f"{split}.pt")
+    if os.path.exists(path):
+        raise FileExistsError(
+            f"Tried to download data to {path}, but path already exists"
+        )
+    urllib.request.urlretrieve(url, path)
+
+
+def write_to_cache(data: Graph, identifier: str, split: str = "data"):
+    path = identifier_to_path(identifier)
+    os.makedirs(path, exist_ok=True)
+    path = os.path.join(f"{split}.pt")
     if os.path.exists(path):
         raise FileExistsError(f"Tried to write data to {path}, but path already exists")
-    os.makedirs(path, exist_ok=False)
-    primitive_data = {key: value.model_dump() for key, value in data.items()}
-    print(f"Saving data with hash {torch_hash(primitive_data)} to {path}")
-    for key, tensors in primitive_data.items():
-        torch.save(tensors, os.path.join(path, f"{key}.pt"))
+    primitive_data = data.model_dump()
+    torch.save(primitive_data, path)
 
 
-def load_and_verify_splits(identifier: str, hash: str):
-    path = identifier_to_path(identifier)
-    fnames = list(os.listdir(path))
-    if not os.path.exists(path) or len(fnames) == 0:
+def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) -> Graph:
+    path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
+    if not os.path.exists(path):
         raise FileNotFoundError
-    result = {}
-    for fname in fnames:
-        split_name = ".".join(fname.split(".")[:-1])
-        data = torch.load(os.path.join(path, fname), weights_only=True)
-        result[split_name] = data
-    return {key: Graph(**val) for key, val in result.items()}
+    data = torch.load(path, weights_only=True, mmap=mmap)
+    return Graph(**data)
