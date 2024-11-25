@@ -169,3 +169,6 @@ class ShardedGraph(BaseModel):
             shard_data = torch.load(shard_path, weights_only=True, mmap=True)
             all_shards.append(Graph(**shard_data))
         return ShardedGraph(storages=all_shards)
+
+    def __len__(self):
+        return self.num_graphs
