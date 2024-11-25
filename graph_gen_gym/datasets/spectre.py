@@ -21,9 +21,7 @@ class PlanarGraphDataset(OnlineGraphDataset):
         return self._URL_FOR_SPLIT[split]
 
     def is_valid(self, graph: nx.Graph) -> bool:
-        if isinstance(graph, nx.Graph):
-            return nx.is_connected(graph) and nx.is_planar(graph)
-        raise TypeError
+        return nx.is_connected(graph) and nx.is_planar(graph)
 
     def sample(self, n_samples: int, replace: bool = False) -> List[Graph]:
         idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
