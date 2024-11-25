@@ -10,7 +10,3 @@ class DobsonDoigGraphDataset(OnlineGraphDataset):
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
-
-    @property
-    def identifier(self):
-        return "dobson_doig"

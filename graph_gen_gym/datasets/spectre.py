@@ -20,10 +20,6 @@ class PlanarGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    @property
-    def identifier(self):
-        return "spectre_planar"
-
     def is_valid(self, graph: nx.Graph) -> bool:
         if isinstance(graph, nx.Graph):
             return nx.is_connected(graph) and nx.is_planar(graph)
@@ -43,10 +39,6 @@ class SBMGraphDataset(OnlineGraphDataset):
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
-
-    @property
-    def identifier(self):
-        return "spectre_sbm"
 
     def is_valid(self, graph: nx.Graph) -> bool:
         import graph_tool.all as gt

@@ -69,11 +69,6 @@ class OnlineGraphDataset(GraphDataset):
             storage = load_from_cache(self.identifier, split, mmap=memmap)
         super().__init__(storage)
 
-    @property
-    @abstractmethod
-    def identifier(self):
-        ...
-
     @abstractmethod
     def url_for_split(self, split: str):
         ...
