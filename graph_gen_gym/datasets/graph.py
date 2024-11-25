@@ -4,7 +4,7 @@
 Implementation of Graphs base classes.
 """
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
@@ -164,7 +164,7 @@ class ShardedGraph(BaseModel):
         return self.storages[shard_idx].get_example(local_idx)
 
     @staticmethod
-    def from_shard_files(shards: List[os.PathLike]):
+    def from_shard_files(shards: List[Union[str, os.PathLike]]):
         all_shards = []
         for shard_path in shards:
             shard_data = torch.load(shard_path, weights_only=True, mmap=True)
