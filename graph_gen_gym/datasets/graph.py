@@ -31,7 +31,11 @@ class Graph(BaseModel):
     graph_attr: Dict[str, torch.Tensor] = Field(default_factory=dict)
     indexing_info: Optional[IndexingInfo] = None
     description: Optional[str] = None
-    extra_data: Any = None  # Any additional primitive ddata
+    extra_data: Any = None  # Any additional primitive data
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.indexing_info is None:
+            self._compute_indexing_info()
 
     @staticmethod
     def _contiguously_increasing(tensor):
@@ -47,7 +51,6 @@ class Graph(BaseModel):
     @staticmethod
     def from_pyg_batch(
         batch: Batch,
-        compute_indexing_info: bool = False,
         edge_attrs: Optional[List[str]] = None,
         node_attrs: Optional[List[str]] = None,
         graph_attrs: Optional[List[str]] = None,
@@ -66,11 +69,9 @@ class Graph(BaseModel):
             if graph_attrs is not None
             else {},
         )
-        if compute_indexing_info:
-            result.compute_indexing_info()
         return result
 
-    def compute_indexing_info(self):
+    def _compute_indexing_info(self):
         if self.indexing_info is not None:
             raise RuntimeError("Indexing info already computed")
 

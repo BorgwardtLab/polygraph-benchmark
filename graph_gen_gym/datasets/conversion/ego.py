@@ -119,9 +119,9 @@ def _get_ego_splits(small=False):
     graphs_validate = Batch.from_data_list([from_networkx(g) for g in egos[0:val_len]])
 
     return (
-        Graph.from_pyg_batch(graphs_train, compute_indexing_info=True),
-        Graph.from_pyg_batch(graphs_validate, compute_indexing_info=True),
-        Graph.from_pyg_batch(graphs_test, compute_indexing_info=True),
+        Graph.from_pyg_batch(graphs_train),
+        Graph.from_pyg_batch(graphs_validate),
+        Graph.from_pyg_batch(graphs_test),
     )
 
 

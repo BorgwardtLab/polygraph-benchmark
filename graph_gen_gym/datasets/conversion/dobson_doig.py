@@ -20,7 +20,6 @@ def _nx_graphs_to_storage(nx_graphs):
     )
     return Graph.from_pyg_batch(
         batch,
-        compute_indexing_info=True,
         node_attrs=["residues"],
         graph_attrs=["is_enzyme"],
     )

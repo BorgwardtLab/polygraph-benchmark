@@ -32,7 +32,7 @@ def _spectre_link_to_storage(url):
             data_lists[split].append(Data(edge_index=edge_index, num_nodes=len(adj)))
 
     return {
-        key: Graph.from_pyg_batch(Batch.from_data_list(lst), compute_indexing_info=True)
+        key: Graph.from_pyg_batch(Batch.from_data_list(lst))
         for key, lst in data_lists.items()
     }
 

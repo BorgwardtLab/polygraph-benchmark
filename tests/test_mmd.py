@@ -139,14 +139,10 @@ def test_variance_computation_correctness(datasets, linear_kernel):
         planar_samples = planar[idx_to_sample]
         sbm_samples = sbm[idx_to_sample]
         planar_subset = GraphDataset(
-            Graph.from_pyg_batch(
-                Batch.from_data_list(planar_samples), compute_indexing_info=True
-            )
+            Graph.from_pyg_batch(Batch.from_data_list(planar_samples))
         )
         sbm_subset = GraphDataset(
-            Graph.from_pyg_batch(
-                Batch.from_data_list(sbm_samples), compute_indexing_info=True
-            )
+            Graph.from_pyg_batch(Batch.from_data_list(sbm_samples))
         )
         mmd = DescriptorMMD2(planar_subset.to_nx(), linear_kernel, variant="ustat-var")
         result = mmd.compute(sbm_subset.to_nx())
