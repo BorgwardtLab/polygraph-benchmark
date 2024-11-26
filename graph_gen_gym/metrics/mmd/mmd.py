@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections import namedtuple
 from typing import Iterable, Literal, Tuple
 
@@ -70,7 +71,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         return multi_kernel_result[idx], self._kernel.get_subkernel(idx)
 
 
-class DescriptorMMD2Intereval:
+class _MMD2Intereval(ABC):
     def __init__(
         self,
         reference_graphs: Iterable[nx.Graph],
@@ -85,12 +86,11 @@ class DescriptorMMD2Intereval:
             self._reference_descriptions, self._reference_descriptions
         )
 
-    def compute(
+    def _generate_mmd_samples(
         self,
         generated_graphs: Iterable[nx.Graph],
         subsample_size: int,
         num_samples: int = 500,
-        coverage: float = 0.95,
     ) -> MMDInterval:
         descriptions = self._kernel.featurize(
             generated_graphs,
@@ -118,6 +118,54 @@ class DescriptorMMD2Intereval:
             )
 
         mmd_samples = np.array(mmd_samples)
+        return mmd_samples
+
+    @abstractmethod
+    def compute(*args, **kwargs) -> MMDInterval:
+        ...
+
+
+class DescriptorMMD2Interval(_MMD2Intereval):
+    def compute(
+        self,
+        generated_graphs: Iterable[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: float = 0.95,
+    ) -> MMDInterval:
+        mmd_samples = self._generate_mmd_samples(
+            generated_graphs=generated_graphs,
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+        )
+        low, high = np.quantile(mmd_samples, (1 - coverage) / 2, axis=0), np.quantile(
+            mmd_samples, coverage + (1 - coverage) / 2, axis=0
+        )
+        avg = np.mean(mmd_samples, axis=0)
+        std = np.std(mmd_samples, axis=0)
+        return MMDInterval(mean=avg, std=std, low=low, high=high)
+
+
+class MaxDescriptorMMD2Interval(_MMD2Intereval):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not isinstance(self._kernel, StackedKernel):
+            raise ValueError(f"Kernel must be a {StackedKernel.__name__}")
+
+    def compute(
+        self,
+        generated_graphs: Iterable[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: float = 0.95,
+    ) -> MMDInterval:
+        mmd_samples = self._generate_mmd_samples(
+            generated_graphs=generated_graphs,
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+        )
+        assert mmd_samples.ndim == 2
+        mmd_samples = np.max(mmd_samples, axis=1)
         low, high = np.quantile(mmd_samples, (1 - coverage) / 2, axis=0), np.quantile(
             mmd_samples, coverage + (1 - coverage) / 2, axis=0
         )
