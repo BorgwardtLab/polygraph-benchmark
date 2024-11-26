@@ -117,17 +117,12 @@ class FrechetDistance:
         descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
         batch_size: float = None,
     ):
-        self._reference_gaussian = fit_gaussian(
+        reference_gaussian = fit_gaussian(
             reference_graphs, descriptor_fn, batch_size=batch_size
         )
-        self._descriptor_fn = descriptor_fn
-        self._batch_size = batch_size
-        self._dim = None
+        self._fd = FittedFrechetDistance(
+            reference_gaussian, descriptor_fn=descriptor_fn, batch_size=batch_size
+        )
 
     def compute(self, generated_graphs: Collection[nx.Graph]):
-        generated_gaussian = fit_gaussian(
-            generated_graphs, self._descriptor_fn, self._batch_size
-        )
-        return compute_wasserstein_distance(
-            self._reference_gaussian, generated_gaussian
-        )
+        return self._fd.compute(generated_graphs)
