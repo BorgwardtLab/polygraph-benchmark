@@ -34,7 +34,7 @@ We can compute arbitrary MMDs on graph descriptors via the `DescriptorMMD2` clas
 
 ```python
 from graph_gen_gym.metrics.mmd.mmd import DescriptorMMD2
-from graph_gen_gym.metrics.mmd.graph_descriptors import orbit_descriptor
+from graph_gen_gym.metrics.graph_descriptors import orbit_descriptor
 from graph_gen_gym.metrics.mmd.kernels import LaplaceKernel
 
 mmd = DescriptorMMD2(ds_planar, descriptor_fn=orbit_descriptor, kernel=LaplaceKernel(lbd=0.2), variant="umve")
@@ -54,7 +54,7 @@ print(mmd.compute(ds_sbm.to_nx()))     # Gives a numpy array
 
 ```python
 from graph_gen_gym.metrics.mmd.tests import OptimizedPValue
-from graph_gen_gym.metrics.mmd.graph_descriptors import clustering_descriptor
+from graph_gen_gym.metrics.graph_descriptors import clustering_descriptor
 from functools import partial
 
 planar_val = PlanarGraphDataset("val")
