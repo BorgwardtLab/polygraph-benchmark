@@ -1,10 +1,9 @@
 from typing import List
 
+import community
 import networkx as nx
 import numpy as np
-import torch
-import torch_geometric
-from scipy.stats import chi2
+from scipy import stats
 
 from graph_gen_gym.datasets.dataset import OnlineGraphDataset
 from graph_gen_gym.datasets.graph import Graph
@@ -39,50 +38,53 @@ class SBMGraphDataset(OnlineGraphDataset):
         return self._URL_FOR_SPLIT[split]
 
     def is_valid(self, graph: nx.Graph) -> bool:
-        import graph_tool.all as gt
+        # Community detection using Louvain method
+        communities = community.best_partition(graph)
+        unique_communities = set(communities.values())
+        n_blocks = len(unique_communities)
 
-        adj = nx.adjacency_matrix(graph).toarray()
-        idx = adj.nonzero()
-        g = gt.Graph()
-        g.add_edge_list(np.transpose(idx))
-        try:
-            state = gt.minimize_blockmodel_dl(g)
-        except ValueError:
+        # Check number of communities
+        if n_blocks < 2 or n_blocks > 5:
             return False
 
-        # Refine using merge-split MCMC
-        for i in range(100):
-            state.multiflip_mcmc_sweep(beta=np.inf, niter=10)
+        # Count nodes per community
+        node_counts = {}
+        for comm in communities.values():
+            node_counts[comm] = node_counts.get(comm, 0) + 1
 
-        b = state.get_blocks()
-        b = gt.contiguous_map(state.get_blocks())
-        state = state.copy(b=b)
-        e = state.get_matrix()
-        n_blocks = state.get_nonempty_B()
-        node_counts = state.get_nr().get_array()[:n_blocks]
-        edge_counts = e.todense()[:n_blocks, :n_blocks]
-        if (
-            (node_counts > 40).sum() > 0
-            or (node_counts < 20).sum() > 0
-            or n_blocks > 5
-            or n_blocks < 2
-        ):
+        # Check community sizes
+        if any(count < 20 or count > 40 for count in node_counts.values()):
             return False
 
-        max_intra_edges = node_counts * (node_counts - 1)
-        est_p_intra = np.diagonal(edge_counts) / (max_intra_edges + 1e-6)
+        # Calculate edge densities
+        edge_counts = np.zeros((n_blocks, n_blocks))
+        for edge in graph.edges():
+            c1, c2 = communities[edge[0]], communities[edge[1]]
+            edge_counts[c1][c2] += 1
+            if c1 != c2:
+                edge_counts[c2][c1] += 1
 
-        max_inter_edges = node_counts.reshape((-1, 1)) @ node_counts.reshape((1, -1))
-        np.fill_diagonal(edge_counts, 0)
-        est_p_inter = edge_counts / (max_inter_edges + 1e-6)
-
-        W_p_intra = (est_p_intra - 0.3) ** 2 / (est_p_intra * (1 - est_p_intra) + 1e-6)
-        W_p_inter = (est_p_inter - 0.005) ** 2 / (
-            est_p_inter * (1 - est_p_inter) + 1e-6
+        # Calculate probabilities
+        node_counts_arr = np.array([node_counts[i] for i in range(n_blocks)])
+        max_intra_edges = node_counts_arr * (node_counts_arr - 1)
+        max_inter_edges = node_counts_arr.reshape((-1, 1)) @ node_counts_arr.reshape(
+            (1, -1)
         )
 
-        W = W_p_inter.copy()
-        np.fill_diagonal(W, W_p_intra)
-        p = 1 - chi2.cdf(abs(W), 1)
-        p = p.mean()
-        return p > 0.9  # p value < 10 %
+        # TODO: if we decide to generate graphs with different intra-community densities, we need to change this line
+        # Intra-community density (should be around 0.3)
+        p_intra = np.diagonal(edge_counts) / (max_intra_edges + 1e-6)
+
+        # TODO: if we decide to generate graphs with different inter-community densities, we need to change this line
+        # Inter-community density (should be around 0.005)
+        np.fill_diagonal(edge_counts, 0)
+        p_inter = edge_counts / (max_inter_edges + 1e-6)
+
+        # Chi-square test for goodness of fit
+        W_intra = stats.chi2_contingency([p_intra, [0.3] * len(p_intra)])[1]
+        W_inter = stats.chi2_contingency(
+            [p_inter.flatten(), [0.005] * len(p_inter.flatten())]
+        )[1]
+
+        # Average p-value should be > 0.9
+        return (W_intra + W_inter) / 2 > 0.9
