@@ -6,12 +6,12 @@ from torch_geometric.data import Batch
 from graph_gen_gym.datasets.dataset import GraphDataset
 from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
-from graph_gen_gym.metrics.mmd.classifier_test import AccuracyInterval, ClassifierTest
-from graph_gen_gym.metrics.mmd.graph_descriptors import (
+from graph_gen_gym.metrics.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     OrbitCounts,
 )
+from graph_gen_gym.metrics.mmd.classifier_test import AccuracyInterval, ClassifierTest
 from graph_gen_gym.metrics.mmd.kernels import (
     LaplaceKernel,
     LinearKernel,
