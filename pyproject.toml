@@ -19,6 +19,7 @@ dependencies = [
     "joblib",
     "appdirs",
     "loguru",
+    "python-louvain",
 ]
 
 [project.optional-dependencies]
