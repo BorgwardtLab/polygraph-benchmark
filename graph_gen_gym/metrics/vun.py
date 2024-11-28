@@ -84,7 +84,7 @@ class _GraphSet:
 
 class VUN:
     def __init__(
-        self, train_graphs: AbstractDataset, validity_fn: Optional[Callable] = None
+        self, train_graphs: Iterable[nx.Graph], validity_fn: Optional[Callable] = None
     ):
         self._train_set = _GraphSet()
         self._train_set.add_from(train_graphs)
