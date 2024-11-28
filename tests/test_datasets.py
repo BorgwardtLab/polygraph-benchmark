@@ -77,7 +77,7 @@ def test_graph_properties():
         assert g.num_edges > 0, "Graphs should have edges"
 
         nx_g = ds.to_nx()[0]
-        assert ds.is_valid(nx_g), "Graphs should be connected"
+        assert ds.is_valid(nx_g), "Graphs should be sampled from SBM"
 
 
 def test_invalid_inputs():
