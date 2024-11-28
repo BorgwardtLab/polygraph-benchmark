@@ -55,7 +55,7 @@ def test_vun_with_real_dataset() -> None:
     ref_graphs = list(ds.to_nx())[:10]
     gen_graphs = list(ds.to_nx())[10:20]
 
-    vun = VUN(ref_graphs)
+    vun = VUN(ref_graphs, validity_fn=ds.is_valid)
     vun_scores = vun.compute(gen_graphs)
 
     assert 0 <= vun_scores["unique"].mle <= 1, "Unique score should be between 0 and 1"
