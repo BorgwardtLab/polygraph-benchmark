@@ -29,24 +29,6 @@ def create_test_graphs() -> List[nx.Graph]:
     return [g1, g2, g3]
 
 
-def create_gaussian_stats(
-    mean: List[float], cov: Union[List[List[float]], NDArray[np.float64]]
-) -> Dict[str, NDArray[np.float64]]:
-    """Create Gaussian statistics dictionary with proper typing.
-
-    Args:
-        mean: Mean vector
-        cov: Covariance matrix
-
-    Returns:
-        Dict containing mean and covariance as numpy arrays
-    """
-    return {
-        "mean": np.array(mean, dtype=np.float64),
-        "cov": np.array(cov, dtype=np.float64),
-    }
-
-
 def test_vun_scores() -> None:
     ref_graphs = create_test_graphs()[:2]  # Triangle and Square
     gen_graphs = create_test_graphs()  # Triangle, Square, and duplicate Triangle
