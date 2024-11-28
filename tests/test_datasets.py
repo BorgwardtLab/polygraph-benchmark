@@ -77,8 +77,7 @@ def test_graph_properties():
         assert g.num_edges > 0, "Graphs should have edges"
 
         nx_g = ds.to_nx()[0]
-        assert nx.is_connected(nx_g), "Graphs should be connected"
-        assert not nx.is_directed(nx_g), "Graphs should be undirected"
+        assert ds.is_valid(nx_g), "Graphs should be connected"
 
 
 def test_invalid_inputs():
