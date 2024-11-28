@@ -1,8 +1,11 @@
 # Graph Generative Benchmark
 # Installation
 For now, you can install the package in editable mode
-
-`pip install -e ".[dev]"`
+```bash
+mamba create -n graph_gen_gym python=3.12
+pip install -e ".[dev]"
+mamba activate graph_gen_gym
+```
 
 This will also install orca and (unpinned) dependencies.
 
