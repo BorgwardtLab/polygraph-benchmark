@@ -24,6 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-xdist",
     "hydra-core",
     "pyprojroot",
     "ipython",
@@ -34,6 +35,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+addopts = "-n auto"
 
 [tool.lint.ruff]
 line-length = 80
