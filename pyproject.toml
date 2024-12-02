@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "graph_gen_gym"
 version = "0.1"
-description = "A description of your project"
+description = "Graph Generation Gym"
 authors = [
     { name="Your Name", email="your.email@example.com" }
 ]
@@ -36,7 +36,10 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-n auto"
+addopts = "-n auto -m 'not sslow'"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]
 
 [tool.lint.ruff]
 line-length = 80
