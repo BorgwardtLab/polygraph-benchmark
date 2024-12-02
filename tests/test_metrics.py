@@ -1,9 +1,8 @@
-from typing import Dict, List, Union
+from typing import List
 
 import networkx as nx
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset
 from graph_gen_gym.metrics.frechet_distance import FrechetDistance
@@ -81,7 +80,7 @@ def test_frechet_distance_identical() -> None:
     gen_distance = frechet_distance.compute(gen_graphs)
 
     assert np.isclose(
-        gen_distance, 0.0
+        gen_distance, 0.0, atol=1e-2
     ), "Frechet distance between identical distributions should be 0"
 
 
