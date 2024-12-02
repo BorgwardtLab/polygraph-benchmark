@@ -1,7 +1,10 @@
 import networkx as nx
+import numpy as np
 import pytest
 import torch
 import torch_geometric as pyg
+from loguru import logger
+from tqdm import tqdm
 
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
 
@@ -78,6 +81,24 @@ def test_graph_properties():
 
         nx_g = ds.to_nx()[0]
         assert ds.is_valid(nx_g), "Graphs should be sampled from SBM"
+
+
+@pytest.mark.slow
+def test_graph_tool_validation():
+    ds_planar = SBMGraphDataset("train")
+    p_values = []
+    validities = []
+    for g in tqdm(ds_planar.to_nx()):
+        valid_gt = ds_planar.is_valid_graphtool(g)
+        valid_nx = ds_planar.is_valid(g)
+        validities.append([valid_gt, valid_nx])
+    valid_gt = np.sum([val[0] for val in validities])
+    valid_nx = np.sum([val[1] for val in validities])
+    logger.info(f"valid_gt: {valid_gt}, valid_nx: {valid_nx}")
+    assert np.isclose(
+        valid_gt, valid_nx, atol=1e-2
+    ), "GraphTool and NetworkX should find the same number of valid graphs"
+    assert np.all(validities), "GraphTool should find all valid graphs"
 
 
 def test_invalid_inputs():
