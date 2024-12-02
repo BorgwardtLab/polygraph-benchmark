@@ -5,8 +5,8 @@ from typing import Iterable, Literal, Tuple
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
-from graph_gen_gym.metrics.mmd.graph_descriptors import ClusteringHistogram, OrbitCounts
+from graph_gen_gym.datasets.dataset import AbstractDataset
+from graph_gen_gym.metrics.graph_descriptors import ClusteringHistogram, OrbitCounts
 from graph_gen_gym.metrics.mmd.kernels import (
     DescriptorKernel,
     GaussianTV,

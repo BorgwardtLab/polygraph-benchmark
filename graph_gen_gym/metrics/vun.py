@@ -5,7 +5,9 @@ import joblib
 import networkx as nx
 from scipy.stats import binomtest
 
-from graph_gen_gym.datasets.abstract_dataset import AbstractDataset
+from graph_gen_gym.datasets.dataset import AbstractDataset
+
+BinomConfidenceInterval = namedtuple("ConfidenceInterval", ["mle", "low", "high"])
 
 
 class _GraphSet:
@@ -26,7 +28,7 @@ class _GraphSet:
 
     def add(self, g: nx.Graph) -> None:
         self.nx_graphs.append(g)
-        self._hash_set[_GraphSet._graph_fingerprint(g)].append(len(self.nx_graphs) - 1)
+        self._hash_set[self._graph_fingerprint(g)].append(len(self.nx_graphs) - 1)
 
     def __contains__(self, g: nx.Graph) -> bool:
         fingerprint = self._graph_fingerprint(g)
@@ -80,21 +82,20 @@ class _GraphSet:
         return hash_set
 
 
-BinomConfidenceInterval = namedtuple("ConfidenceInterval", ["mle", "low", "high"])
-
-
 class VUN:
     def __init__(
-        self, train_graphs: AbstractDataset, validity_fn: Optional[Callable] = None
+        self, train_graphs: Iterable[nx.Graph], validity_fn: Optional[Callable] = None
     ):
         self._train_set = _GraphSet()
-        self._train_set.add_from(train_graphs.to_nx())
+        self._train_set.add_from(train_graphs)
         self._validity_fn = validity_fn
 
     def compute(
         self, generated_samples: Iterable[nx.Graph], confidence_level: float = 0.95
     ) -> Dict[str, BinomConfidenceInterval]:
         n_graphs = len(generated_samples)
+        if n_graphs == 0:
+            raise ValueError("Generated samples must not be empty")
         novel = [graph not in self._train_set for graph in generated_samples]
         unique = []
         generated_set = _GraphSet()
