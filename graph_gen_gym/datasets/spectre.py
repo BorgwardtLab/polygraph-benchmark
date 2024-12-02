@@ -3,6 +3,7 @@ from typing import List
 import community
 import networkx as nx
 import numpy as np
+from loguru import logger
 from scipy import stats
 
 from graph_gen_gym.datasets.dataset import OnlineGraphDataset
@@ -37,7 +38,7 @@ class SBMGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    def is_valid_graphtool(self, graph: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         import graph_tool.all as gt
         from scipy.stats import chi2
 
@@ -87,9 +88,8 @@ class SBMGraphDataset(OnlineGraphDataset):
         p = p.mean()
         return p > 0.9
 
-    def is_valid(self, graph: nx.Graph) -> bool:
+    def is_valid_alt(self, graph: nx.Graph) -> bool:
         partition_methods = [
-            community.best_partition,  # Louvain method
             lambda g: {
                 node: cluster
                 for node, cluster in enumerate(nx.community.louvain_communities(g))
@@ -108,10 +108,6 @@ class SBMGraphDataset(OnlineGraphDataset):
             },  # Label propagation
             lambda g: {
                 node: cluster
-                for node, cluster in enumerate(nx.community.asyn_fluidc(g, k=3))
-            },  # Fluid communities
-            lambda g: {
-                node: cluster
                 for node, cluster in enumerate(nx.community.kernighan_lin_bisection(g))
             },  # Kernighan-Lin
         ]
@@ -122,19 +118,21 @@ class SBMGraphDataset(OnlineGraphDataset):
         for method in partition_methods:
             try:
                 partition = method(graph)
-                mod = community.modularity(partition, graph)
+                partition = [set(partition[i]) for i in range(len(partition))]
+                mod = nx.community.modularity(graph, partition)
                 if mod > best_modularity:
                     best_modularity = mod
                     best_partition = partition
-            except:
+            except Exception as e:
+                logger.error(f"Method {method.__name__} failed")
+                logger.error(f"Error: {e}")
                 continue
-
         if best_partition is None:
             return False
 
-        communities = best_partition
-        unique_communities = set(communities.values())
-        n_blocks = len(unique_communities)
+        # Convert best_partition from list of sets to list of lists for consistency
+        communities = [list(community) for community in best_partition]
+        n_blocks = len(communities)
 
         # Check number of communities
         if n_blocks < 2 or n_blocks > 5:
@@ -142,8 +140,8 @@ class SBMGraphDataset(OnlineGraphDataset):
 
         # Count nodes per community
         node_counts = {}
-        for comm in communities.values():
-            node_counts[comm] = node_counts.get(comm, 0) + 1
+        for i, comm in enumerate(communities):
+            node_counts[i] = len(comm)
 
         # Check community sizes
         if any(count < 20 or count > 40 for count in node_counts.values()):
@@ -151,7 +149,10 @@ class SBMGraphDataset(OnlineGraphDataset):
 
         # Calculate edge densities with more precise counting
         edge_counts = np.zeros((n_blocks, n_blocks))
-        node_mapping = {node: comm for node, comm in communities.items()}
+        node_mapping = {}
+        for i, comm in enumerate(communities):
+            for node in comm:
+                node_mapping[node] = i
 
         for edge in graph.edges():
             c1, c2 = node_mapping[edge[0]], node_mapping[edge[1]]
