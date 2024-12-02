@@ -164,7 +164,7 @@ class SBMGraphDataset(OnlineGraphDataset):
         node_counts_arr = np.array([node_counts[i] for i in range(n_blocks)])
 
         # Calculate max possible edges (similar to graph-tool)
-        max_intra_edges = node_counts_arr * (node_counts_arr - 1)
+        max_intra_edges = node_counts_arr * (node_counts_arr - 1) / 2
         max_inter_edges = node_counts_arr.reshape((-1, 1)) @ node_counts_arr.reshape(
             (1, -1)
         )
