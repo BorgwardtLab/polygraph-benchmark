@@ -108,3 +108,16 @@ class OrbitCounts:
     def __call__(self, graphs: Iterable[nx.Graph]):
         descriptors = [_orbit_descriptor(graph) for graph in graphs]
         return np.stack(descriptors, axis=0)
+
+
+class EigenvalueHistogram:
+    def __call__(self, graphs: Iterable[nx.Graph]):
+        histograms = []
+        for g in graphs:
+            eigs = np.linalg.eigvalsh(nx.normalized_laplacian_matrix(g).todense())
+            spectral_pmf, _ = np.histogram(
+                eigs, bins=200, range=(-1e-5, 2), density=False
+            )
+            spectral_pmf = spectral_pmf / spectral_pmf.sum()
+            histograms.append(spectral_pmf)
+        return np.stack(histograms, axis=0)

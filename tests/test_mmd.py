@@ -3,6 +3,12 @@ import random
 import numpy as np
 import pytest
 import torch
+from gran_mmd_implementation.stats import (
+    clustering_stats,
+    degree_stats,
+    orbit_stats_all,
+    spectral_stats,
+)
 from scipy.stats import kstest
 from torch_geometric.data import Batch
 
@@ -23,9 +29,13 @@ from graph_gen_gym.metrics.mmd.kernels import (
     StackedKernel,
 )
 from graph_gen_gym.metrics.mmd.mmd import (
+    ClusteringMMD2,
+    DegreeMMD2,
     DescriptorMMD2,
     MaxDescriptorMMD2,
     MMDWithVariance,
+    OrbitMMD2,
+    SpectralMMD2,
 )
 from graph_gen_gym.metrics.mmd.test import BootStrapMMDTest
 
@@ -33,8 +43,7 @@ from graph_gen_gym.metrics.mmd.test import BootStrapMMDTest
 def _is_valid_two_sample_test(
     all_samples, test_function, num_iters=500, threshold=0.05
 ):
-    """
-    Perform Kolmogorov-Smirnov test to assert that two-sample test is valid.
+    """Perform Kolmogorov-Smirnov test to assert that two-sample test is valid.
 
     We assert that we cannot reject F(x) <= x where F is the CDF of p-values under the null hypothesis.
     """
@@ -113,6 +122,34 @@ def test_mmd_computation(datasets, stacked_kernel):
     assert len(result) == stacked_kernel.num_kernels
 
 
+def test_gran_equivalence(datasets):
+    """Ensure  that our MMD estimate is equivalent to the one by GRAN implementation."""
+    planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
+    # Test degree MMD, needs special treatment for max_degree
+    deg_mmd = DegreeMMD2(
+        planar, max_degree=200
+    )  # Max degree must be chosen large enough
+    assert np.isclose(deg_mmd.compute(sbm), degree_stats(planar, sbm))
+    deg_mmd = DegreeMMD2(planar[:64], 128)
+    assert np.isclose(
+        deg_mmd.compute(planar[64:]), degree_stats(planar[:64], planar[64:])
+    )
+
+    # Test all other MMD classes
+    for mmd_cls, baseline_method in zip(
+        [SpectralMMD2, OrbitMMD2, ClusteringMMD2],
+        [spectral_stats, orbit_stats_all, clustering_stats],
+    ):
+        mmd = mmd_cls(planar)
+        assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm))
+        mmd = mmd_cls(planar[:64])
+        assert np.isclose(
+            mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
+        )
+
+
 def test_mmd_computation_ustat_var(datasets, degree_linear_kernel):
     planar, sbm = datasets
     mmd = DescriptorMMD2(sbm.to_nx(), degree_linear_kernel, variant="ustat-var")
@@ -129,12 +166,21 @@ def test_mmd_computation_ustat_var_multikernel_error(datasets, stacked_kernel):
         mmd.compute(planar.to_nx())
 
 
-def test_max_mmd(datasets, stacked_kernel):
+def test_max_mmd(datasets, degree_rbf_kernel):
     planar, sbm = datasets
-    max_mmd = MaxDescriptorMMD2(sbm.to_nx(), stacked_kernel, "umve")
+    max_mmd = MaxDescriptorMMD2(sbm.to_nx(), degree_rbf_kernel, "umve")
     metric, kernel = max_mmd.compute(planar.to_nx())
     assert isinstance(metric, float)
     assert isinstance(kernel, DescriptorKernel)
+
+    unpooled_mmd = DescriptorMMD2(sbm.to_nx(), degree_rbf_kernel, "umve")
+    metric_arr = unpooled_mmd.compute(planar.to_nx())
+    assert np.isclose(metric, np.max(metric_arr))
+
+    # Assert that we actually get the proper kernel
+    mmd = DescriptorMMD2(sbm.to_nx(), kernel, "umve")
+    metric2 = mmd.compute(planar.to_nx())
+    assert np.isclose(metric, metric2)
 
 
 def test_max_mmd_ustat_var_multikernel_error(datasets, stacked_kernel):

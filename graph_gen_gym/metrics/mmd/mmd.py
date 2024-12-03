@@ -1,12 +1,16 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Iterable, Literal, Tuple
+from typing import Collection, Literal, Tuple
 
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.datasets.dataset import AbstractDataset
-from graph_gen_gym.metrics.graph_descriptors import ClusteringHistogram, OrbitCounts
+from graph_gen_gym.metrics.graph_descriptors import (
+    ClusteringHistogram,
+    DegreeHistogram,
+    EigenvalueHistogram,
+    OrbitCounts,
+)
 from graph_gen_gym.metrics.mmd.kernels import (
     DescriptorKernel,
     GaussianTV,
@@ -21,7 +25,7 @@ MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
 class DescriptorMMD2:
     def __init__(
         self,
-        reference_graphs: Iterable[nx.Graph],
+        reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
         variant: Literal["biased", "umve", "ustat", "ustat-var"] = "biased",
     ):
@@ -33,7 +37,7 @@ class DescriptorMMD2:
             self._reference_descriptions, self._reference_descriptions
         )
 
-    def compute(self, generated_graphs: Iterable[nx.Graph]):
+    def compute(self, generated_graphs: Collection[nx.Graph]):
         descriptions = self._kernel.featurize(
             generated_graphs,
         )
@@ -60,11 +64,13 @@ class MaxDescriptorMMD2(DescriptorMMD2):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not isinstance(self._kernel, StackedKernel):
-            raise ValueError(f"Kernel must be a {StackedKernel.__name__}")
+        if not self._kernel.num_kernels > 1:
+            raise ValueError(
+                f"Must provide several kernels, i.e. either a {StackedKernel.__name__} or a kernel with multiple parameters"
+            )
 
     def compute(
-        self, generated_graphs: Iterable[nx.Graph]
+        self, generated_graphs: Collection[nx.Graph]
     ) -> Tuple[float, DescriptorKernel]:
         multi_kernel_result = super().compute(generated_graphs)
         idx = np.argmax(multi_kernel_result)
@@ -74,7 +80,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
 class _MMD2Intereval(ABC):
     def __init__(
         self,
-        reference_graphs: Iterable[nx.Graph],
+        reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
         variant: Literal["biased", "umve", "ustat"] = "biased",
     ):
@@ -88,7 +94,7 @@ class _MMD2Intereval(ABC):
 
     def _generate_mmd_samples(
         self,
-        generated_graphs: Iterable[nx.Graph],
+        generated_graphs: Collection[nx.Graph],
         subsample_size: int,
         num_samples: int = 500,
     ) -> MMDInterval:
@@ -127,7 +133,7 @@ class _MMD2Intereval(ABC):
 class DescriptorMMD2Interval(_MMD2Intereval):
     def compute(
         self,
-        generated_graphs: Iterable[nx.Graph],
+        generated_graphs: Collection[nx.Graph],
         subsample_size: int,
         num_samples: int = 500,
         coverage: float = 0.95,
@@ -148,12 +154,14 @@ class DescriptorMMD2Interval(_MMD2Intereval):
 class MaxDescriptorMMD2Interval(_MMD2Intereval):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not isinstance(self._kernel, StackedKernel):
-            raise ValueError(f"Kernel must be a {StackedKernel.__name__}")
+        if not self._kernel.num_kernels > 1:
+            raise ValueError(
+                f"Must provide several kernels, i.e. either a {StackedKernel.__name__} or a kernel with multiple parameters"
+            )
 
     def compute(
         self,
-        generated_graphs: Iterable[nx.Graph],
+        generated_graphs: Collection[nx.Graph],
         subsample_size: int,
         num_samples: int = 500,
         coverage: float = 0.95,
@@ -173,19 +181,35 @@ class MaxDescriptorMMD2Interval(_MMD2Intereval):
         return MMDInterval(mean=avg, std=std, low=low, high=high)
 
 
-class OrbitMM2(DescriptorMMD2):
-    def __init__(self, reference_graphs: AbstractDataset):
+class OrbitMMD2(DescriptorMMD2):
+    def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
-            descriptor_fn=OrbitCounts(),
-            kernel=GaussianTV(bw=80),
+            kernel=GaussianTV(descriptor_fn=OrbitCounts(), bw=30),
         )
 
 
 class ClusteringMMD2(DescriptorMMD2):
-    def __init__(self, reference_graphs: AbstractDataset):
+    def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
-            descriptor_fn=ClusteringHistogram(bins=100),
-            kernel=GaussianTV(bw=1.0 / 10),
+            kernel=GaussianTV(descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10),
+        )
+
+
+class DegreeMMD2(DescriptorMMD2):
+    def __init__(self, reference_graphs: Collection[nx.Graph], max_degree: int):
+        super().__init__(
+            reference_graphs=reference_graphs,
+            kernel=GaussianTV(
+                descriptor_fn=DegreeHistogram(max_degree=max_degree), bw=1.0
+            ),
+        )
+
+
+class SpectralMMD2(DescriptorMMD2):
+    def __init__(self, reference_graphs: Collection[nx.Graph]):
+        super().__init__(
+            reference_graphs=reference_graphs,
+            kernel=GaussianTV(descriptor_fn=EigenvalueHistogram(), bw=1.0),
         )
