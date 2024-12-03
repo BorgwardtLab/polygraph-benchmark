@@ -18,7 +18,7 @@ class ClassifierTest:
         kernel: DescriptorKernel,
     ):
         self._kernel = kernel
-        if not isinstance(self._kernel, StackedKernel):
+        if self._kernel.num_kernels == 1:
             # We don't need validation to find the optimal kernel in this case
             self._validate = False
         else:
@@ -91,6 +91,7 @@ class ClassifierTest:
                 ]
             else:
                 train_vs_test = full_gram[train_indices][:, test_indices]
+            assert train_vs_test.ndim == 2
             test_pred = self._compute_labels(train_vs_test, train_labels)
             assert len(test_pred) == self._num_graphs
             assert len(test_labels) == self._num_graphs

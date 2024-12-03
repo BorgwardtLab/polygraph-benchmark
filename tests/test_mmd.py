@@ -158,7 +158,9 @@ def test_bootstrap_test(datasets, degree_linear_kernel):
     assert _is_valid_two_sample_test(list(planar.to_nx()), _bootstrap_tst_function)
 
 
-@pytest.mark.parametrize("kernel", ["degree_linear_kernel", "fast_stacked_kernel"])
+@pytest.mark.parametrize(
+    "kernel", ["degree_linear_kernel", "fast_stacked_kernel", "degree_rbf_kernel"]
+)
 def test_classifier_test(request, datasets, kernel):
     kernel = request.getfixturevalue(kernel)
     planar, sbm = datasets
