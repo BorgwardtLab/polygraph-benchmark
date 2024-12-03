@@ -98,13 +98,12 @@ class _MMD2Intereval(ABC):
         gen_vs_gen = self._kernel(descriptions, descriptions)
         gen_vs_ref = self._kernel(descriptions, self._reference_descriptions)
         mmd_samples = []
+        rng = np.random.default_rng(42)
         for _ in range(num_samples):
-            ref_idxs = np.random.choice(
+            ref_idxs = rng.choice(
                 len(self._ref_vs_ref), size=subsample_size, replace=False
             )
-            gen_idxs = np.random.choice(
-                len(gen_vs_gen), size=subsample_size, replace=False
-            )
+            gen_idxs = rng.choice(len(gen_vs_gen), size=subsample_size, replace=False)
             sub_ref_vs_ref = self._ref_vs_ref[ref_idxs][:, ref_idxs]
             sub_gen_vs_gen = gen_vs_gen[gen_idxs][:, gen_idxs]
             sub_gen_vs_ref = gen_vs_ref[gen_idxs][:, ref_idxs]

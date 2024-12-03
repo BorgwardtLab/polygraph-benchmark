@@ -11,16 +11,18 @@ def _sample_from_null_distribution(
     full_gram_matrix: np.ndarray,
     n_samples: int,
     variant: Literal["biased", "umve", "ustat"] = "ustat",
+    seed: int = 42,
 ) -> np.ndarray:
     assert (
         full_gram_matrix.shape[0] == full_gram_matrix.shape[1]
         and full_gram_matrix.shape[0] % 2 == 0
     )
+    rng = np.random.default_rng(seed)
     n = full_gram_matrix.shape[0] // 2
     mmd_samples = []
     permutation = np.arange(2 * n)
     for _ in range(n_samples):
-        np.random.shuffle(permutation)
+        rng.shuffle(permutation)
         full_gram_matrix = full_gram_matrix[permutation, :]
         full_gram_matrix = full_gram_matrix[:, permutation]
         kx = full_gram_matrix[:n, :n]
@@ -65,7 +67,7 @@ class BootStrapMMDTest:
             self._ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat"
         )
         mmd_samples = _sample_from_null_distribution(
-            full_gram_matrix, n_samples=num_samples, variant="ustat"
+            full_gram_matrix, n_samples=num_samples, variant="ustat", seed=42
         )
         assert realized_mmd.ndim == 0 and mmd_samples.ndim == 1
 
