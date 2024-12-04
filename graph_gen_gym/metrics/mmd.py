@@ -181,7 +181,7 @@ class MaxDescriptorMMD2Interval(_MMD2Intereval):
         return MMDInterval(mean=avg, std=std, low=low, high=high)
 
 
-class OrbitMMD2(DescriptorMMD2):
+class GRANOrbitMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -189,7 +189,7 @@ class OrbitMMD2(DescriptorMMD2):
         )
 
 
-class ClusteringMMD2(DescriptorMMD2):
+class GRANClusteringMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -197,7 +197,7 @@ class ClusteringMMD2(DescriptorMMD2):
         )
 
 
-class DegreeMMD2(DescriptorMMD2):
+class GRANDegreeMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: Collection[nx.Graph], max_degree: int):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -207,7 +207,7 @@ class DegreeMMD2(DescriptorMMD2):
         )
 
 
-class SpectralMMD2(DescriptorMMD2):
+class GRANSpectralMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,

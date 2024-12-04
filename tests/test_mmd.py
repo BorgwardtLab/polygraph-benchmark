@@ -16,13 +16,13 @@ from graph_gen_gym.datasets.dataset import GraphDataset
 from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
 from graph_gen_gym.metrics.mmd import (
-    ClusteringMMD2,
-    DegreeMMD2,
     DescriptorMMD2,
+    GRANClusteringMMD2,
+    GRANDegreeMMD2,
+    GRANOrbitMMD2,
+    GRANSpectralMMD2,
     MaxDescriptorMMD2,
     MMDWithVariance,
-    OrbitMMD2,
-    SpectralMMD2,
 )
 from graph_gen_gym.metrics.two_sample_tests.classifier_test import (
     AccuracyInterval,
@@ -131,18 +131,18 @@ def test_gran_equivalence(datasets):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     # Test degree MMD, needs special treatment for max_degree
-    deg_mmd = DegreeMMD2(
+    deg_mmd = GRANDegreeMMD2(
         planar, max_degree=200
     )  # Max degree must be chosen large enough
     assert np.isclose(deg_mmd.compute(sbm), degree_stats(planar, sbm))
-    deg_mmd = DegreeMMD2(planar[:64], 128)
+    deg_mmd = GRANDegreeMMD2(planar[:64], 128)
     assert np.isclose(
         deg_mmd.compute(planar[64:]), degree_stats(planar[:64], planar[64:])
     )
 
     # Test all other MMD classes
     for mmd_cls, baseline_method in zip(
-        [SpectralMMD2, OrbitMMD2, ClusteringMMD2],
+        [GRANSpectralMMD2, GRANOrbitMMD2, GRANClusteringMMD2],
         [spectral_stats, orbit_stats_all, clustering_stats],
     ):
         mmd = mmd_cls(planar)
