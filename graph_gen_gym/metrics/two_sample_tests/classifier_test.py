@@ -5,8 +5,8 @@ import networkx as nx
 import numpy as np
 from scipy.stats import binomtest
 
-from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel, StackedKernel
-from graph_gen_gym.metrics.mmd.utils import full_gram_from_blocks
+from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, StackedKernel
+from graph_gen_gym.metrics.utils.mmd_utils import full_gram_from_blocks
 
 AccuracyInterval = namedtuple("AccuracyInterval", ["mean", "low", "high", "pval"])
 

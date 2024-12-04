@@ -15,20 +15,7 @@ from torch_geometric.data import Batch
 from graph_gen_gym.datasets.dataset import GraphDataset
 from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
-from graph_gen_gym.metrics.graph_descriptors import (
-    ClusteringHistogram,
-    DegreeHistogram,
-    OrbitCounts,
-)
-from graph_gen_gym.metrics.mmd.classifier_test import AccuracyInterval, ClassifierTest
-from graph_gen_gym.metrics.mmd.kernels import (
-    DescriptorKernel,
-    LaplaceKernel,
-    LinearKernel,
-    RBFKernel,
-    StackedKernel,
-)
-from graph_gen_gym.metrics.mmd.mmd import (
+from graph_gen_gym.metrics.mmd import (
     ClusteringMMD2,
     DegreeMMD2,
     DescriptorMMD2,
@@ -37,7 +24,23 @@ from graph_gen_gym.metrics.mmd.mmd import (
     OrbitMMD2,
     SpectralMMD2,
 )
-from graph_gen_gym.metrics.mmd.test import BootStrapMMDTest
+from graph_gen_gym.metrics.two_sample_tests.classifier_test import (
+    AccuracyInterval,
+    ClassifierTest,
+)
+from graph_gen_gym.metrics.two_sample_tests.mmd_permutation_test import BootStrapMMDTest
+from graph_gen_gym.metrics.utils.graph_descriptors import (
+    ClusteringHistogram,
+    DegreeHistogram,
+    OrbitCounts,
+)
+from graph_gen_gym.metrics.utils.kernels import (
+    DescriptorKernel,
+    LaplaceKernel,
+    LinearKernel,
+    RBFKernel,
+    StackedKernel,
+)
 
 
 def _is_valid_two_sample_test(

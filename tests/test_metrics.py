@@ -6,7 +6,7 @@ import pytest
 
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset
 from graph_gen_gym.metrics.frechet_distance import FrechetDistance
-from graph_gen_gym.metrics.graph_descriptors import OrbitCounts
+from graph_gen_gym.metrics.utils.graph_descriptors import OrbitCounts
 from graph_gen_gym.metrics.vun import VUN
 
 

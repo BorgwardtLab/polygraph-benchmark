@@ -5,18 +5,18 @@ from typing import Collection, Literal, Tuple
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.metrics.graph_descriptors import (
+from graph_gen_gym.metrics.utils.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     EigenvalueHistogram,
     OrbitCounts,
 )
-from graph_gen_gym.metrics.mmd.kernels import (
+from graph_gen_gym.metrics.utils.kernels import (
     DescriptorKernel,
     GaussianTV,
     StackedKernel,
 )
-from graph_gen_gym.metrics.mmd.utils import mmd_from_gram, mmd_ustat_var
+from graph_gen_gym.metrics.utils.mmd_utils import mmd_from_gram, mmd_ustat_var
 
 MMDWithVariance = namedtuple("MMDWithVariance", ["ustat", "std"])
 MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])

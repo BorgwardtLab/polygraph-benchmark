@@ -3,8 +3,8 @@ from typing import Collection, Literal
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.metrics.mmd.kernels import DescriptorKernel
-from graph_gen_gym.metrics.mmd.utils import full_gram_from_blocks, mmd_from_gram
+from graph_gen_gym.metrics.utils.kernels import DescriptorKernel
+from graph_gen_gym.metrics.utils.mmd_utils import full_gram_from_blocks, mmd_from_gram
 
 
 def _sample_from_null_distribution(
