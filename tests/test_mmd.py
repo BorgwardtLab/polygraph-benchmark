@@ -35,6 +35,7 @@ from graph_gen_gym.metrics.utils.graph_descriptors import (
     OrbitCounts,
 )
 from graph_gen_gym.metrics.utils.kernels import (
+    AdaptiveRBFKernel,
     DescriptorKernel,
     LaplaceKernel,
     LinearKernel,
@@ -91,6 +92,14 @@ def degree_rbf_kernel():
 
 
 @pytest.fixture
+def degree_adaptive_rbf_kernel():
+    return AdaptiveRBFKernel(
+        DegreeHistogram(max_degree=200),
+        bw=np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]),
+    )
+
+
+@pytest.fixture
 def clustering_laplace_kernel():
     return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
 
@@ -103,8 +112,12 @@ def stacked_kernel(orbit_rbf_kernel, degree_linear_kernel, clustering_laplace_ke
 
 
 @pytest.fixture
-def fast_stacked_kernel(degree_linear_kernel, degree_rbf_kernel):
-    return StackedKernel([degree_linear_kernel, degree_rbf_kernel])
+def fast_stacked_kernel(
+    degree_linear_kernel, degree_rbf_kernel, degree_adaptive_rbf_kernel
+):
+    return StackedKernel(
+        [degree_linear_kernel, degree_rbf_kernel, degree_adaptive_rbf_kernel]
+    )
 
 
 def test_dataset_loading(datasets):
@@ -113,16 +126,14 @@ def test_dataset_loading(datasets):
     assert len(sbm) > 0
 
 
-def test_kernel_stacking(stacked_kernel):
-    assert stacked_kernel.num_kernels == 201
-
-
-def test_mmd_computation(datasets, stacked_kernel):
+@pytest.mark.parametrize("kernel", ["stacked_kernel", "fast_stacked_kernel"])
+def test_kernel_stacking(request, datasets, kernel):
     planar, sbm = datasets
-    mmd = DescriptorMMD2(sbm.to_nx(), stacked_kernel, variant="umve")
+    kernel = request.getfixturevalue(kernel)
+    mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant="umve")
     result = mmd.compute(planar.to_nx())
     assert isinstance(result, np.ndarray)
-    assert len(result) == stacked_kernel.num_kernels
+    assert len(result) == kernel.num_kernels
 
 
 def test_gran_equivalence(datasets):
@@ -169,14 +180,16 @@ def test_mmd_computation_ustat_var_multikernel_error(datasets, stacked_kernel):
         mmd.compute(planar.to_nx())
 
 
-def test_max_mmd(datasets, degree_rbf_kernel):
+@pytest.mark.parametrize("kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"])
+def test_max_mmd(request, datasets, kernel):
     planar, sbm = datasets
-    max_mmd = MaxDescriptorMMD2(sbm.to_nx(), degree_rbf_kernel, "umve")
+    kernel = request.getfixturevalue(kernel)
+    max_mmd = MaxDescriptorMMD2(sbm.to_nx(), kernel, "umve")
     metric, kernel = max_mmd.compute(planar.to_nx())
     assert isinstance(metric, float)
     assert isinstance(kernel, DescriptorKernel)
 
-    unpooled_mmd = DescriptorMMD2(sbm.to_nx(), degree_rbf_kernel, "umve")
+    unpooled_mmd = DescriptorMMD2(sbm.to_nx(), kernel, "umve")
     metric_arr = unpooled_mmd.compute(planar.to_nx())
     assert np.isclose(metric, np.max(metric_arr))
 

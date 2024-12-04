@@ -46,25 +46,20 @@ class BootStrapMMDTest:
 
         self._kernel = kernel
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
-        self._ref_vs_ref = self._kernel(
-            self._reference_descriptions, self._reference_descriptions
-        )
         self._num_graphs = len(reference_graphs)
 
     def compute(self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000):
         assert len(generated_graphs) == self._num_graphs
         descriptions = self._kernel.featurize(generated_graphs)
 
-        gen_vs_gen = self._kernel(descriptions, descriptions)
-        ref_vs_gen = self._kernel(self._reference_descriptions, descriptions)
-        full_gram_matrix = np.zeros((2 * self._num_graphs, 2 * self._num_graphs))
-
-        full_gram_matrix = full_gram_from_blocks(
-            self._ref_vs_ref, ref_vs_gen, gen_vs_gen
+        ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel(
+            self._reference_descriptions, descriptions
         )
 
+        full_gram_matrix = full_gram_from_blocks(ref_vs_ref, ref_vs_gen, gen_vs_gen)
+
         realized_mmd = mmd_from_gram(
-            self._ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat"
+            ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat"
         )
         mmd_samples = _sample_from_null_distribution(
             full_gram_matrix, n_samples=num_samples, variant="ustat", seed=42

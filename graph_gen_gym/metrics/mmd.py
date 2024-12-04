@@ -33,28 +33,21 @@ class DescriptorMMD2:
         self._variant = variant
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
 
-        self._ref_vs_ref = self._kernel(
-            self._reference_descriptions, self._reference_descriptions
-        )
-
     def compute(self, generated_graphs: Collection[nx.Graph]):
         descriptions = self._kernel.featurize(
             generated_graphs,
         )
-        gen_vs_gen = self._kernel(descriptions, descriptions)
-        gen_vs_ref = self._kernel(descriptions, self._reference_descriptions)
+        ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel(
+            self._reference_descriptions, descriptions
+        )
         if self._variant == "ustat-var":
             assert (
                 self._kernel.num_kernels == 1
             ), "Only single kernel supported for USTAT-VAR"
-            mmd = mmd_from_gram(
-                gen_vs_gen, self._ref_vs_ref, gen_vs_ref, variant="ustat"
-            )
-            var = mmd_ustat_var(gen_vs_gen, self._ref_vs_ref, gen_vs_ref)
+            mmd = mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat")
+            var = mmd_ustat_var(ref_vs_ref, ref_vs_gen, gen_vs_gen)
             return MMDWithVariance(ustat=mmd, std=np.sqrt(var))
-        return mmd_from_gram(
-            gen_vs_gen, self._ref_vs_ref, gen_vs_ref, variant=self._variant
-        )
+        return mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant=self._variant)
 
 
 class MaxDescriptorMMD2(DescriptorMMD2):

@@ -24,7 +24,6 @@ class ClassifierTest:
         else:
             self._validate = True
         self._reference_desc = self._kernel.featurize(reference_graphs)
-        self._ref_vs_ref = self._kernel(self._reference_desc, self._reference_desc)
         self._num_graphs = len(reference_graphs)
 
     @staticmethod
@@ -50,10 +49,11 @@ class ClassifierTest:
     ):
         assert len(generated) == self._num_graphs
         gen_desc = self._kernel.featurize(generated)
-        gen_vs_gen = self._kernel(gen_desc, gen_desc)
-        ref_vs_gen = self._kernel(self._reference_desc, gen_desc)
+        ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel(
+            self._reference_desc, gen_desc
+        )
 
-        full_gram = full_gram_from_blocks(self._ref_vs_ref, ref_vs_gen, gen_vs_gen)
+        full_gram = full_gram_from_blocks(ref_vs_ref, ref_vs_gen, gen_vs_gen)
 
         samples = []
         predicted_label_samples = []
