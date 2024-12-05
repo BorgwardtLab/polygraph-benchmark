@@ -17,11 +17,14 @@ from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
 from graph_gen_gym.metrics.mmd import (
     DescriptorMMD2,
+    DescriptorMMD2Interval,
     GRANClusteringMMD2,
     GRANDegreeMMD2,
     GRANOrbitMMD2,
     GRANSpectralMMD2,
     MaxDescriptorMMD2,
+    MaxDescriptorMMD2Interval,
+    MMDInterval,
     MMDWithVariance,
 )
 from graph_gen_gym.metrics.two_sample_tests.classifier_test import (
@@ -136,6 +139,31 @@ def test_kernel_stacking(request, datasets, kernel):
     assert len(result) == kernel.num_kernels
 
 
+@pytest.mark.parametrize(
+    "kernel,subsample_size,variant",
+    [("degree_linear_kernel", 32, "biased"), ("degree_linear_kernel", 40, "umve")],
+)
+def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
+    planar, sbm = datasets
+    kernel = request.getfixturevalue(kernel)
+    mmd = DescriptorMMD2Interval(sbm.to_nx(), kernel, variant=variant)
+    result = mmd.compute(planar.to_nx(), subsample_size=subsample_size)
+    assert isinstance(result, MMDInterval)
+    assert result.std > 0
+
+    rng = np.random.default_rng(42)
+    planar_idxs = rng.choice(len(planar), size=subsample_size, replace=False)
+    sbm_idxs = rng.choice(len(sbm), size=subsample_size, replace=False)
+    assert len(np.unique(planar_idxs)) == subsample_size
+    assert len(np.unique(sbm_idxs)) == subsample_size
+    planar_samples = [planar.to_nx()[int(idx)] for idx in planar_idxs]
+    sbm_samples = [sbm.to_nx()[int(idx)] for idx in sbm_idxs]
+
+    single_mmd = DescriptorMMD2(sbm_samples, kernel, variant=variant)
+    single_estimate = single_mmd.compute(planar_samples)
+    assert result.low <= single_estimate <= result.high
+
+
 def test_gran_equivalence(datasets):
     """Ensure  that our MMD estimate is equivalent to the one by GRAN implementation."""
     planar, sbm = datasets
@@ -180,21 +208,28 @@ def test_mmd_computation_ustat_var_multikernel_error(datasets, stacked_kernel):
         mmd.compute(planar.to_nx())
 
 
-@pytest.mark.parametrize("kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"])
-def test_max_mmd(request, datasets, kernel):
+@pytest.mark.parametrize(
+    "kernel,variant",
+    [
+        ("degree_rbf_kernel", "biased"),
+        ("degree_adaptive_rbf_kernel", "umve"),
+        ("degree_rbf_kernel", "ustat"),
+    ],
+)
+def test_max_mmd(request, datasets, kernel, variant):
     planar, sbm = datasets
     kernel = request.getfixturevalue(kernel)
-    max_mmd = MaxDescriptorMMD2(sbm.to_nx(), kernel, "umve")
+    max_mmd = MaxDescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric, kernel = max_mmd.compute(planar.to_nx())
     assert isinstance(metric, float)
     assert isinstance(kernel, DescriptorKernel)
 
-    unpooled_mmd = DescriptorMMD2(sbm.to_nx(), kernel, "umve")
+    unpooled_mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric_arr = unpooled_mmd.compute(planar.to_nx())
     assert np.isclose(metric, np.max(metric_arr))
 
     # Assert that we actually get the proper kernel
-    mmd = DescriptorMMD2(sbm.to_nx(), kernel, "umve")
+    mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric2 = mmd.compute(planar.to_nx())
     assert np.isclose(metric, metric2)
 

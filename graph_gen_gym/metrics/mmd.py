@@ -12,6 +12,7 @@ from graph_gen_gym.metrics.utils.graph_descriptors import (
     OrbitCounts,
 )
 from graph_gen_gym.metrics.utils.kernels import (
+    AdaptiveRBFKernel,
     DescriptorKernel,
     GaussianTV,
     StackedKernel,
@@ -81,10 +82,6 @@ class _MMD2Intereval(ABC):
         self._variant = variant
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
 
-        self._ref_vs_ref = self._kernel(
-            self._reference_descriptions, self._reference_descriptions
-        )
-
     def _generate_mmd_samples(
         self,
         generated_graphs: Collection[nx.Graph],
@@ -94,23 +91,22 @@ class _MMD2Intereval(ABC):
         descriptions = self._kernel.featurize(
             generated_graphs,
         )
-        gen_vs_gen = self._kernel(descriptions, descriptions)
-        gen_vs_ref = self._kernel(descriptions, self._reference_descriptions)
+        ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel(
+            self._reference_descriptions, descriptions
+        )
         mmd_samples = []
         rng = np.random.default_rng(42)
         for _ in range(num_samples):
-            ref_idxs = rng.choice(
-                len(self._ref_vs_ref), size=subsample_size, replace=False
-            )
+            ref_idxs = rng.choice(len(ref_vs_ref), size=subsample_size, replace=False)
             gen_idxs = rng.choice(len(gen_vs_gen), size=subsample_size, replace=False)
-            sub_ref_vs_ref = self._ref_vs_ref[ref_idxs][:, ref_idxs]
+            sub_ref_vs_ref = ref_vs_ref[ref_idxs][:, ref_idxs]
             sub_gen_vs_gen = gen_vs_gen[gen_idxs][:, gen_idxs]
-            sub_gen_vs_ref = gen_vs_ref[gen_idxs][:, ref_idxs]
+            sub_ref_vs_gen = ref_vs_gen[ref_idxs][:, gen_idxs]
             mmd_samples.append(
                 mmd_from_gram(
-                    sub_gen_vs_gen,
                     sub_ref_vs_ref,
-                    sub_gen_vs_ref,
+                    sub_gen_vs_gen,
+                    sub_ref_vs_gen,
                     variant=self._variant,
                 )
             )
@@ -150,6 +146,10 @@ class MaxDescriptorMMD2Interval(_MMD2Intereval):
         if not self._kernel.num_kernels > 1:
             raise ValueError(
                 f"Must provide several kernels, i.e. either a {StackedKernel.__name__} or a kernel with multiple parameters"
+            )
+        if isinstance(self._kernel, AdaptiveRBFKernel):
+            raise ValueError(
+                "Cannot use AdaptiveRBFKernel with uncertainty quantification. Use an RBFKernel with various bandwidths instead."
             )
 
     def compute(
