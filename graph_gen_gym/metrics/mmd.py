@@ -67,7 +67,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         self, generated_graphs: Collection[nx.Graph]
     ) -> Tuple[float, DescriptorKernel]:
         multi_kernel_result = super().compute(generated_graphs)
-        idx = np.argmax(multi_kernel_result)
+        idx = int(np.argmax(multi_kernel_result))
         return multi_kernel_result[idx], self._kernel.get_subkernel(idx)
 
 

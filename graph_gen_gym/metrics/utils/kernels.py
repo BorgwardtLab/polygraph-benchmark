@@ -50,7 +50,9 @@ class StackedKernel(DescriptorKernel):
         self._kernels = kernels
         self._kernel_count = np.array([kernel.num_kernels for kernel in self._kernels])
         self._num_kernels = np.sum(self._kernel_count)
-        self._cumsum_num_kernels = np.cumsum(self._kernel_count) - self._kernel_count
+
+        self._cumsum_num_kernels = np.zeros(len(kernels) + 1, dtype=int)
+        self._cumsum_num_kernels[1:] = np.cumsum(self._kernel_count)
 
     def featurize(self, graphs: Iterable[nx.Graph]) -> List:
         return [kernel.featurize(graphs) for kernel in self._kernels]
@@ -81,8 +83,11 @@ class StackedKernel(DescriptorKernel):
         return self._num_kernels
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
-        idx1 = np.searchsorted(self._cumsum_num_kernels, idx, side="left") - 1
-        idx2 = idx - self._cumsum_num_kernels[idx1]
+        if idx > self.num_kernels or idx < 0:
+            raise IndexError
+        idx1 = int(np.searchsorted(self._cumsum_num_kernels, idx, side="right") - 1)
+        idx2 = int(idx - self._cumsum_num_kernels[idx1])
+        assert idx1 >= 0 and idx2 >= 0
         return self._kernels[idx1].get_subkernel(idx2)
 
 
@@ -163,6 +168,7 @@ class RBFKernel(DescriptorKernel):
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert isinstance(self.bw, np.ndarray)
+        assert isinstance(idx, int), type(idx)
         return RBFKernel(self._descriptor_fn, self.bw[idx])
 
     @property
@@ -251,7 +257,7 @@ class LinearKernel(DescriptorKernel):
         return 1
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
-        assert idx == 0
+        assert idx == 0, idx
         return LinearKernel(self._descriptor_fn)
 
     def gram(

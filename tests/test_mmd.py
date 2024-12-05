@@ -9,12 +9,10 @@ from gran_mmd_implementation.stats import (
     orbit_stats_all,
     spectral_stats,
 )
-from scipy.stats import kstest
 from torch_geometric.data import Batch
 
 from graph_gen_gym.datasets.dataset import GraphDataset
 from graph_gen_gym.datasets.graph import Graph
-from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
 from graph_gen_gym.metrics.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
@@ -23,104 +21,10 @@ from graph_gen_gym.metrics.mmd import (
     GRANOrbitMMD2,
     GRANSpectralMMD2,
     MaxDescriptorMMD2,
-    MaxDescriptorMMD2Interval,
     MMDInterval,
     MMDWithVariance,
 )
-from graph_gen_gym.metrics.two_sample_tests.classifier_test import (
-    AccuracyInterval,
-    ClassifierTest,
-)
-from graph_gen_gym.metrics.two_sample_tests.mmd_permutation_test import BootStrapMMDTest
-from graph_gen_gym.metrics.utils.graph_descriptors import (
-    ClusteringHistogram,
-    DegreeHistogram,
-    OrbitCounts,
-)
-from graph_gen_gym.metrics.utils.kernels import (
-    AdaptiveRBFKernel,
-    DescriptorKernel,
-    LaplaceKernel,
-    LinearKernel,
-    RBFKernel,
-    StackedKernel,
-)
-
-
-def _is_valid_two_sample_test(
-    all_samples, test_function, num_iters=500, threshold=0.05
-):
-    """Perform Kolmogorov-Smirnov test to assert that two-sample test is valid.
-
-    We assert that we cannot reject F(x) <= x where F is the CDF of p-values under the null hypothesis.
-    """
-    num_samples = len(all_samples)
-
-    p_val_samples = []
-
-    random.seed(42)
-
-    for _ in range(num_iters):
-        random.shuffle(all_samples)
-        samples_a = all_samples[: num_samples // 2]
-        samples_b = all_samples[num_samples // 2 :]
-        pval = test_function(samples_a, samples_b)
-        assert 0 <= pval <= 1
-        p_val_samples.append(pval)
-
-    res = kstest(p_val_samples, lambda x: np.clip(x, 0, 1), alternative="greater")
-    return res.pvalue >= threshold
-
-
-@pytest.fixture
-def datasets():
-    planar = PlanarGraphDataset("train")
-    sbm = SBMGraphDataset("train")
-    return planar, sbm
-
-
-@pytest.fixture
-def orbit_rbf_kernel():
-    return RBFKernel(OrbitCounts(), bw=np.linspace(0.01, 20, 100))
-
-
-@pytest.fixture
-def degree_linear_kernel():
-    return LinearKernel(DegreeHistogram(max_degree=200))
-
-
-@pytest.fixture
-def degree_rbf_kernel():
-    return RBFKernel(DegreeHistogram(max_degree=200), bw=np.linspace(0.01, 20, 10))
-
-
-@pytest.fixture
-def degree_adaptive_rbf_kernel():
-    return AdaptiveRBFKernel(
-        DegreeHistogram(max_degree=200),
-        bw=np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]),
-    )
-
-
-@pytest.fixture
-def clustering_laplace_kernel():
-    return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
-
-
-@pytest.fixture
-def stacked_kernel(orbit_rbf_kernel, degree_linear_kernel, clustering_laplace_kernel):
-    return StackedKernel(
-        [orbit_rbf_kernel, degree_linear_kernel, clustering_laplace_kernel]
-    )
-
-
-@pytest.fixture
-def fast_stacked_kernel(
-    degree_linear_kernel, degree_rbf_kernel, degree_adaptive_rbf_kernel
-):
-    return StackedKernel(
-        [degree_linear_kernel, degree_rbf_kernel, degree_adaptive_rbf_kernel]
-    )
+from graph_gen_gym.metrics.utils.kernels import DescriptorKernel
 
 
 def test_dataset_loading(datasets):
@@ -129,14 +33,24 @@ def test_dataset_loading(datasets):
     assert len(sbm) > 0
 
 
-@pytest.mark.parametrize("kernel", ["stacked_kernel", "fast_stacked_kernel"])
-def test_kernel_stacking(request, datasets, kernel):
+@pytest.mark.parametrize(
+    "kernel", ["stacked_kernel", "fast_stacked_kernel", "degree_adaptive_rbf_kernel"]
+)
+def test_mmd_stacking(request, datasets, kernel):
     planar, sbm = datasets
     kernel = request.getfixturevalue(kernel)
     mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant="umve")
     result = mmd.compute(planar.to_nx())
     assert isinstance(result, np.ndarray)
     assert len(result) == kernel.num_kernels
+
+    separate_kernels = [kernel.get_subkernel(i) for i in range(kernel.num_kernels)]
+    separate_mmds = [
+        DescriptorMMD2(sbm.to_nx(), subkernel, variant="umve")
+        for subkernel in separate_kernels
+    ]
+    separate_results = [sub_mmd.compute(planar.to_nx()) for sub_mmd in separate_mmds]
+    assert np.allclose(result, np.array(separate_results))
 
 
 @pytest.mark.parametrize(
@@ -239,49 +153,6 @@ def test_max_mmd_ustat_var_multikernel_error(datasets, stacked_kernel):
     with pytest.raises(AssertionError):
         max_mmd = MaxDescriptorMMD2(sbm.to_nx(), stacked_kernel, "ustat-var")
         max_mmd.compute(planar.to_nx())
-
-
-def test_bootstrap_test(datasets, degree_linear_kernel):
-    planar, sbm = datasets
-    tst = BootStrapMMDTest(sbm.to_nx(), degree_linear_kernel)
-    p_value = tst.compute(planar.to_nx())
-    assert 0 <= p_value <= 1
-
-    def _bootstrap_tst_function(samples_a, samples_b):
-        tst = BootStrapMMDTest(samples_a, degree_linear_kernel)
-        res = tst.compute(samples_b)
-        return res
-
-    assert _is_valid_two_sample_test(list(planar.to_nx()), _bootstrap_tst_function)
-
-
-@pytest.mark.parametrize(
-    "kernel", ["degree_linear_kernel", "fast_stacked_kernel", "degree_rbf_kernel"]
-)
-def test_classifier_test(request, datasets, kernel):
-    kernel = request.getfixturevalue(kernel)
-    planar, sbm = datasets
-    tst = ClassifierTest(sbm.to_nx(), kernel)
-    result = tst.compute(planar.to_nx())
-    assert isinstance(result, AccuracyInterval)
-    assert hasattr(result, "mean")
-    assert hasattr(result, "low")
-    assert hasattr(result, "high")
-    assert hasattr(result, "pval")
-
-    # We expect the classifier test to be able to distinguish planar and SBM
-    assert result.pval <= 0.05
-    assert result.mean >= 0.6
-
-    def _classifier_tst_function(samples_a, samples_b):
-        tst = ClassifierTest(samples_a, kernel)
-        res = tst.compute(samples_b, num_samples=10, pvalue_method="permutation")
-        return res.pval
-
-    assert _is_valid_two_sample_test(
-        list(planar.to_nx()),
-        _classifier_tst_function,
-    )
 
 
 def test_variance_computation_correctness(datasets, degree_linear_kernel):
