@@ -1,2 +1,0 @@
-from graph_gen_gym.metrics.two_sample_tests.classifier_test import ClassifierTest
-from graph_gen_gym.metrics.two_sample_tests.mmd_permutation_test import BootStrapMMDTest

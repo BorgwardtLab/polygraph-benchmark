@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Any, Callable, Iterable, List, Union
+from typing import Any, Callable, Iterable, List, TypeAlias, Union
 
 import networkx as nx
 import numpy as np
 from scipy.sparse import csr_array
+from sklearn.metrics import pairwise_distances
 
 GraphDescriptorFn = Callable[[Iterable[nx.Graph]], np.ndarray]
+MatrixLike: TypeAlias = Union[np.ndarray, csr_array]
 
 GramBlocks = namedtuple("GramBlocks", ["ref_vs_ref", "ref_vs_gen", "gen_vs_gen"])
 
@@ -16,11 +18,16 @@ class DescriptorKernel(ABC):
         self._descriptor_fn = descriptor_fn
 
     @abstractmethod
-    def gram(self, x: Any, y: Any) -> np.ndarray:
+    def pre_gram_block(self, x: Any, y: Any) -> np.ndarray:
         ...
 
     @abstractmethod
     def get_subkernel(self, idx: int) -> "DescriptorKernel":
+        ...
+
+    @property
+    @abstractmethod
+    def is_adative(self) -> bool:
         ...
 
     @property
@@ -31,64 +38,23 @@ class DescriptorKernel(ABC):
     def featurize(self, graphs: Iterable[nx.Graph]) -> Any:
         return self._descriptor_fn(graphs)
 
-    def __call__(self, ref: Any, gen: Any) -> GramBlocks:
+    def pre_gram(self, ref: Any, gen: Any) -> GramBlocks:
         ref_vs_ref, ref_vs_gen, gen_vs_gen = (
-            self.gram(ref, ref),
-            self.gram(ref, gen),
-            self.gram(gen, gen),
+            self.pre_gram_block(ref, ref),
+            self.pre_gram_block(ref, gen),
+            self.pre_gram_block(gen, gen),
         )
         assert ref_vs_ref.ndim == ref_vs_gen.ndim and ref_vs_ref.ndim == gen_vs_gen.ndim
-        if self.num_kernels > 1:
-            assert ref_vs_ref.ndim == 3 and ref_vs_ref.shape[2] == self.num_kernels
-        else:
-            assert ref_vs_ref.ndim == 2
+        assert ref_vs_ref.shape[:2] == (ref.shape[0], ref.shape[0])
+        assert ref_vs_gen.shape[:2] == (ref.shape[0], gen.shape[0])
+        assert gen_vs_gen.shape[:2] == (gen.shape[0], gen.shape[0])
         return GramBlocks(ref_vs_ref, ref_vs_gen, gen_vs_gen)
 
+    def adapt(self, blocks: GramBlocks) -> GramBlocks:
+        return blocks
 
-class StackedKernel(DescriptorKernel):
-    def __init__(self, kernels: List[DescriptorKernel]):
-        self._kernels = kernels
-        self._kernel_count = np.array([kernel.num_kernels for kernel in self._kernels])
-        self._num_kernels = np.sum(self._kernel_count)
-
-        self._cumsum_num_kernels = np.zeros(len(kernels) + 1, dtype=int)
-        self._cumsum_num_kernels[1:] = np.cumsum(self._kernel_count)
-
-    def featurize(self, graphs: Iterable[nx.Graph]) -> List:
-        return [kernel.featurize(graphs) for kernel in self._kernels]
-
-    def __call__(self, ref: List, gen: List) -> GramBlocks:
-        assert len(ref) == len(gen) and len(ref) == len(self._kernels)
-        results: LinearKernel[GramBlocks] = [
-            kernel(feat_ref, feat_gen)
-            for kernel, feat_ref, feat_gen in zip(self._kernels, ref, gen)
-        ]
-        results = [
-            [
-                np.expand_dims(block, axis=-1) if block.ndim == 2 else block
-                for block in result
-            ]
-            for result in results
-        ]
-        concatenated_blocks = [
-            np.concatenate(blocks, axis=-1) for blocks in zip(*results)
-        ]
-        return GramBlocks(*concatenated_blocks)
-
-    def gram(self, x: Any, y: Any) -> Any:
-        raise NotImplementedError
-
-    @property
-    def num_kernels(self) -> int:
-        return self._num_kernels
-
-    def get_subkernel(self, idx: int) -> DescriptorKernel:
-        if idx > self.num_kernels or idx < 0:
-            raise IndexError
-        idx1 = int(np.searchsorted(self._cumsum_num_kernels, idx, side="right") - 1)
-        idx2 = int(idx - self._cumsum_num_kernels[idx1])
-        assert idx1 >= 0 and idx2 >= 0
-        return self._kernels[idx1].get_subkernel(idx2)
+    def __call__(self, ref: Any, gen: Any) -> GramBlocks:
+        return self.adapt(self.pre_gram(ref, gen))
 
 
 class LaplaceKernel(DescriptorKernel):
@@ -101,16 +67,20 @@ class LaplaceKernel(DescriptorKernel):
         return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
     @property
+    def is_adative(self) -> bool:
+        False
+
+    @property
     def num_kernels(self) -> int:
         if isinstance(self.lbd, np.ndarray):
             assert self.lbd.ndim == 1
             return self.lbd.size
         return 1
 
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
 
-        comparison = np.expand_dims(x, 1) - np.expand_dims(y, 0)
+        comparison = pairwise_distances(x, y, metric="l1")
 
         if isinstance(self.lbd, np.ndarray):
             if self.lbd.ndim != 1:
@@ -119,9 +89,8 @@ class LaplaceKernel(DescriptorKernel):
                 )
             comparison = np.expand_dims(comparison, -1)
 
-        comparison = np.abs(comparison).sum(axis=2)
         comparison = np.exp(-self.lbd * comparison)
-        assert comparison.shape[:2] == (len(x), len(y))
+        assert comparison.shape[:2] == (x.shape[0], y.shape[0])
         return comparison
 
 
@@ -135,16 +104,20 @@ class GaussianTV(DescriptorKernel):
         return GaussianTV(self._descriptor_fn, self.bw[idx])
 
     @property
+    def is_adative(self) -> bool:
+        return False
+
+    @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
             assert self.bw.ndim == 1
             return self.bw.size
         return 1
 
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
 
-        comparison = np.expand_dims(x, 1) - np.expand_dims(y, 0)
+        comparison = pairwise_distances(x, y, metric="l1")
 
         if isinstance(self.bw, np.ndarray):
             if self.bw.ndim != 1:
@@ -153,9 +126,8 @@ class GaussianTV(DescriptorKernel):
                 )
             comparison = np.expand_dims(comparison, -1)
 
-        comparison = np.abs(comparison).sum(axis=2)
         comparison = np.exp(-((comparison / 2) ** 2) / (2 * self.bw**2))
-        assert comparison.shape[:2] == (len(x), len(y))
+        assert comparison.shape[:2] == (x.shape[0], y.shape[0])
         return comparison
 
 
@@ -172,16 +144,20 @@ class RBFKernel(DescriptorKernel):
         return RBFKernel(self._descriptor_fn, self.bw[idx])
 
     @property
+    def is_adative(self) -> bool:
+        return False
+
+    @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
             assert self.bw.ndim == 1
             return self.bw.size
         return 1
 
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
 
-        comparison = np.expand_dims(x, 1) - np.expand_dims(y, 0)
+        comparison = pairwise_distances(x, y, metric="l2") ** 2
 
         if isinstance(self.bw, np.ndarray):
             if self.bw.ndim != 1:
@@ -190,9 +166,8 @@ class RBFKernel(DescriptorKernel):
                 )
             comparison = np.expand_dims(comparison, -1)
 
-        comparison = (comparison**2).sum(axis=2)
         comparison = np.exp(-comparison / (2 * self.bw**2))
-        assert comparison.shape[:2] == (len(x), len(y))
+        assert comparison.shape[:2] == (x.shape[0], y.shape[0])
         return comparison
 
 
@@ -209,7 +184,13 @@ class AdaptiveRBFKernel(DescriptorKernel):
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert isinstance(self.bw, np.ndarray)
-        return AdaptiveRBFKernel(self._descriptor_fn, self.bw[idx])
+        return AdaptiveRBFKernel(
+            self._descriptor_fn, self.bw[idx], variant=self._variant
+        )
+
+    @property
+    def is_adative(self) -> bool:
+        return True
 
     @property
     def num_kernels(self) -> int:
@@ -218,11 +199,11 @@ class AdaptiveRBFKernel(DescriptorKernel):
             return self.bw.size
         return 1
 
-    def __call__(self, ref: np.ndarray, gen: np.ndarray):
-        assert ref.ndim == 2 and gen.ndim == 2
-        ref_ref = ((np.expand_dims(ref, 1) - np.expand_dims(ref, 0)) ** 2).sum(-1)
-        ref_gen = ((np.expand_dims(ref, 1) - np.expand_dims(gen, 0)) ** 2).sum(-1)
-        gen_gen = ((np.expand_dims(gen, 1) - np.expand_dims(gen, 0)) ** 2).sum(-1)
+    def pre_gram_block(self, x: Any, y: Any) -> np.ndarray:
+        return pairwise_distances(x, y, metric="l2") ** 2
+
+    def adapt(self, blocks: GramBlocks) -> GramBlocks:
+        ref_ref, ref_gen, gen_gen = blocks
 
         if self._variant == "mean":
             mult = np.sqrt(ref_gen.mean())
@@ -247,22 +228,21 @@ class AdaptiveRBFKernel(DescriptorKernel):
         gen_gen = np.exp(-gen_gen / (2 * bw**2))
         return GramBlocks(ref_ref, ref_gen, gen_gen)
 
-    def gram(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
 
 class LinearKernel(DescriptorKernel):
     @property
     def num_kernels(self) -> int:
         return 1
 
+    @property
+    def is_adative(self) -> bool:
+        return False
+
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert idx == 0, idx
         return LinearKernel(self._descriptor_fn)
 
-    def gram(
-        self, x: Union[np.ndarray, csr_array], y: Union[np.ndarray, csr_array]
-    ) -> np.ndarray:
+    def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
         result = x @ y.transpose()
         if isinstance(result, np.ndarray):

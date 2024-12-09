@@ -12,7 +12,6 @@ from graph_gen_gym.metrics.utils.kernels import (
     LaplaceKernel,
     LinearKernel,
     RBFKernel,
-    StackedKernel,
 )
 
 
@@ -49,19 +48,3 @@ def degree_adaptive_rbf_kernel():
 @pytest.fixture(scope="session", autouse=True)
 def clustering_laplace_kernel():
     return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
-
-
-@pytest.fixture(scope="session", autouse=True)
-def stacked_kernel(orbit_rbf_kernel, degree_linear_kernel, clustering_laplace_kernel):
-    return StackedKernel(
-        [orbit_rbf_kernel, degree_linear_kernel, clustering_laplace_kernel]
-    )
-
-
-@pytest.fixture(scope="session", autouse=True)
-def fast_stacked_kernel(
-    degree_linear_kernel, degree_rbf_kernel, degree_adaptive_rbf_kernel
-):
-    return StackedKernel(
-        [degree_linear_kernel, degree_rbf_kernel, degree_adaptive_rbf_kernel]
-    )

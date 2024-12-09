@@ -76,12 +76,12 @@ class SparseDegreeHistogram:
             np.array(nx.degree_histogram(graph)) / graph.number_of_nodes()
             for graph in graphs
         ]
-        index = [np.nonzero(hist)[0] for hist in hists]
+        index = [np.nonzero(hist)[0].astype(np.int32) for hist in hists]
         data = [hist[idx] for hist, idx in zip(hists, index)]
-        ptr = np.zeros(len(index) + 1)
-        ptr[1:] = np.cumsum([len(idx) for idx in index])
+        ptr = np.zeros(len(index) + 1, dtype=np.int32)
+        ptr[1:] = np.cumsum([len(idx) for idx in index]).astype(np.int32)
         result = csr_array(
-            (np.concatenate(data), np.concatenate(index), ptr), (len(graphs), 1_000_000)
+            (np.concatenate(data), np.concatenate(index), ptr), (len(graphs), 100_000)
         )
         return result
 

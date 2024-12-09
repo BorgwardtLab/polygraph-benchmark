@@ -34,26 +34,6 @@ def test_dataset_loading(datasets):
 
 
 @pytest.mark.parametrize(
-    "kernel", ["stacked_kernel", "fast_stacked_kernel", "degree_adaptive_rbf_kernel"]
-)
-def test_mmd_stacking(request, datasets, kernel):
-    planar, sbm = datasets
-    kernel = request.getfixturevalue(kernel)
-    mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant="umve")
-    result = mmd.compute(planar.to_nx())
-    assert isinstance(result, np.ndarray)
-    assert len(result) == kernel.num_kernels
-
-    separate_kernels = [kernel.get_subkernel(i) for i in range(kernel.num_kernels)]
-    separate_mmds = [
-        DescriptorMMD2(sbm.to_nx(), subkernel, variant="umve")
-        for subkernel in separate_kernels
-    ]
-    separate_results = [sub_mmd.compute(planar.to_nx()) for sub_mmd in separate_mmds]
-    assert np.allclose(result, np.array(separate_results))
-
-
-@pytest.mark.parametrize(
     "kernel,subsample_size,variant",
     [("degree_linear_kernel", 32, "biased"), ("degree_linear_kernel", 40, "umve")],
 )
@@ -83,23 +63,13 @@ def test_gran_equivalence(datasets):
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
-    # Test degree MMD, needs special treatment for max_degree
-    deg_mmd = GRANDegreeMMD2(
-        planar, max_degree=200
-    )  # Max degree must be chosen large enough
-    assert np.isclose(deg_mmd.compute(sbm), degree_stats(planar, sbm))
-    deg_mmd = GRANDegreeMMD2(planar[:64], 128)
-    assert np.isclose(
-        deg_mmd.compute(planar[64:]), degree_stats(planar[:64], planar[64:])
-    )
-
-    # Test all other MMD classes
+    # Test all GRAN MMD classes
     for mmd_cls, baseline_method in zip(
-        [GRANSpectralMMD2, GRANOrbitMMD2, GRANClusteringMMD2],
-        [spectral_stats, orbit_stats_all, clustering_stats],
+        [GRANSpectralMMD2, GRANOrbitMMD2, GRANClusteringMMD2, GRANDegreeMMD2],
+        [spectral_stats, orbit_stats_all, clustering_stats, degree_stats],
     ):
         mmd = mmd_cls(planar)
-        assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm))
+        assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls
         mmd = mmd_cls(planar[:64])
         assert np.isclose(
             mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
@@ -113,13 +83,6 @@ def test_mmd_computation_ustat_var(datasets, degree_linear_kernel):
     assert isinstance(result, MMDWithVariance)
     assert hasattr(result, "ustat")
     assert hasattr(result, "std")
-
-
-def test_mmd_computation_ustat_var_multikernel_error(datasets, stacked_kernel):
-    planar, sbm = datasets
-    mmd = DescriptorMMD2(sbm.to_nx(), stacked_kernel, variant="ustat-var")
-    with pytest.raises(AssertionError):
-        mmd.compute(planar.to_nx())
 
 
 @pytest.mark.parametrize(
@@ -146,13 +109,6 @@ def test_max_mmd(request, datasets, kernel, variant):
     mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric2 = mmd.compute(planar.to_nx())
     assert np.isclose(metric, metric2)
-
-
-def test_max_mmd_ustat_var_multikernel_error(datasets, stacked_kernel):
-    planar, sbm = datasets
-    with pytest.raises(AssertionError):
-        max_mmd = MaxDescriptorMMD2(sbm.to_nx(), stacked_kernel, "ustat-var")
-        max_mmd.compute(planar.to_nx())
 
 
 def test_variance_computation_correctness(datasets, degree_linear_kernel):

@@ -7,16 +7,11 @@ import numpy as np
 
 from graph_gen_gym.metrics.utils.graph_descriptors import (
     ClusteringHistogram,
-    DegreeHistogram,
     EigenvalueHistogram,
     OrbitCounts,
+    SparseDegreeHistogram,
 )
-from graph_gen_gym.metrics.utils.kernels import (
-    AdaptiveRBFKernel,
-    DescriptorKernel,
-    GaussianTV,
-    StackedKernel,
-)
+from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, GaussianTV, GramBlocks
 from graph_gen_gym.metrics.utils.mmd_utils import mmd_from_gram, mmd_ustat_var
 
 MMDWithVariance = namedtuple("MMDWithVariance", ["ustat", "std"])
@@ -60,7 +55,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         super().__init__(*args, **kwargs)
         if not self._kernel.num_kernels > 1:
             raise ValueError(
-                f"Must provide several kernels, i.e. either a {StackedKernel.__name__} or a kernel with multiple parameters"
+                f"Must provide several kernels, i.e. a kernel with multiple parameters"
             )
 
     def compute(
@@ -91,17 +86,22 @@ class _MMD2Intereval(ABC):
         descriptions = self._kernel.featurize(
             generated_graphs,
         )
-        ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel(
-            self._reference_descriptions, descriptions
-        )
         mmd_samples = []
         rng = np.random.default_rng(42)
+
+        ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel.pre_gram(
+            self._reference_descriptions, descriptions
+        )
+
         for _ in range(num_samples):
             ref_idxs = rng.choice(len(ref_vs_ref), size=subsample_size, replace=False)
             gen_idxs = rng.choice(len(gen_vs_gen), size=subsample_size, replace=False)
             sub_ref_vs_ref = ref_vs_ref[ref_idxs][:, ref_idxs]
             sub_gen_vs_gen = gen_vs_gen[gen_idxs][:, gen_idxs]
             sub_ref_vs_gen = ref_vs_gen[ref_idxs][:, gen_idxs]
+            sub_ref_vs_ref, sub_ref_vs_gen, sub_gen_vs_gen = self._kernel.adapt(
+                GramBlocks(sub_ref_vs_ref, sub_ref_vs_gen, sub_gen_vs_gen)
+            )
             mmd_samples.append(
                 mmd_from_gram(
                     sub_ref_vs_ref,
@@ -145,11 +145,7 @@ class MaxDescriptorMMD2Interval(_MMD2Intereval):
         super().__init__(*args, **kwargs)
         if not self._kernel.num_kernels > 1:
             raise ValueError(
-                f"Must provide several kernels, i.e. either a {StackedKernel.__name__} or a kernel with multiple parameters"
-            )
-        if isinstance(self._kernel, AdaptiveRBFKernel):
-            raise ValueError(
-                "Cannot use AdaptiveRBFKernel with uncertainty quantification. Use an RBFKernel with various bandwidths instead."
+                f"Must provide several kernels, i.e. either a kernel with multiple parameters"
             )
 
     def compute(
@@ -191,12 +187,10 @@ class GRANClusteringMMD2(DescriptorMMD2):
 
 
 class GRANDegreeMMD2(DescriptorMMD2):
-    def __init__(self, reference_graphs: Collection[nx.Graph], max_degree: int):
+    def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
-            kernel=GaussianTV(
-                descriptor_fn=DegreeHistogram(max_degree=max_degree), bw=1.0
-            ),
+            kernel=GaussianTV(descriptor_fn=SparseDegreeHistogram(), bw=1.0),
         )
 
 

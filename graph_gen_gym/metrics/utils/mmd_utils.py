@@ -37,6 +37,9 @@ def mmd_from_gram(
 def full_gram_from_blocks(kxx, kxy, kyy):
     n, _, *residual_shape = kxx.shape
     m = kyy.shape[0]
+    assert np.allclose(kxx, np.swapaxes(kxx, 0, 1)) and np.allclose(
+        kyy, np.swapaxes(kyy, 0, 1)
+    )
     assert kyy.shape == (m, m, *residual_shape), (kxx.shape, kyy.shape)
     assert kxy.shape == (n, m, *residual_shape)
 
@@ -46,7 +49,7 @@ def full_gram_from_blocks(kxx, kxy, kyy):
     full_gram_matrix[:n, n:] = kxy
     full_gram_matrix[n:, :n] = np.swapaxes(kxy, 0, 1)
     full_gram_matrix[n:, n:] = kyy
-    assert (full_gram_matrix == np.swapaxes(full_gram_matrix, 0, 1)).all()
+    assert np.allclose(full_gram_matrix, np.swapaxes(full_gram_matrix, 0, 1))
     return full_gram_matrix
 
 
