@@ -1,59 +1,15 @@
-import os
-import subprocess
-import tempfile
-from pathlib import Path
 from typing import Callable, Iterable
 
 import dgl
 import networkx as nx
 import numpy as np
+import orbit_count
 import torch
 from scipy.sparse import csr_array
 from sklearn.preprocessing import StandardScaler
 
 import graph_gen_gym
 from graph_gen_gym.metrics.utils.gin import GIN
-
-
-def _edge_list_reindexed(graph: nx.Graph):
-    idx = 0
-    id2idx = dict()
-    for u in graph.nodes():
-        id2idx[str(u)] = idx
-        idx += 1
-
-    edges = []
-    for u, v in graph.edges():
-        edges.append((id2idx[str(u)], id2idx[str(v)]))
-    return edges
-
-
-def _orbit_descriptor(graph: nx.Graph) -> np.ndarray:
-    tmp, fname = tempfile.mkstemp()
-    try:
-        os.close(tmp)
-        with open(fname, "w") as tmp:
-            tmp.write(
-                str(graph.number_of_nodes()) + " " + str(graph.number_of_edges()) + "\n"
-            )
-            for u, v in _edge_list_reindexed(graph):
-                tmp.write(str(u) + " " + str(v) + "\n")
-        exec_path = str(Path(graph_gen_gym.__file__).parent.joinpath("orca"))
-        output = subprocess.check_output([exec_path, "node", "4", fname, "std"])
-    finally:
-        os.unlink(fname)
-
-    output = output.decode("utf8").strip()
-    idx = output.find("orbit counts:") + len("orbit counts:") + 2
-    output = output[idx:]
-    node_orbit_counts = np.array(
-        [
-            list(map(int, node_cnts.strip().split(" ")))
-            for node_cnts in output.strip("\n").split("\n")
-        ]
-    )
-
-    return node_orbit_counts.sum(axis=0) / graph.number_of_nodes()
 
 
 class DegreeHistogram:
@@ -105,13 +61,10 @@ class ClusteringHistogram:
 
 
 class OrbitCounts:
-    def __init__(self, num_processes: int = 0):
-        if num_processes > 0:
-            raise NotImplementedError
-
     def __call__(self, graphs: Iterable[nx.Graph]):
-        descriptors = [_orbit_descriptor(graph) for graph in graphs]
-        return np.stack(descriptors, axis=0)
+        counts = orbit_count.batched_node_orbit_counts(graphs, graphlet_size=4)
+        counts = [count.mean(axis=0) for count in counts]
+        return np.stack(counts, axis=0)
 
 
 class EigenvalueHistogram:

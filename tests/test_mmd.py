@@ -58,7 +58,7 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     assert result.low <= single_estimate <= result.high
 
 
-def test_gran_equivalence(datasets):
+def test_gran_equivalence(datasets, orca_executable):
     """Ensure  that our MMD estimate is equivalent to the one by GRAN implementation."""
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
@@ -66,7 +66,12 @@ def test_gran_equivalence(datasets):
     # Test all GRAN MMD classes
     for mmd_cls, baseline_method in zip(
         [GRANSpectralMMD2, GRANOrbitMMD2, GRANClusteringMMD2, GRANDegreeMMD2],
-        [spectral_stats, orbit_stats_all, clustering_stats, degree_stats],
+        [
+            spectral_stats,
+            lambda ref, pred: orbit_stats_all(ref, pred, orca_executable),
+            clustering_stats,
+            degree_stats,
+        ],
     ):
         mmd = mmd_cls(planar)
         assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls

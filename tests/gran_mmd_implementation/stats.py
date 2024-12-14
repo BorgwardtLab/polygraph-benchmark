@@ -283,7 +283,7 @@ def edge_list_reindexed(G):
     return edges
 
 
-def orca(graph):
+def orca(graph, executable_path):
     tmp_fname = "tmp.txt"
     f = open(tmp_fname, "w")
     f.write(str(graph.number_of_nodes()) + " " + str(graph.number_of_edges()) + "\n")
@@ -291,7 +291,7 @@ def orca(graph):
         f.write(str(u) + " " + str(v) + "\n")
     f.close()
 
-    output = sp.check_output(["graph_gen_gym/orca", "node", "4", "tmp.txt", "std"])
+    output = sp.check_output([executable_path, "node", "4", "tmp.txt", "std"])
     output = output.decode("utf8").strip()
     idx = output.find(COUNT_START_STR) + len(COUNT_START_STR) + 2
     output = output[idx:]
@@ -370,7 +370,7 @@ def motif_stats(
     return mmd_dist
 
 
-def orbit_stats_all(graph_ref_list, graph_pred_list):
+def orbit_stats_all(graph_ref_list, graph_pred_list, executable_path):
     total_counts_ref = []
     total_counts_pred = []
 
@@ -379,13 +379,13 @@ def orbit_stats_all(graph_ref_list, graph_pred_list):
     ]
 
     for G in graph_ref_list:
-        orbit_counts = orca(G)
+        orbit_counts = orca(G, executable_path)
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
         total_counts_ref.append(orbit_counts_graph)
 
     for G in graph_pred_list:
         try:
-            orbit_counts = orca(G)
+            orbit_counts = orca(G, executable_path)
         except:
             continue
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()

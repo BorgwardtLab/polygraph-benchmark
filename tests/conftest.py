@@ -1,3 +1,6 @@
+import subprocess
+import urllib.request
+
 import numpy as np
 import pytest
 
@@ -13,6 +16,26 @@ from graph_gen_gym.metrics.utils.kernels import (
     LinearKernel,
     RBFKernel,
 )
+
+
+@pytest.fixture(scope="session")
+def orca_executable(tmpdir_factory):
+    orca_path = tmpdir_factory.mktemp("orca")
+    cpp_path = orca_path.join("orca.cpp")
+    h_path = orca_path.join("orca.h")
+    executable_path = orca_path.join("orca")
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/cvignac/DiGress/refs/heads/main/src/analysis/orca/orca.cpp",
+        cpp_path,
+    )
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/cvignac/DiGress/refs/heads/main/src/analysis/orca/orca.h",
+        h_path,
+    )
+    subprocess.run(
+        ["g++", "-O2", "-std=c++11", "-o", str(executable_path), str(cpp_path)]
+    )
+    return executable_path
 
 
 @pytest.fixture(scope="session", autouse=True)
