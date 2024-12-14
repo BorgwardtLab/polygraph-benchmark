@@ -1,148 +1,81 @@
 """
-How Powerful are Graph Neural Networks
-https://arxiv.org/abs/1810.00826
-https://openreview.net/forum?id=ryGs6iA5Km
-Author's implementation: https://github.com/weihua916/powerful-gnns
+Based on https://github.com/uoguelph-mlrg/GGM-metrics, modified to use torch_geometric but identical computation-wise.
 """
-
-
-# from dgl.nn.pytorch.conv import GINConv
-import dgl.function as fn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dgl.nn.pytorch.glob import AvgPooling, MaxPooling, SumPooling
-from dgl.utils import expand_as_pair
+from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
+from torch_geometric.nn.conv import MessagePassing
 
 
-class GINConv(nn.Module):
-    r"""
-    Description
-    -----------
-    Graph Isomorphism Network layer from paper `How Powerful are Graph
-    Neural Networks? <https://arxiv.org/pdf/1810.00826.pdf>`__.
-    .. math::
-        h_i^{(l+1)} = f_\Theta \left((1 + \epsilon) h_i^{l} +
-        \mathrm{aggregate}\left(\left\{h_j^{l}, j\in\mathcal{N}(i)
-        \right\}\right)\right)
-    If a weight tensor on each edge is provided, the weighted graph convolution is defined as:
-    .. math::
-        h_i^{(l+1)} = f_\Theta \left((1 + \epsilon) h_i^{l} +
-        \mathrm{aggregate}\left(\left\{e_{ji} h_j^{l}, j\in\mathcal{N}(i)
-        \right\}\right)\right)
-    where :math:`e_{ji}` is the weight on the edge from node :math:`j` to node :math:`i`.
-    Please make sure that `e_{ji}` is broadcastable with `h_j^{l}`.
-    Parameters
-    ----------
-    apply_func : callable activation function/layer or None
-        If not None, apply this function to the updated node feature,
-        the :math:`f_\Theta` in the formula.
-    aggregator_type : str
-        Aggregator type to use (``sum``, ``max`` or ``mean``).
-    init_eps : float, optional
-        Initial :math:`\epsilon` value, default: ``0``.
-    learn_eps : bool, optional
-        If True, :math:`\epsilon` will be a learnable parameter. Default: ``False``.
-    Example
-    -------
-    >>> import dgl
-    >>> import numpy as np
-    >>> import torch as th
-    >>> from dgl.nn import GINConv
-    >>>
-    >>> g = dgl.graph(([0,1,2,3,2,5], [1,2,3,4,0,3]))
-    >>> feat = th.ones(6, 10)
-    >>> lin = th.nn.Linear(10, 10)
-    >>> conv = GINConv(lin, 'max')
-    >>> res = conv(g, feat)
-    >>> res
-    tensor([[-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.4821,  0.0207, -0.7665,  0.5721, -0.4682, -0.2134, -0.5236,  1.2855,
-            0.8843, -0.8764],
-            [-0.1804,  0.0758, -0.5159,  0.3569, -0.1408, -0.1395, -0.2387,  0.7773,
-            0.5266, -0.4465]], grad_fn=<AddmmBackward>)
+class GINConv(MessagePassing):
+    """
+    Graph Isomorphism Network layer implemented in PyTorch Geometric
+    Closely mirrors the original DGL implementation
     """
 
     def __init__(self, apply_func, aggregator_type, init_eps=0, learn_eps=False):
-        super(GINConv, self).__init__()
+        # Determine reducer based on aggregator type
+        if aggregator_type == "sum":
+            self._reducer = "add"
+        elif aggregator_type == "max":
+            self._reducer = "max"
+        elif aggregator_type == "mean":
+            self._reducer = "mean"
+        else:
+            raise KeyError(f"Aggregator type {aggregator_type} not recognized.")
+
+        # Initialize message passing with message aggegration type
+        super().__init__(aggr=self._reducer)
+
         self.apply_func = apply_func
         self._aggregator_type = aggregator_type
-        if aggregator_type == "sum":
-            self._reducer = fn.sum
-        elif aggregator_type == "max":
-            self._reducer = fn.max
-        elif aggregator_type == "mean":
-            self._reducer = fn.mean
-        else:
-            raise KeyError("Aggregator type {} not recognized.".format(aggregator_type))
-        # to specify whether eps is trainable or not.
+
+        # Handle epsilon parameter
         if learn_eps:
-            self.eps = torch.nn.Parameter(torch.FloatTensor([init_eps]))
+            self.eps = nn.Parameter(torch.FloatTensor([init_eps]))
         else:
             self.register_buffer("eps", torch.FloatTensor([init_eps]))
 
-    def forward(self, graph, feat, edge_weight=None):
-        r"""
-        Description
-        -----------
-        Compute Graph Isomorphism Network layer.
-        Parameters
-        ----------
-        graph : DGLGraph
-            The graph.
-        feat : torch.Tensor or pair of torch.Tensor
-            If a torch.Tensor is given, the input feature of shape :math:`(N, D_{in})` where
-            :math:`D_{in}` is size of input feature, :math:`N` is the number of nodes.
-            If a pair of torch.Tensor is given, the pair must contain two tensors of shape
-            :math:`(N_{in}, D_{in})` and :math:`(N_{out}, D_{in})`.
-            If ``apply_func`` is not None, :math:`D_{in}` should
-            fit the input dimensionality requirement of ``apply_func``.
-        edge_weight : torch.Tensor, optional
-            Optional tensor on the edge. If given, the convolution will weight
-            with regard to the message.
-        Returns
-        -------
-        torch.Tensor
-            The output feature of shape :math:`(N, D_{out})` where
-            :math:`D_{out}` is the output dimensionality of ``apply_func``.
-            If ``apply_func`` is None, :math:`D_{out}` should be the same
-            as input dimensionality.
-        """
-        with graph.local_scope():
-            aggregate_fn = self.concat_edge_msg
-            # aggregate_fn = fn.copy_src('h', 'm')
-            if edge_weight is not None:
-                assert edge_weight.shape[0] == graph.number_of_edges()
-                graph.edata["_edge_weight"] = edge_weight
-                aggregate_fn = fn.u_mul_e("h", "_edge_weight", "m")
+    def forward(self, x, edge_index, edge_weight=None, edge_attr=None):
+        # Handle optional edge weight
+        if edge_weight is not None:
+            assert False
 
-            feat_src, feat_dst = expand_as_pair(feat, graph)
-            graph.srcdata["h"] = feat_src
-            graph.update_all(aggregate_fn, self._reducer("m", "neigh"))
-
-            diff = torch.tensor(graph.dstdata["neigh"].shape[1:]) - torch.tensor(
-                feat_dst.shape[1:]
-            )
-            zeros = torch.zeros(feat_dst.shape[0], *diff).to(feat_dst.device)
-            feat_dst = torch.cat([feat_dst, zeros], dim=1)
-            rst = (1 + self.eps) * feat_dst + graph.dstdata["neigh"]
-            if self.apply_func is not None:
-                rst = self.apply_func(rst)
-            return rst
-
-    def concat_edge_msg(self, edges):
-        if self.edge_feat_loc not in edges.data:
-            return {"m": edges.src["h"]}
+        # Propagate messages with optional edge attributes
+        out = self.propagate(
+            edge_index, x=x, edge_weight=edge_weight, edge_attr=edge_attr
+        )
+        assert out.ndim == x.ndim
+        diff = out.shape[-1] - x.shape[-1]
+        if diff != 0:
+            zeros = torch.zeros((*x.shape[:-1], diff)).to(x.device)
+            padded_x = torch.cat([x, zeros], dim=-1)
         else:
-            m = torch.cat([edges.src["h"], edges.data[self.edge_feat_loc]], dim=1)
-            return {"m": m}
+            padded_x = x
+
+        # Apply epsilon-weighted update
+        rst = (1 + self.eps) * padded_x + out
+
+        # Apply optional MLP function
+        if self.apply_func is not None:
+            rst = self.apply_func(rst)
+
+        return rst
+
+    def message(self, x_j, edge_weight=None, edge_attr=None):
+        # Default message
+        m = x_j
+
+        # Optional edge weight multiplication
+        if edge_weight is not None:
+            m = m * edge_weight.view(-1, 1)
+
+        # Optional edge attribute concatenation
+        if edge_attr is not None:
+            m = torch.cat([m, edge_attr], dim=-1)
+
+        return m
 
 
 class ApplyNodeFunc(nn.Module):
@@ -230,7 +163,7 @@ class GIN(nn.Module):
         final_dropout=0.0,
         learn_eps=False,
         output_dim=1,
-        **kwargs
+        **kwargs,
     ):
         """model parameters setting
 
@@ -316,63 +249,63 @@ class GIN(nn.Module):
         self.drop = nn.Dropout(final_dropout)
 
         if graph_pooling_type == "sum":
-            self.pool = SumPooling()
+            self.pool = global_add_pool
         elif graph_pooling_type == "mean":
-            self.pool = AvgPooling()
+            self.pool = global_mean_pool
         elif graph_pooling_type == "max":
-            self.pool = MaxPooling()
+            self.pool = global_max_pool
         else:
             raise NotImplementedError
 
-    def forward(self, g, h):
+    def forward(self, x, edge_index, batch, edge_attr=None):
         # list of hidden representation at each layer (including input)
-        hidden_rep = [h]
+        hidden_rep = [x]
 
         # h = self.preprocess_nodes(h)
         for i in range(self.num_layers - 1):
-            h = self.ginlayers[i](g, h)
-            h = self.batch_norms[i](h)
-            h = F.relu(h)
-            hidden_rep.append(h)
+            x = self.ginlayers[i](x, edge_index, edge_attr=edge_attr)
+            x = self.batch_norms[i](x)
+            x = F.relu(x)
+            hidden_rep.append(x)
 
         score_over_layer = 0
 
         # perform pooling over all nodes in each graph in every layer
         for i, h in enumerate(hidden_rep):
-            pooled_h = self.pool(g, h)
+            pooled_h = self.pool(x=h, batch=batch)
             score_over_layer += self.drop(self.linears_prediction[i](pooled_h))
         return score_over_layer
 
-    def get_graph_embed(self, g, h):
+    def get_graph_embed(self, x, edge_index, batch, edge_attr=None):
         self.eval()
         with torch.no_grad():
             # return self.forward(g, h).detach().numpy()
             hidden_rep = []
             # h = self.preprocess_nodes(h)
             for i in range(self.num_layers - 1):
-                h = self.ginlayers[i](g, h)
-                h = self.batch_norms[i](h)
-                h = F.relu(h)
-                hidden_rep.append(h)
+                x = self.ginlayers[i](x, edge_index, edge_attr=edge_attr)
+                x = self.batch_norms[i](x)
+                x = F.relu(x)
+                hidden_rep.append(x)
 
             # perform pooling over all nodes in each graph in every layer
-            graph_embed = torch.Tensor([]).to(self.device)
+            graph_embed = torch.Tensor([]).to(x.device)
             for i, h in enumerate(hidden_rep):
-                pooled_h = self.pool(g, h)
+                pooled_h = self.pool(x=h, batch=batch)
                 graph_embed = torch.cat([graph_embed, pooled_h], dim=1)
 
             return graph_embed
 
-    def get_graph_embed_no_cat(self, g, h):
+    def get_graph_embed_no_cat(self, x, edge_index, batch, edge_attr=None):
         self.eval()
         with torch.no_grad():
             hidden_rep = []
             # h = self.preprocess_nodes(h)
             for i in range(self.num_layers - 1):
-                h = self.ginlayers[i](g, h)
-                h = self.batch_norms[i](h)
-                h = F.relu(h)
-                hidden_rep.append(h)
+                x = self.ginlayers[i](x, edge_index, edge_attr=edge_attr)
+                x = self.batch_norms[i](x)
+                x = F.relu(x)
+                hidden_rep.append(x)
 
             # perform pooling over all nodes in each graph in every layer
             # graph_embed = torch.Tensor([]).to(self.device)
@@ -381,13 +314,4 @@ class GIN(nn.Module):
             #     graph_embed = torch.cat([graph_embed, pooled_h], dim = 1)
 
             # return graph_embed
-            return self.pool(g, hidden_rep[-1]).to(self.device)
-
-    @property
-    def edge_feat_loc(self):
-        return self.ginlayers[0].edge_feat_loc
-
-    @edge_feat_loc.setter
-    def edge_feat_loc(self, loc):
-        for layer in self.ginlayers:
-            layer.edge_feat_loc = loc
+            return self.pool(x=hidden_rep[-1], batch=batch)

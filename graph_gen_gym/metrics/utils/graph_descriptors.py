@@ -1,12 +1,13 @@
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Optional
 
-import dgl
 import networkx as nx
 import numpy as np
 import orbit_count
 import torch
 from scipy.sparse import csr_array
 from sklearn.preprocessing import StandardScaler
+from torch_geometric.data import Batch
+from torch_geometric.utils import degree, from_networkx
 
 import graph_gen_gym
 from graph_gen_gym.metrics.utils.gin import GIN
@@ -92,10 +93,10 @@ class RandomGIN:
         dont_concat: bool = False,
         num_mlp_layers: int = 2,
         output_dim: int = 1,
-        node_feat_loc: str = "attr",
-        edge_feat_loc: str = "attr",
         init: str = "orthogonal",
         device: str = "cpu",
+        node_feat_loc: Optional[str] = None,
+        edge_feat_loc: Optional[str] = None,
     ):
         self.model = GIN(
             num_layers=num_layers,
@@ -108,39 +109,50 @@ class RandomGIN:
             output_dim=output_dim,
             init=init,
         )
-
-        self.model.node_feat_loc = node_feat_loc
-        self.model.edge_feat_loc = edge_feat_loc
+        self._device = device
+        self.model = self.model.to(device)
 
         self.model.eval()
 
         if dont_concat:
-            self.model.forward = self.model.get_graph_embed_no_cat
+            self._feat_fn = self.model.get_graph_embed_no_cat
         else:
-            self.model.forward = self.model.get_graph_embed
+            self._feat_fn = self.model.get_graph_embed
 
-        self.model.device = device
-        self.model = self.model.to(device)
+        self.node_feat_loc = node_feat_loc
+        self.edge_feat_loc = edge_feat_loc
 
     @torch.inference_mode()
     def __call__(self, graphs: Iterable[nx.Graph]):
-        node_feat_loc = self.model.node_feat_loc
-        edge_feat_loc = self.model.edge_feat_loc
+        pyg_graphs = [from_networkx(g) for g in graphs]
 
-        dgl_graphs = [dgl.from_networkx(g) for g in graphs]
-
-        ndata = [node_feat_loc] if node_feat_loc in dgl_graphs[0].ndata else "__ALL__"
-        edata = [edge_feat_loc] if edge_feat_loc in dgl_graphs[0].edata else "__ALL__"
-        graphs = dgl.batch(dgl_graphs, ndata=ndata, edata=edata).to(self.model.device)
-
-        if node_feat_loc not in graphs.ndata:  # Use degree as features
-            feats = graphs.in_degrees() + graphs.out_degrees()
-            feats = feats.unsqueeze(1).type(torch.float32)
+        if self.node_feat_loc is None:  # Use degree as features
+            feats = (
+                torch.cat(
+                    [
+                        degree(index=g.edge_index[0], num_nodes=g.num_nodes)
+                        + degree(index=g.edge_index[1], num_nodes=g.num_nodes)
+                        for g in pyg_graphs
+                    ]
+                )
+                .unsqueeze(-1)
+                .to(self._device)
+            )
         else:
-            feats = graphs.ndata[node_feat_loc]
-        feats = feats.to(self.model.device)
+            # TODO: Implement loading node features from networkx graphs
+            assert False
 
-        graph_embeds = self.model(graphs, feats)
+        if self.edge_feat_loc is None:
+            edge_attr = None
+        else:
+            # TODO: Implement loading edge features from networkx graphs
+            assert False
+
+        batch = Batch.from_data_list(pyg_graphs).to(self._device)
+
+        graph_embeds = self._feat_fn(
+            feats, batch.edge_index, batch.batch, edge_attr=edge_attr
+        )
         return graph_embeds.cpu().detach().numpy()
 
 
