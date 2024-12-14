@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 import pytest
 import torch
@@ -13,13 +11,19 @@ from torch_geometric.data import Batch
 
 from graph_gen_gym.datasets.dataset import GraphDataset
 from graph_gen_gym.datasets.graph import Graph
+from graph_gen_gym.metrics import (
+    GRANClusteringMMD2,
+    GRANClusteringMMD2Interval,
+    GRANDegreeMMD2,
+    GRANDegreeMMD2Interval,
+    GRANOrbitMMD2,
+    GRANOrbitMMD2Interval,
+    GRANSpectralMMD2,
+    GRANSpectralMMD2Interval,
+)
 from graph_gen_gym.metrics.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
-    GRANClusteringMMD2,
-    GRANDegreeMMD2,
-    GRANOrbitMMD2,
-    GRANSpectralMMD2,
     MaxDescriptorMMD2,
     MMDInterval,
     MMDWithVariance,
@@ -39,19 +43,19 @@ def test_dataset_loading(datasets):
 )
 def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
     kernel = request.getfixturevalue(kernel)
-    mmd = DescriptorMMD2Interval(sbm.to_nx(), kernel, variant=variant)
-    result = mmd.compute(planar.to_nx(), subsample_size=subsample_size)
+    mmd = DescriptorMMD2Interval(sbm, kernel, variant=variant)
+    result = mmd.compute(planar, subsample_size=subsample_size)
     assert isinstance(result, MMDInterval)
     assert result.std > 0
 
     rng = np.random.default_rng(42)
     planar_idxs = rng.choice(len(planar), size=subsample_size, replace=False)
     sbm_idxs = rng.choice(len(sbm), size=subsample_size, replace=False)
-    assert len(np.unique(planar_idxs)) == subsample_size
-    assert len(np.unique(sbm_idxs)) == subsample_size
-    planar_samples = [planar.to_nx()[int(idx)] for idx in planar_idxs]
-    sbm_samples = [sbm.to_nx()[int(idx)] for idx in sbm_idxs]
+    planar_samples = [planar[int(idx)] for idx in planar_idxs]
+    sbm_samples = [sbm[int(idx)] for idx in sbm_idxs]
 
     single_mmd = DescriptorMMD2(sbm_samples, kernel, variant=variant)
     single_estimate = single_mmd.compute(planar_samples)
@@ -79,6 +83,40 @@ def test_gran_equivalence(datasets, orca_executable):
         assert np.isclose(
             mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
         )
+
+
+@pytest.mark.parametrize("subsample_size", [32, 64, 100, 128])
+def test_gran_uncertainty(datasets, subsample_size):
+    planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
+    assert subsample_size <= len(planar) and subsample_size <= len(sbm)
+
+    rng = np.random.default_rng(42)
+
+    for single_cls, interval_cls in zip(
+        [GRANClusteringMMD2, GRANDegreeMMD2, GRANOrbitMMD2, GRANSpectralMMD2],
+        [
+            GRANClusteringMMD2Interval,
+            GRANDegreeMMD2Interval,
+            GRANOrbitMMD2Interval,
+            GRANSpectralMMD2Interval,
+        ],
+    ):
+        assert issubclass(single_cls, DescriptorMMD2)
+        assert issubclass(interval_cls, DescriptorMMD2Interval)
+
+        planar_idxs = rng.choice(len(planar), size=subsample_size, replace=False)
+        sbm_idxs = rng.choice(len(sbm), size=subsample_size, replace=False)
+        planar_samples = [planar[int(idx)] for idx in planar_idxs]
+        sbm_samples = [sbm[int(idx)] for idx in sbm_idxs]
+
+        single_mmd = single_cls(planar_samples)
+        interval_mmd = interval_cls(planar)
+        interval = interval_mmd.compute(sbm, subsample_size=subsample_size)
+        single_estimate = single_mmd.compute(sbm_samples)
+        assert isinstance(interval, MMDInterval)
+        assert interval.low <= single_estimate <= interval.high
 
 
 def test_mmd_computation_ustat_var(datasets, degree_linear_kernel):

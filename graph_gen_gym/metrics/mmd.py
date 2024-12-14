@@ -5,13 +5,7 @@ from typing import Collection, Literal, Tuple
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.metrics.utils.graph_descriptors import (
-    ClusteringHistogram,
-    EigenvalueHistogram,
-    OrbitCounts,
-    SparseDegreeHistogram,
-)
-from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, GaussianTV, GramBlocks
+from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, GramBlocks
 from graph_gen_gym.metrics.utils.mmd_utils import mmd_from_gram, mmd_ustat_var
 
 MMDWithVariance = namedtuple("MMDWithVariance", ["ustat", "std"])
@@ -168,35 +162,3 @@ class MaxDescriptorMMD2Interval(_MMD2Intereval):
         avg = np.mean(mmd_samples, axis=0)
         std = np.std(mmd_samples, axis=0)
         return MMDInterval(mean=avg, std=std, low=low, high=high)
-
-
-class GRANOrbitMMD2(DescriptorMMD2):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
-        super().__init__(
-            reference_graphs=reference_graphs,
-            kernel=GaussianTV(descriptor_fn=OrbitCounts(), bw=30),
-        )
-
-
-class GRANClusteringMMD2(DescriptorMMD2):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
-        super().__init__(
-            reference_graphs=reference_graphs,
-            kernel=GaussianTV(descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10),
-        )
-
-
-class GRANDegreeMMD2(DescriptorMMD2):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
-        super().__init__(
-            reference_graphs=reference_graphs,
-            kernel=GaussianTV(descriptor_fn=SparseDegreeHistogram(), bw=1.0),
-        )
-
-
-class GRANSpectralMMD2(DescriptorMMD2):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
-        super().__init__(
-            reference_graphs=reference_graphs,
-            kernel=GaussianTV(descriptor_fn=EigenvalueHistogram(), bw=1.0),
-        )
