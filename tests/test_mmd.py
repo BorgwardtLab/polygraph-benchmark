@@ -20,6 +20,10 @@ from graph_gen_gym.metrics import (
     GRANOrbitMMD2Interval,
     GRANSpectralMMD2,
     GRANSpectralMMD2Interval,
+    RBFClusteringMMD2,
+    RBFDegreeMMD2,
+    RBFOrbitMMD2,
+    RBFSpectralMMD2,
 )
 from graph_gen_gym.metrics.mmd import (
     DescriptorMMD2,
@@ -62,61 +66,91 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     assert result.low <= single_estimate <= result.high
 
 
-def test_gran_equivalence(datasets, orca_executable):
+@pytest.mark.parametrize(
+    "mmd_cls,baseline_method",
+    [
+        (GRANSpectralMMD2, spectral_stats),
+        (GRANOrbitMMD2, orbit_stats_all),
+        (GRANClusteringMMD2, clustering_stats),
+        (GRANDegreeMMD2, degree_stats),
+    ],
+)
+def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
     """Ensure  that our MMD estimate is equivalent to the one by GRAN implementation."""
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
-    # Test all GRAN MMD classes
-    for mmd_cls, baseline_method in zip(
-        [GRANSpectralMMD2, GRANOrbitMMD2, GRANClusteringMMD2, GRANDegreeMMD2],
-        [
-            spectral_stats,
-            lambda ref, pred: orbit_stats_all(ref, pred, orca_executable),
-            clustering_stats,
-            degree_stats,
-        ],
-    ):
-        mmd = mmd_cls(planar)
-        assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls
-        mmd = mmd_cls(planar[:64])
-        assert np.isclose(
-            mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
-        )
+    if baseline_method is orbit_stats_all:
+        baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)
+
+    mmd = mmd_cls(planar)
+    assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls
+    mmd = mmd_cls(planar[:64])
+    assert np.isclose(
+        mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
+    )
 
 
 @pytest.mark.parametrize("subsample_size", [32, 64, 100, 128])
-def test_gran_uncertainty(datasets, subsample_size):
+@pytest.mark.parametrize(
+    "single_cls,interval_cls",
+    [
+        (GRANClusteringMMD2, GRANClusteringMMD2Interval),
+        (GRANDegreeMMD2, GRANDegreeMMD2Interval),
+        (GRANOrbitMMD2, GRANOrbitMMD2Interval),
+        (GRANSpectralMMD2, GRANSpectralMMD2Interval),
+    ],
+)
+def test_gran_uncertainty(datasets, subsample_size, single_cls, interval_cls):
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     assert subsample_size <= len(planar) and subsample_size <= len(sbm)
 
-    rng = np.random.default_rng(42)
+    rng = np.random.default_rng(1)
 
-    for single_cls, interval_cls in zip(
-        [GRANClusteringMMD2, GRANDegreeMMD2, GRANOrbitMMD2, GRANSpectralMMD2],
-        [
-            GRANClusteringMMD2Interval,
-            GRANDegreeMMD2Interval,
-            GRANOrbitMMD2Interval,
-            GRANSpectralMMD2Interval,
-        ],
-    ):
-        assert issubclass(single_cls, DescriptorMMD2)
-        assert issubclass(interval_cls, DescriptorMMD2Interval)
+    assert issubclass(single_cls, DescriptorMMD2)
+    assert issubclass(interval_cls, DescriptorMMD2Interval)
 
-        planar_idxs = rng.choice(len(planar), size=subsample_size, replace=False)
-        sbm_idxs = rng.choice(len(sbm), size=subsample_size, replace=False)
-        planar_samples = [planar[int(idx)] for idx in planar_idxs]
-        sbm_samples = [sbm[int(idx)] for idx in sbm_idxs]
+    planar_idxs = rng.choice(len(planar), size=subsample_size, replace=False)
+    sbm_idxs = rng.choice(len(sbm), size=subsample_size, replace=False)
+    planar_samples = [planar[int(idx)] for idx in planar_idxs]
+    sbm_samples = [sbm[int(idx)] for idx in sbm_idxs]
 
-        single_mmd = single_cls(planar_samples)
-        interval_mmd = interval_cls(planar)
-        interval = interval_mmd.compute(sbm, subsample_size=subsample_size)
-        single_estimate = single_mmd.compute(sbm_samples)
-        assert isinstance(interval, MMDInterval)
-        assert interval.low <= single_estimate <= interval.high
+    single_mmd = single_cls(planar_samples)
+    interval_mmd = interval_cls(planar)
+    interval = interval_mmd.compute(sbm, subsample_size=subsample_size)
+    single_estimate = single_mmd.compute(sbm_samples)
+    assert isinstance(interval, MMDInterval)
+    assert interval.low <= single_estimate <= interval.high
+
+
+@pytest.mark.parametrize(
+    "mmd_cls,stat",
+    [
+        (RBFClusteringMMD2, "clustering"),
+        (RBFDegreeMMD2, "degree"),
+        (RBFOrbitMMD2, "orbits"),
+        (RBFSpectralMMD2, "spectral"),
+    ],
+)
+def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
+    import sys
+    from pathlib import Path
+
+    sys.path.append(str(Path(__file__).parent / "ggm_implementation"))
+    from ggm_implementation.graph_structure_evaluation import MMDEval
+
+    planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
+    baseline_eval = MMDEval(
+        statistic=stat, kernel="gaussian_rbf", sigma="range", orca_path=orca_executable
+    )
+    baseline_results, _ = baseline_eval.evaluate(planar, sbm)
+    assert len(baseline_results) == 1
+    our_eval = mmd_cls(planar)
+    assert np.isclose(our_eval.compute(sbm)[0], list(baseline_results.values())[0])
 
 
 def test_mmd_computation_ustat_var(datasets, degree_linear_kernel):

@@ -31,7 +31,8 @@ dev = [
     "pyprojroot",
     "ipython",
     "ruff",
-    "pre-commit"
+    "pre-commit",
+    "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git",      # Required for testing equivalence to Thompson et al.
 ]
 
 [tool.pytest.ini_options]

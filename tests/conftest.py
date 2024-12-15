@@ -1,5 +1,6 @@
 import subprocess
 import urllib.request
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -18,7 +19,7 @@ from graph_gen_gym.metrics.utils.kernels import (
 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def orca_executable(tmpdir_factory):
     orca_path = tmpdir_factory.mktemp("orca")
     cpp_path = orca_path.join("orca.cpp")

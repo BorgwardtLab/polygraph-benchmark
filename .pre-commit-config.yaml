@@ -1,10 +1,13 @@
 repos:
-  - repo: https://github.com/python/black
-    rev: 23.12.1
-    hooks:
-      - id: black
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.1
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
+ - repo: https://github.com/python/black
+   rev: 23.12.1
+   hooks:
+     - id: black
+       exclude: ^(tests/ggm_implementation|tests/gran_implementation)/
+
+ - repo: https://github.com/pycqa/isort
+   rev: 5.13.1
+   hooks:
+     - id: isort
+       args: ["--profile", "black", "--filter-files"]
+       exclude: ^(tests/ggm_implementation|tests/gran_implementation)/
