@@ -1,14 +1,13 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Collection, Literal, Tuple
+from typing import Collection, Literal, Union
 
 import networkx as nx
 import numpy as np
 
 from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, GramBlocks
-from graph_gen_gym.metrics.utils.mmd_utils import mmd_from_gram, mmd_ustat_var
+from graph_gen_gym.metrics.utils.mmd_utils import mmd_from_gram
 
-MMDWithVariance = namedtuple("MMDWithVariance", ["ustat", "std"])
 MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
 
 
@@ -17,26 +16,21 @@ class DescriptorMMD2:
         self,
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
-        variant: Literal["biased", "umve", "ustat", "ustat-var"] = "biased",
+        variant: Literal["biased", "umve", "ustat"] = "biased",
     ):
         self._kernel = kernel
         self._variant = variant
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
 
-    def compute(self, generated_graphs: Collection[nx.Graph]):
+    def compute(
+        self, generated_graphs: Collection[nx.Graph]
+    ) -> Union[float, np.ndarray]:
         descriptions = self._kernel.featurize(
             generated_graphs,
         )
         ref_vs_ref, ref_vs_gen, gen_vs_gen = self._kernel(
             self._reference_descriptions, descriptions
         )
-        if self._variant == "ustat-var":
-            assert (
-                self._kernel.num_kernels == 1
-            ), "Only single kernel supported for USTAT-VAR"
-            mmd = mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat")
-            var = mmd_ustat_var(ref_vs_ref, ref_vs_gen, gen_vs_gen)
-            return MMDWithVariance(ustat=mmd, std=np.sqrt(var))
         return mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant=self._variant)
 
 
@@ -52,12 +46,10 @@ class MaxDescriptorMMD2(DescriptorMMD2):
                 f"Must provide several kernels, i.e. a kernel with multiple parameters"
             )
 
-    def compute(
-        self, generated_graphs: Collection[nx.Graph]
-    ) -> Tuple[float, DescriptorKernel]:
+    def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
         multi_kernel_result = super().compute(generated_graphs)
         idx = int(np.argmax(multi_kernel_result))
-        return multi_kernel_result[idx], self._kernel.get_subkernel(idx)
+        return multi_kernel_result[idx]
 
 
 class _MMD2Intereval(ABC):
