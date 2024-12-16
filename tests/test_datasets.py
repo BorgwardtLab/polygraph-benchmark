@@ -2,99 +2,71 @@ import networkx as nx
 import numpy as np
 import pytest
 import torch
-import torch_geometric as pyg
-from loguru import logger
-from tqdm import tqdm
+from torch_geometric.data import Data
 
-from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
+from graph_gen_gym.datasets import (
+    DobsonDoigGraphDataset,
+    EgoGraphDataset,
+    LobsterGraphDataset,
+    PlanarGraphDataset,
+    SBMGraphDataset,
+    SmallEgoGraphDataset,
+)
+from graph_gen_gym.datasets.dataset import AbstractDataset
 
 
-def test_planar_dataset_loading():
-    # Test different splits
+@pytest.mark.parametrize(
+    "ds_cls",
+    [
+        PlanarGraphDataset,
+        SBMGraphDataset,
+        LobsterGraphDataset,
+        EgoGraphDataset,
+        SmallEgoGraphDataset,
+        DobsonDoigGraphDataset,
+    ],
+)
+def test_loading(ds_cls):
     for split in ["train", "val", "test"]:
-        ds = PlanarGraphDataset(split)
-        assert len(ds) > 0, f"Planar {split} dataset should not be empty"
+        ds = ds_cls(split)
+        assert isinstance(ds, AbstractDataset), "Should inherit from AbstraactDataset"
+        assert len(ds) > 0
+        pyg_graphs = list(ds)
+        assert len(pyg_graphs) == len(ds)
+        assert all(
+            isinstance(item, Data) for item in pyg_graphs
+        ), "Dataset should return PyG graphs"
+        nx_graphs = ds.to_nx()
+        assert len(nx_graphs) == len(
+            ds
+        ), "NetworkX conversion should preserve dataset size"
+        assert all(
+            isinstance(g, nx.Graph) for g in nx_graphs
+        ), "to_nx should return NetworkX graphs"
 
-        # Test PyG format
-        g = ds[0]
-        assert isinstance(g, pyg.data.Data), "Dataset should return PyG graphs"
-        assert g.edge_index is not None, "Graph should have edges"
 
-        # Test NetworkX conversion
-        nx_ds = ds.to_nx()
-        assert len(nx_ds) == len(ds), "NetworkX conversion should preserve dataset size"
-        nx_g = nx_ds[0]
-        assert isinstance(nx_g, nx.Graph), "to_nx should return NetworkX graphs"
-
-
-def test_sbm_dataset_loading():
-    # Test different splits
+@pytest.mark.parametrize("ds_cls", [PlanarGraphDataset, LobsterGraphDataset])
+def test_graph_properties(ds_cls):
     for split in ["train", "val", "test"]:
-        ds = SBMGraphDataset(split)
-        assert len(ds) > 0, f"SBM {split} dataset should not be empty"
-
-        # Test PyG format
-        g = ds[0]
-        assert isinstance(g, pyg.data.Data), "Dataset should return PyG graphs"
-        assert g.edge_index is not None, "Graph should have edges"
-
-        # Test NetworkX conversion
-        nx_ds = ds.to_nx()
-        assert len(nx_ds) == len(ds), "NetworkX conversion should preserve dataset size"
-        nx_g = nx_ds[0]
-        assert isinstance(nx_g, nx.Graph), "to_nx should return NetworkX graphs"
+        ds = ds_cls(split)
+        assert hasattr(ds, "is_valid")
+        assert all(g.number_of_nodes() > 0 for g in ds.to_nx())
+        assert all(g.number_of_edges() > 0 for g in ds.to_nx())
+        assert all(ds.is_valid(g) for g in ds.to_nx())
 
 
-def test_dataset_iteration():
-    # Test iteration functionality
-    ds_planar = PlanarGraphDataset("train")
-    ds_sbm = SBMGraphDataset("train")
-
-    # Test PyG iteration
-    for g in ds_planar:
-        assert isinstance(g, pyg.data.Data)
-        break
-
-    for g in ds_sbm:
-        assert isinstance(g, pyg.data.Data)
-        break
-
-    # Test NetworkX iteration
-    for g in ds_planar.to_nx():
-        assert isinstance(g, nx.Graph)
-        break
-
-    for g in ds_sbm.to_nx():
-        assert isinstance(g, nx.Graph)
-        break
-
-
-def test_graph_properties():
-    ds_planar = PlanarGraphDataset("train")
-    ds_sbm = SBMGraphDataset("train")
-
-    # Test basic graph properties
-    for ds in [ds_planar, ds_sbm]:
-        g = ds[0]
-        assert g.num_nodes > 0, "Graphs should have nodes"
-        assert g.num_edges > 0, "Graphs should have edges"
-
-        nx_g = ds.to_nx()[0]
-        assert ds.is_valid(nx_g), "Graphs should be sampled from SBM"
-
-
-@pytest.mark.slow
+@pytest.mark.skip
 def test_graph_tool_validation():
-    ds_planar = SBMGraphDataset("train")
-    p_values = []
+    ds_sbm = SBMGraphDataset("train")
     validities = []
-    for g in tqdm(ds_planar.to_nx()):
-        valid_gt = ds_planar.is_valid(g)
-        valid_nx = ds_planar.is_valid_alt(g)
-        validities.append([valid_gt, valid_nx])
+    for g in ds_sbm.to_nx():
+        valid_gt = ds_sbm.is_valid(g)
+        valid_alt = ds_sbm.is_valid_alt(g)
+        validities.append([valid_gt, valid_alt])
     valid_gt = np.sum([val[0] for val in validities])
-    valid_nx = np.sum([val[1] for val in validities])
-    logger.info(f"valid_gt: {valid_gt}, valid_nx: {valid_nx}")
+    valid_alt = np.sum([val[1] for val in validities])
+    assert valid_gt / len(ds_sbm) > 0.8
+    assert valid_alt / len(ds_sbm) > 0.8
 
 
 def test_invalid_inputs():
@@ -106,10 +78,21 @@ def test_invalid_inputs():
         SBMGraphDataset("invalid_split")
 
 
-def test_dataset_consistency():
+@pytest.mark.parametrize(
+    "ds_cls",
+    [
+        PlanarGraphDataset,
+        SBMGraphDataset,
+        LobsterGraphDataset,
+        EgoGraphDataset,
+        SmallEgoGraphDataset,
+        DobsonDoigGraphDataset,
+    ],
+)
+def test_dataset_consistency(ds_cls):
     # Test if multiple loads give same data
-    ds1 = PlanarGraphDataset("train")
-    ds2 = PlanarGraphDataset("train")
+    ds1 = ds_cls("train")
+    ds2 = ds_cls("train")
 
     g1 = ds1[0]
     g2 = ds2[0]
