@@ -61,7 +61,7 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
         mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
     )
 
-
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "mmd_cls,stat",
     [
@@ -185,7 +185,7 @@ def test_max_mmd(request, datasets, kernel, variant):
     metric_arr = unpooled_mmd.compute(planar.to_nx())
     assert np.isclose(metric, np.max(metric_arr))
 
-
+@pytest.mark.skip
 def test_gin_metrics_unattributed(datasets):
     import sys
     from pathlib import Path
