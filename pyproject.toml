@@ -25,6 +25,7 @@ dependencies = [
     "python-louvain",
     "orbit_count @ git+ssh://git@github.com/BorgwardtLab/orca-bindings.git",
     "rdkit",
+    "pandas",
 ]
 
 [project.optional-dependencies]
@@ -36,9 +37,9 @@ dev = [
     "ipython",
     "ruff",
     "pre-commit",
-    "pandas",
     "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git", # Required for testing equivalence to Thompson et al.
     "torch>=2.4, <2.5",
+    "ipykernel",
 ]
 gpu = [
     "dgl @ https://data.dgl.ai/wheels/torch-2.4/cu124/dgl-2.4.0%2Bcu124-cp310-cp310-manylinux1_x86_64.whl",
