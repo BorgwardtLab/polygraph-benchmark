@@ -20,7 +20,7 @@ dependencies = [
     "appdirs",
     "loguru",
     "python-louvain",
-    "orbit_count @ git+https://github.com/BorgwardtLab/orca-bindings"
+    "orbit_count @ git+ssh://git@github.com/BorgwardtLab/orca-bindings.git"
 ]
 
 [project.optional-dependencies]
