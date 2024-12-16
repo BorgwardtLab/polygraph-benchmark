@@ -84,14 +84,18 @@ class VUN:
         self, generated_samples: Iterable[nx.Graph], confidence_level: float = 0.95
     ) -> Dict[str, BinomConfidenceInterval]:
         n_graphs = len(generated_samples)
+
         if n_graphs == 0:
             raise ValueError("Generated samples must not be empty")
+
         novel = [graph not in self._train_set for graph in generated_samples]
+
         unique = []
         generated_set = _GraphSet()
         for graph in generated_samples:
             unique.append(graph not in generated_set)
             generated_set.add(graph)
+
         unique_novel = [u and n for u, n in zip(unique, novel)]
 
         result = {
