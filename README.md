@@ -66,4 +66,3 @@ sbm_val = SBMGraphDataset("val")
 tst = OptimizedPValue(ds_planar, planar_val, descriptor_fn=partial(clustering_descriptor, bins=100), kernel=LaplaceKernel(lbd=np.linspace(0.05, 5, 100)))
 print(tst.compute(ds_sbm.to_nx(), sbm_val.to_nx()))
 ```
-

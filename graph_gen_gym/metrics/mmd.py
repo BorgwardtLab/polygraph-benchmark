@@ -43,7 +43,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         super().__init__(*args, **kwargs)
         if not self._kernel.num_kernels > 1:
             raise ValueError(
-                f"Must provide several kernels, i.e. a kernel with multiple parameters"
+                "Must provide several kernels, i.e. a kernel with multiple parameters"
             )
 
     def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
@@ -131,7 +131,7 @@ class MaxDescriptorMMD2Interval(_MMD2Intereval):
         super().__init__(*args, **kwargs)
         if not self._kernel.num_kernels > 1:
             raise ValueError(
-                f"Must provide several kernels, i.e. either a kernel with multiple parameters"
+                "Must provide several kernels, i.e. either a kernel with multiple parameters"
             )
 
     def compute(

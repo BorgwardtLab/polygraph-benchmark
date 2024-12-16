@@ -6,32 +6,13 @@
 ###############################################################################
 try:
     import pyemd
-except:
+except ImportError:
     pyemd = None
 import concurrent.futures
 from functools import partial
 
-import networkx as nx
 import numpy as np
 from scipy.linalg import toeplitz
-
-
-def emd(x, y, distance_scaling=1.0):
-    support_size = max(len(x), len(y))
-    d_mat = toeplitz(range(support_size)).astype(float)
-    distance_mat = d_mat / distance_scaling
-
-    # convert histogram values x and y to float, and make them equal len
-    x = x.astype(float)
-    y = y.astype(float)
-    if len(x) < len(y):
-        x = np.hstack((x, [0.0] * (support_size - len(x))))
-    elif len(y) < len(x):
-        y = np.hstack((y, [0.0] * (support_size - len(y))))
-
-    emd = pyemd.emd(x, y, distance_mat)
-    return emd
-
 
 def l2(x, y):
     dist = np.linalg.norm(x - y, 2)

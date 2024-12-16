@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Any, Callable, Iterable, List, TypeAlias, Union
+from typing import Any, Callable, Iterable, TypeAlias, Union
 
 import networkx as nx
 import numpy as np

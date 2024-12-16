@@ -1,6 +1,5 @@
 from typing import List
 
-import community
 import networkx as nx
 import numpy as np
 from loguru import logger

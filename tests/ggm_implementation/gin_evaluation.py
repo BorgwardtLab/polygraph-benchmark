@@ -1,4 +1,3 @@
-import os
 import torch
 import numpy as np
 import time
@@ -298,7 +297,7 @@ class FIDEvaluation(GINMetric):
         # Numerical error might give slight imaginary component
         if np.iscomplexobj(covmean):
             if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
-                m = np.max(np.abs(covmean.imag))
+                _ = np.max(np.abs(covmean.imag))
                 #raise ValueError('Imaginary component {}'.format(m))
             covmean = covmean.real
 

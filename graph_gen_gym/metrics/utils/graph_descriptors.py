@@ -9,7 +9,6 @@ from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
-import graph_gen_gym
 from graph_gen_gym.metrics.utils.gin import GIN
 
 

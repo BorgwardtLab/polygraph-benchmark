@@ -15,9 +15,7 @@ import networkx as nx
 import numpy as np
 from gran_mmd_implementation.mmd import (
     compute_mmd,
-    emd,
     gaussian,
-    gaussian_emd,
     gaussian_tv,
 )
 from scipy.linalg import eigvalsh
@@ -374,7 +372,7 @@ def orbit_stats_all(graph_ref_list, graph_pred_list, executable_path):
     total_counts_ref = []
     total_counts_pred = []
 
-    graph_pred_list_remove_empty = [
+    _ = [
         G for G in graph_pred_list if not G.number_of_nodes() == 0
     ]
 
@@ -386,7 +384,8 @@ def orbit_stats_all(graph_ref_list, graph_pred_list, executable_path):
     for G in graph_pred_list:
         try:
             orbit_counts = orca(G, executable_path)
-        except:
+        except Exception as e:
+            print(f"Error computing orbit counts for graph {G}: {e}")
             continue
         orbit_counts_graph = np.sum(orbit_counts, axis=0) / G.number_of_nodes()
         total_counts_pred.append(orbit_counts_graph)

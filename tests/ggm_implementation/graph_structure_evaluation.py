@@ -1,4 +1,3 @@
-from pathlib import Path
 import tempfile
 import networkx as nx
 import dgl
@@ -6,7 +5,7 @@ import numpy as np
 from scipy.linalg import toeplitz
 try:
     import pyemd
-except:
+except ImportError:
     pyemd = None
 import time
 import concurrent.futures
@@ -19,7 +18,7 @@ from eden.graph import vectorize
 try:
     import grakel
     from grakel.kernels import WeisfeilerLehman, VertexHistogram
-except:
+except ImportError:
     grakel = None
     WeisfeilerLehman = None
     VertexHistogram = None
@@ -46,7 +45,7 @@ class MMDEval():
         elif statistic == 'spectral':
             self.descriptor = Spectral(**kwargs)
         else:
-            raise Exception('unsupported statistic'.format(statistic))
+            raise Exception('unsupported statistic'.format())
 
 
     def evaluate(self, generated_dataset=None, reference_dataset=None):
@@ -63,9 +62,8 @@ class MMDEval():
 
 
     def extract_dataset(self, dataset):
-        assert type(dataset) == list or type(dataset) == tuple, f'Unsupported type {type(dataset)} for \
+        assert isinstance(dataset, (list, tuple)), f'Unsupported type {type(dataset)} for \
                 dataset, expected list of nx.Graph or dgl.DGLGraph'
-
         if isinstance(dataset[0], nx.Graph):
             pass
         elif isinstance(dataset[0], dgl.DGLGraph):
@@ -281,7 +279,7 @@ class Orbits(Descriptor):
                 for (u, v) in self.edge_list_reindexed(graph):
                     f.write(str(u) + ' ' + str(v) + '\n')
                 f.close()
-                
+
             output = sp.check_output([self.orca_path, 'node', '4', f.name, 'std'])
             output = output.decode('utf8').strip()
             idx = output.find(self.COUNT_START_STR) + len(self.COUNT_START_STR)
@@ -293,7 +291,7 @@ class Orbits(Descriptor):
             # Ensure the temporary file is deleted even if an exception occurs
             if 'f' in locals() and os.path.exists(f.name):
                 os.unlink(f.name)
-        
+
         return node_orbit_counts
 
     def edge_list_reindexed(self, G):
