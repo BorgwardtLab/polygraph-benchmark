@@ -1,5 +1,5 @@
-from evaluation import graph_structure_evaluation
-from evaluation import gin_evaluation
+from ggm_implementation import graph_structure_evaluation
+from ggm_implementation import gin_evaluation
 
 
 class Evaluator():
@@ -12,8 +12,8 @@ class Evaluator():
             self.evaluators = []
             self.evaluators.append(gin_evaluation.FIDEvaluation(
                 model=model))
-            self.evaluators.append(gin_evaluation.KIDEvaluation(
-                model=model))
+            #self.evaluators.append(gin_evaluation.KIDEvaluation(
+            #    model=model))
             self.evaluators.append(gin_evaluation.prdcEvaluation(
                 model=model, use_pr=True))
             self.evaluators.append(gin_evaluation.prdcEvaluation(

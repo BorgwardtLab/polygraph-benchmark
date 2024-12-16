@@ -46,7 +46,9 @@ def compute_wasserstein_distance(
     if np.iscomplexobj(covmean):
         if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
             m = np.max(np.abs(covmean.imag))
-            raise ValueError("Imaginary component {}".format(m))
+            raise ValueError(
+                f"Imaginary component {m} for gaussians {gaussian_a}, {gaussian_b}"
+            )
         covmean = covmean.real
 
     tr_covmean = np.trace(covmean)
@@ -62,30 +64,10 @@ def compute_wasserstein_distance(
 def fit_gaussian(
     graphs: Collection[nx.Graph],
     descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
-    batch_size=None,
 ):
-    mean = None
-    cov = None
-    data_iter = batched(graphs, batch_size) if batch_size is not None else (graphs,)
-    batch_size = batch_size if batch_size is not None else len(graphs)
-    num_batches = 0
-
-    for graph_batch in data_iter:
-        n_graphs = len(graph_batch)
-        representations = descriptor_fn(graph_batch)
-        assert representations.ndim == 2 and representations.shape[0] == n_graphs
-        if mean is None:
-            mean = np.zeros(representations.shape[1])
-            cov = np.zeros((representations.shape[1], representations.shape[1]))
-
-        mean += (n_graphs / batch_size) * representations.mean(axis=0)
-        cov += (n_graphs / batch_size) * np.einsum(
-            "k i, k j -> k i j", representations, representations
-        ).mean(axis=0)
-        num_batches += 1
-
-    mean = mean / num_batches
-    cov = cov / num_batches - np.einsum("i, j -> i j", mean, mean)
+    representations = descriptor_fn(graphs)
+    mean = np.mean(representations, axis=0)
+    cov = np.cov(representations, rowvar=False)
     return GaussianParameters(mean=mean, covariance=cov)
 
 
@@ -94,16 +76,15 @@ class FittedFrechetDistance:
         self,
         fitted_gaussian: GaussianParameters,
         descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
-        batch_size: float = None,
     ):
         self._reference_gaussian = fitted_gaussian
         self._descriptor_fn = descriptor_fn
-        self._batch_size = batch_size
         self._dim = None
 
     def compute(self, generated_graphs: Collection[nx.Graph]):
         generated_gaussian = fit_gaussian(
-            generated_graphs, self._descriptor_fn, self._batch_size
+            generated_graphs,
+            self._descriptor_fn,
         )
         return compute_wasserstein_distance(
             self._reference_gaussian, generated_gaussian
@@ -115,13 +96,14 @@ class FrechetDistance:
         self,
         reference_graphs: Collection[nx.Graph],
         descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
-        batch_size: float = None,
     ):
         reference_gaussian = fit_gaussian(
-            reference_graphs, descriptor_fn, batch_size=batch_size
+            reference_graphs,
+            descriptor_fn,
         )
         self._fd = FittedFrechetDistance(
-            reference_gaussian, descriptor_fn=descriptor_fn, batch_size=batch_size
+            reference_gaussian,
+            descriptor_fn=descriptor_fn,
         )
 
     def compute(self, generated_graphs: Collection[nx.Graph]):
