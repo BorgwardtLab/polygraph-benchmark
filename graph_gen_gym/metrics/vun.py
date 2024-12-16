@@ -57,21 +57,11 @@ class _GraphSet:
         return all(e1[key] == e2[key] for key in self._edge_attrs)
 
     def _graph_fingerprint(self, g: nx.Graph) -> str:
-        nodes = list(g.nodes)
-        triangle_counts = nx.triangles(g, nodes)
-        degrees = [item[1] for item in g.degree(nodes)]
-        node_attrs = [
-            tuple(g.node[node][key] for key in self._node_attrs) for node in nodes
-        ]
-        fingerprint = tuple(
-            sorted(
-                [
-                    joblib.hash((attr, deg, triangle))
-                    for attr, deg, triangle in zip(node_attrs, degrees, triangle_counts)
-                ]
-            )
+        return nx.weisfeiler_lehman_graph_hash(
+            g,
+            edge_attr=self._edge_attrs[0] if len(self._edge_attrs) > 0 else None,
+            node_attr=self._node_attrs[0] if len(self._node_attrs) > 0 else None,
         )
-        return fingerprint
 
     def _compute_hash_set(
         self, nx_graphs: List[nx.Graph]

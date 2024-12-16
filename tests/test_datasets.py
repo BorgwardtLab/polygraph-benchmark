@@ -13,18 +13,21 @@ from graph_gen_gym.datasets import (
     SmallEgoGraphDataset,
 )
 from graph_gen_gym.datasets.dataset import AbstractDataset
+from graph_gen_gym.metrics.vun import VUN
+
+ALL_DATASETS = [
+    PlanarGraphDataset,
+    SBMGraphDataset,
+    LobsterGraphDataset,
+    SmallEgoGraphDataset,
+    EgoGraphDataset,
+    DobsonDoigGraphDataset,
+]
 
 
 @pytest.mark.parametrize(
     "ds_cls",
-    [
-        PlanarGraphDataset,
-        SBMGraphDataset,
-        LobsterGraphDataset,
-        EgoGraphDataset,
-        SmallEgoGraphDataset,
-        DobsonDoigGraphDataset,
-    ],
+    ALL_DATASETS,
 )
 def test_loading(ds_cls):
     for split in ["train", "val", "test"]:
@@ -80,14 +83,7 @@ def test_invalid_inputs():
 
 @pytest.mark.parametrize(
     "ds_cls",
-    [
-        PlanarGraphDataset,
-        SBMGraphDataset,
-        LobsterGraphDataset,
-        EgoGraphDataset,
-        SmallEgoGraphDataset,
-        DobsonDoigGraphDataset,
-    ],
+    ALL_DATASETS,
 )
 def test_dataset_consistency(ds_cls):
     # Test if multiple loads give same data
@@ -100,3 +96,27 @@ def test_dataset_consistency(ds_cls):
     assert torch.equal(
         g1.edge_index, g2.edge_index
     ), "Multiple loads should give consistent data"
+
+
+# Ego datasets have non-unique graphs, which is apparently okay (?)
+@pytest.mark.parametrize(
+    "ds_cls",
+    [
+        PlanarGraphDataset,
+        SBMGraphDataset,
+        LobsterGraphDataset,
+        DobsonDoigGraphDataset,
+    ],
+)
+def test_split_disjointness(ds_cls):
+    prev_splits = []
+    import time
+
+    t0 = time.time()
+    for split in ["train", "val", "test"]:
+        graphs = list(ds_cls(split).to_nx())
+        vun = VUN(prev_splits, validity_fn=None)
+        result = vun.compute(graphs)
+        assert result["unique"].mle == 1
+        assert result["novel"].mle == 1
+        prev_splits.extend(graphs)
