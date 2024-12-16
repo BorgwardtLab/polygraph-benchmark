@@ -7,7 +7,10 @@ name = "graph_gen_gym"
 version = "0.1"
 description = "Graph Generation Gym"
 authors = [
-    { name="Your Name", email="your.email@example.com" }
+    { name = "Markus Krimmel", email = "krimmel@biochem.mpg.de" },
+    { name = "Philip Hartout", email = "hartout@biochem.mpg.de" },
+    { name = "Dexiong Chen", email = "dchen@biochem.mpg.de" },
+    { name = "Karsten Borgwardt", email = "borgwardt@biochem.mpg.de" },
 ]
 dependencies = [
     "numpy",
@@ -20,7 +23,7 @@ dependencies = [
     "appdirs",
     "loguru",
     "python-louvain",
-    "orbit_count @ git+ssh://git@github.com/BorgwardtLab/orca-bindings.git"
+    "orbit_count @ git+ssh://git@github.com/BorgwardtLab/orca-bindings.git",
 ]
 
 [project.optional-dependencies]
@@ -33,8 +36,10 @@ dev = [
     "ruff",
     "pre-commit",
     "pandas",
-    "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git",      # Required for testing equivalence to Thompson et al.
+    "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git", # Required for testing equivalence to Thompson et al.
     "torch>=2.4, <2.5",
+]
+gpu = [
     "dgl @ https://data.dgl.ai/wheels/torch-2.4/cu124/dgl-2.4.0%2Bcu124-cp310-cp310-manylinux1_x86_64.whl",
     "nvidia-cuda-runtime-cu12==12.4",
     "nvidia-cuda-nvrtc-cu12==12.4",
