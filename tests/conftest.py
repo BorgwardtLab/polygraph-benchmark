@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """conftest.py
 
-The conftest.py file is used to define fixtures and other configurations for 
+The conftest.py file is used to define fixtures and other configurations for
 pytest at the start of the session.
 """
-from graph_tool.all import _  # noqa
+import graph_tool.all as _   # noqa
 
 import subprocess
 import urllib.request
