@@ -11,6 +11,7 @@ from graph_gen_gym.datasets import (
     PlanarGraphDataset,
     SBMGraphDataset,
     SmallEgoGraphDataset,
+    QM9,
 )
 from graph_gen_gym.datasets.dataset import AbstractDataset
 from graph_gen_gym.metrics.vun import VUN
@@ -22,6 +23,7 @@ ALL_DATASETS = [
     SmallEgoGraphDataset,
     EgoGraphDataset,
     DobsonDoigGraphDataset,
+    QM9,
 ]
 
 
@@ -110,9 +112,7 @@ def test_dataset_consistency(ds_cls):
 )
 def test_split_disjointness(ds_cls):
     prev_splits = []
-    import time
 
-    t0 = time.time()
     for split in ["train", "val", "test"]:
         graphs = list(ds_cls(split).to_nx())
         vun = VUN(prev_splits, validity_fn=None)
