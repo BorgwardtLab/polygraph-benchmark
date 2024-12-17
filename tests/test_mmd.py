@@ -7,7 +7,7 @@ from gran_mmd_implementation.stats import (
     spectral_stats,
 )
 
-from graph_gen_gym.metrics import (
+from graph_gen_gym.metrics.gran import (
     GRANClusteringMMD2,
     GRANClusteringMMD2Interval,
     GRANDegreeMMD2,
@@ -16,19 +16,17 @@ from graph_gen_gym.metrics import (
     GRANOrbitMMD2Interval,
     GRANSpectralMMD2,
     GRANSpectralMMD2Interval,
-    GraphNeuralNetworkFrechetDistance,
-    LinearGraphNeuralNetworkMMD2,
     RBFClusteringMMD2,
     RBFClusteringMMD2Interval,
     RBFDegreeMMD2,
     RBFDegreeMMD2Interval,
-    RBFGraphNeuralNetworkMMD2,
     RBFOrbitMMD2,
     RBFOrbitMMD2Interval,
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
 )
-from graph_gen_gym.metrics.mmd import (
+from graph_gen_gym.metrics.gin import GraphNeuralNetworkFrechetDistance, LinearGraphNeuralNetworkMMD2, RBFGraphNeuralNetworkMMD2
+from graph_gen_gym.metrics.base import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
     MaxDescriptorMMD2,
@@ -52,7 +50,7 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     if baseline_method is orbit_stats_all:
-        baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)
+        baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)     # noqa
 
     mmd = mmd_cls(planar)
     assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls

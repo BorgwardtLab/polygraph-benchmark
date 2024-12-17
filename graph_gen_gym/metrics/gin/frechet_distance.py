@@ -1,5 +1,5 @@
-from graph_gen_gym.metrics.frechet_distance import FrechetDistance
-from graph_gen_gym.metrics.utils.graph_descriptors import (
+from graph_gen_gym.metrics.base.frechet_distance import FrechetDistance
+from graph_gen_gym.utils.graph_descriptors import (
     NormalizedDescriptor,
     RandomGIN,
 )

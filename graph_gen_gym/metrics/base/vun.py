@@ -4,6 +4,7 @@ from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Optional
 import networkx as nx
 from scipy.stats import binomtest
 
+__all__ = ["VUN"]
 
 BinomConfidenceInterval = namedtuple("ConfidenceInterval", ["mle", "low", "high"])
 

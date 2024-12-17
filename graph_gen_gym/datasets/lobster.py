@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import networkx as nx
 
-from graph_gen_gym.datasets.dataset import OnlineGraphDataset
+from graph_gen_gym.datasets.base import OnlineGraphDataset
 
 
 class LobsterGraphDataset(OnlineGraphDataset):

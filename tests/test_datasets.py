@@ -13,8 +13,8 @@ from graph_gen_gym.datasets import (
     SmallEgoGraphDataset,
     QM9,
 )
-from graph_gen_gym.datasets.dataset import AbstractDataset
-from graph_gen_gym.metrics.vun import VUN
+from graph_gen_gym.datasets.base import AbstractDataset
+from graph_gen_gym.metrics.base import VUN
 
 ALL_DATASETS = [
     PlanarGraphDataset,

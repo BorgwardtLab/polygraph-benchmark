@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset
-from graph_gen_gym.metrics.frechet_distance import FrechetDistance
-from graph_gen_gym.metrics.utils.graph_descriptors import OrbitCounts
-from graph_gen_gym.metrics.vun import VUN
+from graph_gen_gym.metrics.base import FrechetDistance
+from graph_gen_gym.utils.graph_descriptors import OrbitCounts
+from graph_gen_gym.metrics.base import VUN
 
 
 def create_test_graphs() -> List[nx.Graph]:
