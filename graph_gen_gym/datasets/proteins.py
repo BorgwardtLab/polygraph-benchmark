@@ -1,4 +1,4 @@
-from graph_gen_gym.datasets.dataset import OnlineGraphDataset
+from graph_gen_gym.datasets.base import OnlineGraphDataset
 
 
 class DobsonDoigGraphDataset(OnlineGraphDataset):

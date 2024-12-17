@@ -5,7 +5,7 @@ import torch
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
-from graph_gen_gym.datasets.graph import Graph
+from graph_gen_gym.datasets.base import Graph
 
 
 def generate_lobster_graphs(num_graphs=100, seed=1234):

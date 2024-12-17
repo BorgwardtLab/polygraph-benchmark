@@ -5,8 +5,12 @@ from typing import Collection, Literal, Union
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, GramBlocks
-from graph_gen_gym.metrics.utils.mmd_utils import mmd_from_gram
+from graph_gen_gym.utils.kernels import DescriptorKernel, GramBlocks
+from graph_gen_gym.utils.mmd_utils import mmd_from_gram
+
+
+__all__ = ["DescriptorMMD2", "MaxDescriptorMMD2", "MMDInterval", "DescriptorMMD2Interval", "MaxDescriptorMMD2Interval"]
+
 
 MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
 
@@ -52,7 +56,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         return multi_kernel_result[idx]
 
 
-class _MMD2Intereval(ABC):
+class _DescriptorMMD2Interval(ABC):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -105,7 +109,7 @@ class _MMD2Intereval(ABC):
         ...
 
 
-class DescriptorMMD2Interval(_MMD2Intereval):
+class DescriptorMMD2Interval(_DescriptorMMD2Interval):
     def compute(
         self,
         generated_graphs: Collection[nx.Graph],
@@ -126,7 +130,7 @@ class DescriptorMMD2Interval(_MMD2Intereval):
         return MMDInterval(mean=avg, std=std, low=low, high=high)
 
 
-class MaxDescriptorMMD2Interval(_MMD2Intereval):
+class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self._kernel.num_kernels > 1:

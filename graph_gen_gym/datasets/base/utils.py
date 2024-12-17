@@ -5,7 +5,7 @@ import torch
 from appdirs import user_cache_dir
 
 from graph_gen_gym import __version__
-from graph_gen_gym.datasets.graph import Graph
+from graph_gen_gym.datasets.base.graph import Graph
 
 
 def identifier_to_path(identifier: str):

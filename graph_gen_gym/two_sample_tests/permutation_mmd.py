@@ -3,9 +3,10 @@ from typing import Collection, Literal
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.metrics.utils.kernels import DescriptorKernel, GramBlocks
-from graph_gen_gym.metrics.utils.mmd_utils import full_gram_from_blocks, mmd_from_gram
+from graph_gen_gym.utils.kernels import DescriptorKernel, GramBlocks
+from graph_gen_gym.utils.mmd_utils import full_gram_from_blocks, mmd_from_gram
 
+__all__ = ["BootStrapMMDTest", "BootStrapMaxMMDTest"]
 
 class _BootStrapTestBase:
     def __init__(

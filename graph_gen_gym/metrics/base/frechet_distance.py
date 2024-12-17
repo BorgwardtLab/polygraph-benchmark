@@ -6,6 +6,9 @@ import networkx as nx
 import numpy as np
 import scipy
 
+
+__all__ = ["FittedFrechetDistance", "FrechetDistance"]
+
 GaussianParameters = namedtuple("GaussianParameters", ["mean", "covariance"])
 
 

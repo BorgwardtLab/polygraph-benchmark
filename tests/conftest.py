@@ -13,12 +13,12 @@ import numpy as np
 import pytest
 
 from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
-from graph_gen_gym.metrics.utils.graph_descriptors import (
+from graph_gen_gym.utils.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     OrbitCounts,
 )
-from graph_gen_gym.metrics.utils.kernels import (
+from graph_gen_gym.utils.kernels import (
     AdaptiveRBFKernel,
     LaplaceKernel,
     LinearKernel,

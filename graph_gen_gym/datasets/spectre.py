@@ -5,8 +5,8 @@ import numpy as np
 from loguru import logger
 from scipy import stats
 
-from graph_gen_gym.datasets.dataset import OnlineGraphDataset
-from graph_gen_gym.datasets.graph import Graph
+from graph_gen_gym.datasets.base import OnlineGraphDataset
+from graph_gen_gym.datasets.base import Graph
 
 
 class PlanarGraphDataset(OnlineGraphDataset):
