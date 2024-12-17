@@ -9,6 +9,8 @@ from graph_gen_gym.datasets.graph import Graph
 from typing import Any, Sequence
 from loguru import logger
 
+from typing import Any, Sequence
+from loguru import logger
 
 def identifier_to_path(identifier: str):
     cache_dir = os.environ.get("GRAPH_GEN_GYM_CACHE_DIR")
