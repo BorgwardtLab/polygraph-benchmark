@@ -11,7 +11,7 @@ from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
 from graph_gen_gym.datasets.base.graph import Graph
-from graph_gen_gym.datasets.base.utils import download_to_cache, load_from_cache
+from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache
 
 
 class AbstractDataset(ABC):
