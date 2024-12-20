@@ -21,7 +21,6 @@ from tqdm import tqdm
 from graph_gen_gym.datasets import OnlineGraphDataset
 from graph_gen_gym.datasets.graph import Graph
 from graph_gen_gym.datasets.utils import (
-    check_cache_data_exists,
     identifier_to_path,
     to_list,
 )
@@ -95,10 +94,8 @@ class QM9(OnlineGraphDataset):
     raw_url2 = "https://ndownloader.figshare.com/files/3195404"
     processed_url = "https://data.pyg.org/datasets/qm9_v3.zip"
 
-    def __init__(self, split: str = "train", use_precomputed: bool = False):
-        if not use_precomputed or not check_cache_data_exists(
-            self.identifier, split=split
-        ):
+    def __init__(self, split: str = "train", use_precomputed: bool = True):
+        if not use_precomputed:
             self.download_raw_data()
             self.split_raw_data()
             self.process_split(split)

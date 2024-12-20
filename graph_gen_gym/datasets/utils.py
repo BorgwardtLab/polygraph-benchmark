@@ -50,12 +50,6 @@ def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) ->
     data = torch.load(path, weights_only=True, mmap=mmap)
     return Graph(**data)
 
-def check_cache_data_exists(identifier: str, split: str="data") -> bool:
-    if not os.path.exists(identifier_to_path(identifier)):
-        return False
-    else:
-        return True
-
 def to_list(value: Any) -> Sequence:
     if isinstance(value, Sequence) and not isinstance(value, str):
         return value
