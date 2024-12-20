@@ -4,8 +4,18 @@ from torch_geometric.data import Data
 from rdkit import Chem
 
 
-BOND_DICT = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE,
-                 Chem.rdchem.BondType.AROMATIC]
+BOND_DICT = [
+    Chem.rdchem.BondType.SINGLE,
+    Chem.rdchem.BondType.DOUBLE,
+    Chem.rdchem.BondType.TRIPLE,
+    Chem.rdchem.BondType.AROMATIC,
+]
+
+N_UNIQUE_ATOMS = 119
+ATOM_DECODER = {
+    i: Chem.GetPeriodicTable().GetElementSymbol(i) for i in range(1, N_UNIQUE_ATOMS)
+}
+
 
 def are_smiles_equivalent(smiles1, smiles2):
     # Convert SMILES to mol objects
@@ -22,6 +32,7 @@ def are_smiles_equivalent(smiles1, smiles2):
 
     return canonical_smiles1 == canonical_smiles2
 
+
 def mol2smiles(mol, canonical: bool = False):
     try:
         Chem.SanitizeMol(mol)
@@ -31,7 +42,15 @@ def mol2smiles(mol, canonical: bool = False):
     return Chem.MolToSmiles(mol, canonical=canonical)
 
 
-def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_hydrogens=None, charges=None, num_radical_electrons=None):
+def build_molecule(
+    node_labels: torch.Tensor,
+    edge_index: torch.Tensor,
+    edge_labels: torch.Tensor,
+    atom_decoder: list[str],
+    explicit_hydrogens: torch.Tensor | None = None,
+    charges: torch.Tensor | None = None,
+    num_radical_electrons: torch.Tensor | None = None,
+) -> Chem.RWMol:
     assert edge_index.shape[1] == len(edge_labels)
     assert edge_labels.ndim == 1
 
@@ -43,17 +62,24 @@ def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_
         mol.AddAtom(a)
         node_idx_to_atom_idx[node_idx] = current_atom_idx
         if charges is not None:
-            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetFormalCharge(charges[node_idx].item())
+            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetFormalCharge(
+                charges[node_idx].item()
+            )
         if num_radical_electrons is not None:
-            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetNumRadicalElectrons(num_radical_electrons[node_idx].item())
+            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetNumRadicalElectrons(
+                num_radical_electrons[node_idx].item()
+            )
         current_atom_idx += 1
         if explicit_hydrogens is not None:
             num_hydrogens = explicit_hydrogens[node_idx].item()
             for _ in range(num_hydrogens):
                 mol.AddAtom(Chem.Atom("H"))
-                mol.AddBond(current_atom_idx, node_idx_to_atom_idx[node_idx], Chem.rdchem.BondType.SINGLE)
+                mol.AddBond(
+                    current_atom_idx,
+                    node_idx_to_atom_idx[node_idx],
+                    Chem.rdchem.BondType.SINGLE,
+                )
                 current_atom_idx += 1
-
 
     added_bonds = set()
     for bond, bond_type in zip(edge_index.T, edge_labels):
@@ -61,12 +87,21 @@ def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_
         if a != b and (a, b) not in added_bonds:
             added_bonds.add((a, b))
             added_bonds.add((b, a))
-            mol.AddBond(node_idx_to_atom_idx[a], node_idx_to_atom_idx[b], BOND_DICT[bond_type.item()])
+            mol.AddBond(
+                node_idx_to_atom_idx[a],
+                node_idx_to_atom_idx[b],
+                BOND_DICT[bond_type.item()],
+            )
     return mol
 
 
 class AddHydrogenTransform:
-    def __init__(self, add_hydrogen: Literal["all", "explicit"] = "all", hydrogen_label: int = 0, single_bond_label: int = 0):
+    def __init__(
+        self,
+        add_hydrogen: Literal["all", "explicit"] = "all",
+        hydrogen_label: int = 0,
+        single_bond_label: int = 0,
+    ):
         """Transform to add hydrogen nodes to molecular graphs.
 
         :param add_hydrogen: Whether to add all hydrogens, or only those that have been marked as explicit, defaults to "all"
@@ -82,41 +117,84 @@ class AddHydrogenTransform:
 
     def __call__(self, graph: Data) -> Data:
         """Add hydrogen nodes to molecular graph."""
-        if not (hasattr(graph, "atom_labels") and hasattr(graph, "bond_labels") and hasattr(graph, "explicit_hydrogens") and hasattr(graph, "implicit_hydrogens") and hasattr(graph, "radical_electrons") and hasattr(graph, "charges")):
-            raise ValueError("Molecular graph must have attributes: atom_labels, bond_labels, implicit_hydrogens, explicit_hydrogens, radical_electrons, charges.")
+        if not (
+            hasattr(graph, "atom_labels")
+            and hasattr(graph, "bond_labels")
+            and hasattr(graph, "explicit_hydrogens")
+            and hasattr(graph, "implicit_hydrogens")
+            and hasattr(graph, "radical_electrons")
+            and hasattr(graph, "charges")
+        ):
+            raise ValueError(
+                "Molecular graph must have attributes: atom_labels, bond_labels, implicit_hydrogens, explicit_hydrogens, radical_electrons, charges."
+            )
 
         if self._variant == "explicit":
             hydrogens_to_add = graph.explicit_hydrogens
         elif self._variant == "all":
             hydrogens_to_add = graph.explicit_hydrogens + graph.implicit_hydrogens
         else:
-            raise NotImplementedError(f"Only valid modes are 'all' and 'explicit', got {self._variant}")
+            raise NotImplementedError(
+                f"Only valid modes are 'all' and 'explicit', got {self._variant}"
+            )
 
         total_nodes_to_add = hydrogens_to_add.sum().item()
         total_edges_to_add = 2 * total_nodes_to_add
 
-        new_edge_index = torch.zeros((2, graph.edge_index.shape[1] + total_edges_to_add), dtype=graph.edge_index.dtype, device=graph.edge_index.device)
-        new_edge_index[:, :graph.edge_index.shape[1]] = graph.edge_index
+        new_edge_index = torch.zeros(
+            (2, graph.edge_index.shape[1] + total_edges_to_add),
+            dtype=graph.edge_index.dtype,
+            device=graph.edge_index.device,
+        )
+        new_edge_index[:, : graph.edge_index.shape[1]] = graph.edge_index
 
-        new_atom_labels = torch.full((graph.num_nodes + total_nodes_to_add,), self._hydrogen_label, dtype=graph.atom_labels.dtype, device=graph.atom_labels.device)
-        new_atom_labels[:len(graph.atom_labels)] = graph.atom_labels
+        new_atom_labels = torch.full(
+            (graph.num_nodes + total_nodes_to_add,),
+            self._hydrogen_label,
+            dtype=graph.atom_labels.dtype,
+            device=graph.atom_labels.device,
+        )
+        new_atom_labels[: len(graph.atom_labels)] = graph.atom_labels
 
-        new_bond_labels = torch.full((len(graph.bond_labels) + total_edges_to_add,), self._single_bond_label, dtype=graph.atom_labels.dtype, device=graph.atom_labels.device)
-        new_bond_labels[:len(graph.bond_labels)] = graph.bond_labels
+        new_bond_labels = torch.full(
+            (len(graph.bond_labels) + total_edges_to_add,),
+            self._single_bond_label,
+            dtype=graph.atom_labels.dtype,
+            device=graph.atom_labels.device,
+        )
+        new_bond_labels[: len(graph.bond_labels)] = graph.bond_labels
 
-        new_implicit_hydrogens = torch.zeros(len(graph.implicit_hydrogens) + total_nodes_to_add, dtype=graph.implicit_hydrogens.dtype, device=graph.implicit_hydrogens.device)
+        new_implicit_hydrogens = torch.zeros(
+            len(graph.implicit_hydrogens) + total_nodes_to_add,
+            dtype=graph.implicit_hydrogens.dtype,
+            device=graph.implicit_hydrogens.device,
+        )
         if self._variant != "all":
             # only keep implicit hydrogens if we do not add them as nodes
-            new_implicit_hydrogens[:len(graph.implicit_hydrogens)] = graph.implicit_hydrogens
+            new_implicit_hydrogens[: len(graph.implicit_hydrogens)] = (
+                graph.implicit_hydrogens
+            )
 
-        new_explicit_hydrogens = torch.zeros(len(graph.explicit_hydrogens) + total_nodes_to_add, dtype=graph.explicit_hydrogens.dtype, device=graph.explicit_hydrogens.device)
+        new_explicit_hydrogens = torch.zeros(
+            len(graph.explicit_hydrogens) + total_nodes_to_add,
+            dtype=graph.explicit_hydrogens.dtype,
+            device=graph.explicit_hydrogens.device,
+        )
         # All explicit hydrogens are now part of the graph, so we do not keep the old explicit hydrogens
 
-        new_radical_electrons = torch.zeros(len(graph.radical_electrons) + total_nodes_to_add, dtype=graph.radical_electrons.dtype, device=graph.radical_electrons.device)
-        new_radical_electrons[:len(graph.radical_electrons)] = graph.radical_electrons
+        new_radical_electrons = torch.zeros(
+            len(graph.radical_electrons) + total_nodes_to_add,
+            dtype=graph.radical_electrons.dtype,
+            device=graph.radical_electrons.device,
+        )
+        new_radical_electrons[: len(graph.radical_electrons)] = graph.radical_electrons
 
-        new_charges = torch.zeros(len(graph.charges) + total_nodes_to_add, dtype=graph.charges.dtype, device=graph.charges.device)
-        new_charges[:len(graph.charges)] = graph.charges
+        new_charges = torch.zeros(
+            len(graph.charges) + total_nodes_to_add,
+            dtype=graph.charges.dtype,
+            device=graph.charges.device,
+        )
+        new_charges[: len(graph.charges)] = graph.charges
 
         current_edge_idx = graph.edge_index.shape[1]
         current_hydrogen_id = graph.num_nodes
@@ -137,5 +215,48 @@ class AddHydrogenTransform:
             implicit_hydrogens=new_implicit_hydrogens,
             explicit_hydrogens=new_explicit_hydrogens,
             radical_electrons=new_radical_electrons,
-            charges=new_charges
+            charges=new_charges,
         )
+
+
+def molecule2graph(
+    mol: Chem.RWMol,
+    add_hydrogen: Literal["explicit", "all", "none"] = "all",
+    charges: bool = True,
+    num_radical_electrons: bool = True,
+) -> Data:
+    # Node labels
+    node_labels = torch.tensor([atom.GetAtomicNum() for atom in mol.GetAtoms()])
+
+    # Get charges and radical electrons if requested
+    charge_tensor = torch.tensor([atom.GetFormalCharge() for atom in mol.GetAtoms()]) if charges else torch.zeros_like(node_labels)
+    radical_tensor = torch.tensor([atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()]) if num_radical_electrons else torch.zeros_like(node_labels)
+
+    # Get explicit and implicit hydrogens
+    explicit_hydrogens = torch.tensor([atom.GetNumExplicitHs() for atom in mol.GetAtoms()])
+    implicit_hydrogens = torch.tensor([atom.GetNumImplicitHs() for atom in mol.GetAtoms()])
+
+    # Build edge information
+    bonds = list(mol.GetBonds())
+    if bonds:  # Check if there are any bonds
+        edge_index = torch.tensor(
+            [(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()) for bond in bonds]
+            + [(bond.GetEndAtomIdx(), bond.GetBeginAtomIdx()) for bond in bonds]
+        ).t()
+
+        edge_attrs = torch.tensor(
+            [BOND_DICT.index(bond.GetBondType()) for bond in bonds] * 2
+        )
+    else:  # Handle molecules with no bonds (e.g., single atoms)
+        edge_index = torch.empty((2, 0), dtype=torch.long)
+        edge_attrs = torch.empty((0,), dtype=torch.long)
+
+    return Data(
+        edge_index=edge_index,
+        atom_labels=node_labels,
+        bond_labels=edge_attrs,
+        explicit_hydrogens=explicit_hydrogens,
+        implicit_hydrogens=implicit_hydrogens,
+        charges=charge_tensor,
+        radical_electrons=radical_tensor,
+    )

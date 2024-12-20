@@ -4,23 +4,24 @@
 QM9 dataset.
 """
 
+from __future__ import annotations
+
 import os
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as F
 from loguru import logger
 from rdkit import Chem, RDLogger
 from rdkit.Chem.rdchem import BondType as BT
 from torch_geometric.data import Batch, Data, download_url, extract_zip
-from torch_geometric.utils import subgraph
 from tqdm import tqdm
 
-from graph_gen_gym.datasets import OnlineGraphDataset
-from graph_gen_gym.datasets.graph import Graph
-from graph_gen_gym.datasets.utils import (
+from graph_gen_gym.datasets.base.molecules import molecule2graph
+from graph_gen_gym.datasets.base.dataset import OnlineGraphDataset
+from graph_gen_gym.datasets.base.graph import Graph
+from graph_gen_gym.datasets.base.caching import (
     identifier_to_path,
     to_list,
 )
@@ -52,7 +53,7 @@ conversion = torch.tensor(
     ]
 )
 
-guidance_names = [
+GUIDANCE_ATTRS = [
     "mu",
     "alpha",
     "eps_homo",
@@ -73,6 +74,8 @@ guidance_names = [
     "b",
     "c",
 ]
+ATOM_TYPES = {"H": 0, "C": 1, "N": 2, "O": 3, "F": 4}
+BOND_TYPES = {BT.SINGLE: 0, BT.DOUBLE: 1, BT.TRIPLE: 2, BT.AROMATIC: 3}
 
 
 class QM9(OnlineGraphDataset):
@@ -94,12 +97,23 @@ class QM9(OnlineGraphDataset):
     raw_url2 = "https://ndownloader.figshare.com/files/3195404"
     processed_url = "https://data.pyg.org/datasets/qm9_v3.zip"
 
-    def __init__(self, split: str = "train", use_precomputed: bool = True):
+    def __init__(
+        self,
+        split: str = "train",
+        use_precomputed: bool = True,
+        data_store: Optional[Graph] = None,
+        pre_filter: Optional[Callable] = None,
+        pre_transform: Optional[Callable] = None,
+    ):
         if not use_precomputed:
             self.download_raw_data()
             self.split_raw_data()
-            self.process_split(split)
-        super().__init__(split)
+            self.process_split(
+                split, pre_filter=pre_filter, pre_transform=pre_transform
+            )
+        super().__init__(
+            split, data_store, pre_filter=pre_filter, pre_transform=pre_transform
+        )
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
@@ -161,10 +175,8 @@ class QM9(OnlineGraphDataset):
         val.to_csv(os.path.join(self.raw_dir, "val.csv"))
         test.to_csv(os.path.join(self.raw_dir, "test.csv"))
 
-    def process_split(self, split_name):
+    def process_split(self, split_name, pre_filter, pre_transform):
         RDLogger.DisableLog("rdApp.*")
-        types = {"H": 0, "C": 1, "N": 2, "O": 3, "F": 4}
-        bonds = {BT.SINGLE: 0, BT.DOUBLE: 1, BT.TRIPLE: 2, BT.AROMATIC: 3}
 
         target_df = pd.read_csv(
             os.path.join(self.raw_dir, f"{split_name}.csv"), index_col=0
@@ -187,64 +199,96 @@ class QM9(OnlineGraphDataset):
 
         data_list = []
         for i, mol in enumerate(tqdm(suppl)):
-            if i in skip or i not in target_df.index:
+            if i in skip:
                 continue
-
-            N = mol.GetNumAtoms()
-
-            type_idx = []
-            for atom in mol.GetAtoms():
-                type_idx.append(types[atom.GetSymbol()])
-
-            row, col, edge_type = [], [], []
-            for bond in mol.GetBonds():
-                start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-                row += [start, end]
-                col += [end, start]
-                edge_type += 2 * [bonds[bond.GetBondType()] + 1]
-
-            edge_index = torch.tensor([row, col], dtype=torch.long)
-            edge_type = torch.tensor(edge_type, dtype=torch.long)
-            edge_attr = F.one_hot(edge_type, num_classes=len(bonds) + 1).to(torch.float)
-
-            perm = (edge_index[0] * N + edge_index[1]).argsort()
-            edge_index = edge_index[:, perm]
-            edge_attr = edge_attr[perm]
-
-            x = F.one_hot(torch.tensor(type_idx), num_classes=len(types)).float()
-            # y = torch.zeros((1, 0), dtype=torch.float)
-
-            type_idx = torch.tensor(type_idx).long()
-            to_keep = type_idx > 0
-            edge_index, edge_attr = subgraph(
-                to_keep,
-                edge_index,
-                edge_attr,
-                relabel_nodes=True,
-                num_nodes=len(to_keep),
-            )
-            x = x[to_keep]
-            # Shift onehot encoding to match atom decoder
-            x = x[:, 1:]
-
-            data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y[i], idx=i)
-
+            data = molecule2graph(mol)
+            # QM9-specific labels
             data_list.append(data)
 
         pyg_batch = Batch.from_data_list(data_list)
-        for guidance_name in guidance_names:
+
+        # pyg_batch.smiles = [data.smiles for data in data_list]
+        # pyg_batch.names = [data.name for data in data_list]
+        # graph_attrs = ["smiles", "name"]
+
+        for guidance_name in GUIDANCE_ATTRS:
             setattr(
                 pyg_batch,
                 guidance_name,
-                pyg_batch.y[:, guidance_names.index(guidance_name)],
+                y[:, GUIDANCE_ATTRS.index(guidance_name)],
             )
+
         graph_storage = Graph.from_pyg_batch(
             pyg_batch,
-            node_attrs=guidance_names,
+            node_attrs=[
+                "atom_labels",
+                "explicit_hydrogens",
+                "implicit_hydrogens",
+                "charges",
+                "radical_electrons",
+            ]
+            + GUIDANCE_ATTRS,
+            edge_attrs=["bond_labels"],
+            # TODO: graph attrs cannot be added bc they are strings
+            # graph_attrs=graph_attrs,
         )
         torch.save(
             graph_storage.model_dump(),
             os.path.join(self.raw_dir, f"{split_name}.pt"),
         )
 
-    def is_valid(self, data: Data): ...
+    def is_valid(self, data: Data) -> bool:
+        """Convert PyG graph back to RDKit molecule and validate it."""
+        mol = Chem.RWMol()
+        # Add atoms
+        for atom_label in data.atom_labels:
+            atom = Chem.Atom(int(atom_label.item()))
+            mol.AddAtom(atom)
+        logger.info(f"Added atoms to mol: {mol}")
+
+        # Add bonds
+        edge_index = data.edge_index
+        bond_labels = data.bond_labels
+        for i in range(edge_index.shape[1]):
+            src, dst = edge_index[:, i]
+            bond_type = bond_labels[i].item()
+            # Only add bond if source index is less than destination
+            # to avoid adding same bond twice
+            if src < dst:
+                try:
+                    mol.AddBond(int(src), int(dst), list(BOND_TYPES.keys())[bond_type])
+                except Exception as e:
+                    logger.error(f"Error adding bond: {e}")
+                    return False
+        logger.info(f"Added bonds to mol: {mol}")
+
+        # Set atom properties
+        for i, (exp_h, imp_h, charge, radical) in enumerate(zip(
+            data.explicit_hydrogens,
+            data.implicit_hydrogens,
+            data.charges,
+            data.radical_electrons
+        )):
+            try:
+                atom = mol.GetAtomWithIdx(i)
+                atom.SetNumExplicitHs(int(exp_h.item()))
+                atom.SetFormalCharge(int(charge.item()))
+                atom.SetNumRadicalElectrons(int(radical.item()))
+            except Exception as e:
+                # Plot networkx graph
+                import networkx as nx
+                import matplotlib.pyplot as plt
+                G = nx.from_pyg_batch(data)
+                nx.draw(G, with_labels=True)
+                plt.savefig("invalid_mol.png")
+                logger.error(f"Error setting atom properties: {e}")
+                return False
+        logger.info(f"Set atom properties: {mol}")
+
+        try:
+            Chem.SanitizeMol(mol)
+            logger.success(f"Sanitized mol: {mol}")
+            return True
+        except Exception as e:
+            logger.error(f"Invalid molecule: {e}")
+            return False
