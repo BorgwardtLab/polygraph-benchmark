@@ -11,8 +11,13 @@ import urllib.request
 
 import numpy as np
 import pytest
+from loguru import logger
+import sys
 
-from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
+from graph_gen_gym.datasets import (
+    PlanarGraphDataset,
+    SBMGraphDataset,
+)
 from graph_gen_gym.utils.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
@@ -26,6 +31,8 @@ from graph_gen_gym.utils.kernels import (
 )
 
 NO_SKIP_OPTION = "--no-skip"
+SAMPLE_SIZE_OPTION = "--sample-size"
+LOG_LEVEL_OPTION = "--test-log-level"
 
 
 def pytest_addoption(parser):
@@ -34,6 +41,20 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="also run skipped tests",
+    )
+    parser.addoption(
+        SAMPLE_SIZE_OPTION,
+        action="store",
+        default=5,
+        type=int,
+        help="number of samples to use in tests",
+    )
+    parser.addoption(
+        LOG_LEVEL_OPTION,
+        action="store",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="set the logging level",
     )
 
 
@@ -46,6 +67,34 @@ def pytest_collection_modifyitems(config, items):
                 if marker.name not in ("skip", "skipif")
             ]
 
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_logging(request):
+    logger.remove()  # Remove existing handlers
+    log_level = request.config.getoption(LOG_LEVEL_OPTION)
+    logger.add(
+        sys.stderr,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        level=log_level,
+    )
+
+    logger.add(
+        "./logs/tests/test_session.log",
+        rotation="1 day",
+        retention="1 week",
+        level=log_level,
+        encoding="utf-8",
+    )
+    logger.success(f"Logging level set to {log_level}")
+    logger.success(f"Sample size set to {request.config.getoption(SAMPLE_SIZE_OPTION)}")
+    logger.success(
+        f"Skipping tests operator set to {request.config.getoption(NO_SKIP_OPTION)}"
+    )
+    return logger
+
+@pytest.fixture(scope="session", autouse=True)
+def sample_size(request):
+    return request.config.getoption(SAMPLE_SIZE_OPTION)
 
 @pytest.fixture(scope="session", autouse=True)
 def orca_executable(tmpdir_factory):
