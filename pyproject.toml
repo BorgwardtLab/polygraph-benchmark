@@ -16,6 +16,7 @@ dependencies = [
     "numpy",
     "torch",
     "torch_geometric",
+    "rich",
     "scipy",
     "pydantic",
     "networkx",
