@@ -1,4 +1,3 @@
-from typing import List
 
 import networkx as nx
 import numpy as np
@@ -6,7 +5,6 @@ from loguru import logger
 from scipy import stats
 
 from graph_gen_gym.datasets.base import OnlineGraphDataset
-from graph_gen_gym.datasets.base import Graph
 
 
 class PlanarGraphDataset(OnlineGraphDataset):
@@ -21,11 +19,6 @@ class PlanarGraphDataset(OnlineGraphDataset):
 
     def is_valid(self, graph: nx.Graph) -> bool:
         return nx.is_connected(graph) and nx.is_planar(graph)
-
-    def sample(self, n_samples: int, replace: bool = False) -> List[Graph]:
-        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
-        return self[idx_to_sample]
-
 
 class SBMGraphDataset(OnlineGraphDataset):
     _URL_FOR_SPLIT = {
