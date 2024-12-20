@@ -5,12 +5,11 @@ import torch
 from appdirs import user_cache_dir
 
 from graph_gen_gym import __version__
-from graph_gen_gym.datasets.graph import Graph
+from graph_gen_gym.datasets.base.graph import Graph
 from typing import Any, Sequence
 from loguru import logger
 
-from typing import Any, Sequence
-from loguru import logger
+
 
 def identifier_to_path(identifier: str):
     cache_dir = os.environ.get("GRAPH_GEN_GYM_CACHE_DIR")
@@ -45,6 +44,7 @@ def write_to_cache(data: Graph, identifier: str, split: str = "data"):
     logger.debug(f"Writing data to {path}")
     torch.save(primitive_data, path)
 
+
 def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) -> Graph:
     path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
     if not os.path.exists(path):
@@ -52,6 +52,7 @@ def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) ->
     logger.debug(f"Loading data from {path}")
     data = torch.load(path, weights_only=True, mmap=mmap)
     return Graph(**data)
+
 
 def to_list(value: Any) -> Sequence:
     if isinstance(value, Sequence) and not isinstance(value, str):
