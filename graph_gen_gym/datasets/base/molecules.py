@@ -60,6 +60,5 @@ def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_
         if a != b and (a, b) not in added_bonds:
             added_bonds.add((a, b))
             added_bonds.add((b, a))
-            #print(f"Attaching {mol.GetAtomWithIdx(node_idx_to_atom_idx[a]).GetSymbol()} to {mol.GetAtomWithIdx(node_idx_to_atom_idx[b]).GetSymbol()} via {BOND_DICT[bond_type.item()]}")
             mol.AddBond(node_idx_to_atom_idx[a], node_idx_to_atom_idx[b], BOND_DICT[bond_type.item()])
     return mol
