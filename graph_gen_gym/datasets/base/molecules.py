@@ -70,11 +70,21 @@ def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_
 
 class AddHydrogenTransform:
     def __init__(self, add_hydrogen: Literal["all", "explicit"] = "all", hydrogen_label: int = 0, single_bond_label: int = 0):
+        """Transform to add hydrogen nodes to molecular graphs.
+
+        :param add_hydrogen: Whether to add all hydrogens, or only those that have been marked as explicit, defaults to "all"
+        :type add_hydrogen: Literal[&quot;all&quot;, &quot;explicit&quot;], optional
+        :param hydrogen_label: The integer node label used to denote hydrogen atoms, defaults to 0
+        :type hydrogen_label: int, optional
+        :param single_bond_label: The integer edge label used to denote single bonds, defaults to 0
+        :type single_bond_label: int, optional
+        """
         self._variant = add_hydrogen
         self._hydrogen_label = hydrogen_label
         self._single_bond_label = single_bond_label
 
-    def __call__(self, graph: Data):
+    def __call__(self, graph: Data) -> Data:
+        """Add hydrogen nodes to molecular graph."""
         if not (hasattr(graph, "atom_labels") and hasattr(graph, "bond_labels") and hasattr(graph, "explicit_hydrogens") and hasattr(graph, "implicit_hydrogens") and hasattr(graph, "radical_electrons") and hasattr(graph, "charges")):
             raise ValueError("Molecular graph must have attributes: atom_labels, bond_labels, implicit_hydrogens, explicit_hydrogens, radical_electrons, charges.")
 
