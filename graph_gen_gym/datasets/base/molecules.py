@@ -7,6 +7,7 @@ from rdkit import Chem
 BOND_DICT = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE,
                  Chem.rdchem.BondType.AROMATIC]
 
+
 def are_smiles_equivalent(smiles1, smiles2):
     # Convert SMILES to mol objects
     mol1 = Chem.MolFromSmiles(smiles1)
@@ -22,6 +23,7 @@ def are_smiles_equivalent(smiles1, smiles2):
 
     return canonical_smiles1 == canonical_smiles2
 
+
 def mol2smiles(mol, canonical: bool = False):
     try:
         Chem.SanitizeMol(mol)
@@ -31,7 +33,7 @@ def mol2smiles(mol, canonical: bool = False):
     return Chem.MolToSmiles(mol, canonical=canonical)
 
 
-def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_hydrogens=None, charges=None, num_radical_electrons=None):
+def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_hydrogens=None, charges=None, num_radical_electrons=None, pos=None):
     assert edge_index.shape[1] == len(edge_labels)
     assert edge_labels.ndim == 1
 
@@ -54,6 +56,11 @@ def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_
                 mol.AddBond(current_atom_idx, node_idx_to_atom_idx[node_idx], Chem.rdchem.BondType.SINGLE)
                 current_atom_idx += 1
 
+    if pos is not None:
+        conf = Chem.Conformer(mol.GetNumAtoms())
+        for node_idx, atom_pos in enumerate(pos):
+            conf.SetAtomPosition(node_idx_to_atom_idx[node_idx], atom_pos.tolist())
+        mol.AddConformer(conf)
 
     added_bonds = set()
     for bond, bond_type in zip(edge_index.T, edge_labels):
@@ -62,6 +69,10 @@ def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_
             added_bonds.add((a, b))
             added_bonds.add((b, a))
             mol.AddBond(node_idx_to_atom_idx[a], node_idx_to_atom_idx[b], BOND_DICT[bond_type.item()])
+
+    if pos is not None:
+        Chem.rdmolops.AssignStereochemistryFrom3D(mol)
+
     return mol
 
 
