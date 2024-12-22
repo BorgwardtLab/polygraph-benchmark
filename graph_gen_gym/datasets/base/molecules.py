@@ -1,20 +1,50 @@
 from typing import Literal
+
 import torch
-from torch_geometric.data import Data
 from rdkit import Chem
+from torch_geometric.data import Data
 
-
-BOND_DICT = [
+BOND_TYPES = [
+    Chem.rdchem.BondType.UNSPECIFIED,
     Chem.rdchem.BondType.SINGLE,
     Chem.rdchem.BondType.DOUBLE,
     Chem.rdchem.BondType.TRIPLE,
+    Chem.rdchem.BondType.QUADRUPLE,
+    Chem.rdchem.BondType.QUINTUPLE,
+    Chem.rdchem.BondType.HEXTUPLE,
+    Chem.rdchem.BondType.ONEANDAHALF,
+    Chem.rdchem.BondType.TWOANDAHALF,
+    Chem.rdchem.BondType.THREEANDAHALF,
+    Chem.rdchem.BondType.FOURANDAHALF,
+    Chem.rdchem.BondType.FIVEANDAHALF,
     Chem.rdchem.BondType.AROMATIC,
+    Chem.rdchem.BondType.IONIC,
+    Chem.rdchem.BondType.HYDROGEN,
+    Chem.rdchem.BondType.THREECENTER,
+    Chem.rdchem.BondType.DATIVEONE,
+    Chem.rdchem.BondType.DATIVE,
+    Chem.rdchem.BondType.DATIVEL,
+    Chem.rdchem.BondType.DATIVER,
+    Chem.rdchem.BondType.OTHER,
+    Chem.rdchem.BondType.ZERO,
 ]
 
+# Generalized atom vocabulary for all molecules
 N_UNIQUE_ATOMS = 119
-ATOM_DECODER = {
+ATOM_TYPES = {
     i: Chem.GetPeriodicTable().GetElementSymbol(i) for i in range(1, N_UNIQUE_ATOMS)
 }
+
+# Graph attributes for molecular graphs
+NODE_ATTRS = [
+    "atom_labels",
+    "explicit_hydrogens",
+    "implicit_hydrogens",
+    "radical_electrons",
+    "charges",
+    "stereo",
+]
+EDGE_ATTRS = ["bond_labels"]
 
 
 def are_smiles_equivalent(smiles1, smiles2):
@@ -42,15 +72,15 @@ def mol2smiles(mol, canonical: bool = False):
     return Chem.MolToSmiles(mol, canonical=canonical)
 
 
-def build_molecule(
+def graph2molecule(
     node_labels: torch.Tensor,
     edge_index: torch.Tensor,
     edge_labels: torch.Tensor,
-    atom_decoder: list[str],
     explicit_hydrogens: torch.Tensor | None = None,
     charges: torch.Tensor | None = None,
     num_radical_electrons: torch.Tensor | None = None,
-    pos=None
+    pos=None,
+    stereo=None,
 ) -> Chem.RWMol:
     assert edge_index.shape[1] == len(edge_labels)
     assert edge_labels.ndim == 1
@@ -59,7 +89,7 @@ def build_molecule(
     current_atom_idx = 0
     mol = Chem.RWMol()
     for node_idx, atom in enumerate(node_labels):
-        a = Chem.Atom(atom_decoder[atom.item()])
+        a = Chem.Atom(ATOM_TYPES[atom.item()])
         mol.AddAtom(a)
         node_idx_to_atom_idx[node_idx] = current_atom_idx
         if charges is not None:
@@ -81,7 +111,7 @@ def build_molecule(
                     Chem.rdchem.BondType.SINGLE,
                 )
                 current_atom_idx += 1
-                
+
     if pos is not None:
         conf = Chem.Conformer(mol.GetNumAtoms())
         for node_idx, atom_pos in enumerate(pos):
@@ -97,11 +127,16 @@ def build_molecule(
             mol.AddBond(
                 node_idx_to_atom_idx[a],
                 node_idx_to_atom_idx[b],
-                BOND_DICT[bond_type.item()],
+                BOND_TYPES[bond_type.item()],
             )
 
     if pos is not None:
         Chem.rdmolops.AssignStereochemistryFrom3D(mol)
+
+    if stereo is not None:
+        for node_idx, stereo_tag in enumerate(stereo):
+            chiral_tag = Chem.rdchem.ChiralType.values[stereo_tag.item()]
+            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetChiralTag(chiral_tag)
 
     return mol
 
@@ -240,12 +275,28 @@ def molecule2graph(
     node_labels = torch.tensor([atom.GetAtomicNum() for atom in mol.GetAtoms()])
 
     # Get charges and radical electrons if requested
-    charge_tensor = torch.tensor([atom.GetFormalCharge() for atom in mol.GetAtoms()]) if charges else torch.zeros_like(node_labels)
-    radical_tensor = torch.tensor([atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()]) if num_radical_electrons else torch.zeros_like(node_labels)
+    charge_tensor = (
+        torch.tensor([atom.GetFormalCharge() for atom in mol.GetAtoms()])
+        if charges
+        else torch.zeros_like(node_labels)
+    )
+    radical_tensor = (
+        torch.tensor([atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()])
+        if num_radical_electrons
+        else torch.zeros_like(node_labels)
+    )
 
     # Get explicit and implicit hydrogens
-    explicit_hydrogens = torch.tensor([atom.GetNumExplicitHs() for atom in mol.GetAtoms()])
-    implicit_hydrogens = torch.tensor([atom.GetNumImplicitHs() for atom in mol.GetAtoms()])
+    explicit_hydrogens = torch.tensor(
+        [atom.GetNumExplicitHs() for atom in mol.GetAtoms()]
+    )
+    implicit_hydrogens = torch.tensor(
+        [atom.GetNumImplicitHs() for atom in mol.GetAtoms()]
+    )
+
+    # Get stereochemistry information
+    Chem.rdmolops.AssignStereochemistryFrom3D(mol)
+    stereo_tensor = torch.tensor([atom.GetChiralTag().real for atom in mol.GetAtoms()])
 
     # Build edge information
     bonds = list(mol.GetBonds())
@@ -256,7 +307,7 @@ def molecule2graph(
         ).t()
 
         edge_attrs = torch.tensor(
-            [BOND_DICT.index(bond.GetBondType()) for bond in bonds] * 2
+            [BOND_TYPES.index(bond.GetBondType()) for bond in bonds] * 2
         )
     else:  # Handle molecules with no bonds (e.g., single atoms)
         edge_index = torch.empty((2, 0), dtype=torch.long)
@@ -270,4 +321,5 @@ def molecule2graph(
         implicit_hydrogens=implicit_hydrogens,
         charges=charge_tensor,
         radical_electrons=radical_tensor,
+        stereo=stereo_tensor,
     )

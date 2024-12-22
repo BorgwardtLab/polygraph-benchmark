@@ -10,26 +10,30 @@ import os
 from typing import Callable, List, Optional
 
 import networkx as nx
-import numpy as np
 import pandas as pd
 import torch
 from loguru import logger
 from rdkit import Chem, RDLogger
-from rdkit.Chem.rdchem import BondType as BT
-from torch_geometric.data import Batch, Data, download_url, extract_zip
+from torch_geometric.data import Batch, download_url, extract_zip
+from torch_geometric.utils import from_networkx
 from tqdm import tqdm
 
-from graph_gen_gym.datasets.base.molecules import molecule2graph
-from graph_gen_gym.datasets.base.dataset import OnlineGraphDataset
-from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.caching import (
     identifier_to_path,
     to_list,
 )
+from graph_gen_gym.datasets.base.dataset import OnlineGraphDataset
+from graph_gen_gym.datasets.base.graph import Graph
+from graph_gen_gym.datasets.base.molecules import (
+    EDGE_ATTRS,
+    NODE_ATTRS,
+    graph2molecule,
+    molecule2graph,
+)
 
+# Those constants are used for the guidance attributes
 HAR2EV = 27.211386246
 KCALMOL2EV = 0.04336414
-
 conversion = torch.tensor(
     [
         1.0,
@@ -75,8 +79,6 @@ GUIDANCE_ATTRS = [
     "b",
     "c",
 ]
-ATOM_TYPES = {"H": 0, "C": 1, "N": 2, "O": 3, "F": 4}
-BOND_TYPES = {BT.SINGLE: 0, BT.DOUBLE: 1, BT.TRIPLE: 2, BT.AROMATIC: 3}
 
 
 class QM9(OnlineGraphDataset):
@@ -87,7 +89,7 @@ class QM9(OnlineGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/O6pyw8wo5SZ0zg0",
+        "train": "https://datashare.biochem.mpg.de/s/cnRpafWxInKGUWB",
         "val": "https://datashare.biochem.mpg.de/s/FO1jlHTDqQwvG9o",
         "test": "https://datashare.biochem.mpg.de/s/O6pyw8wo5SZ0zg0",
     }
@@ -100,7 +102,7 @@ class QM9(OnlineGraphDataset):
 
     def __init__(
         self,
-        split: str = "train",
+        split: Optional[str] = None,
         use_precomputed: bool = True,
         data_store: Optional[Graph] = None,
         pre_filter: Optional[Callable] = None,
@@ -167,10 +169,10 @@ class QM9(OnlineGraphDataset):
         n_test = int(0.1 * n_samples)
         n_val = n_samples - (n_train + n_test)
 
-        # Shuffle dataset with df.sample, then split
-        train, val, test = np.split(
-            dataset.sample(frac=1, random_state=42), [n_train, n_val + n_train]
-        )
+        shuffled = dataset.sample(frac=1, random_state=42)
+        train = shuffled.iloc[:n_train]
+        val = shuffled.iloc[n_train : n_train + n_val]
+        test = shuffled.iloc[n_train + n_val :]
 
         train.to_csv(os.path.join(self.raw_dir, "train.csv"))
         val.to_csv(os.path.join(self.raw_dir, "val.csv"))
@@ -183,7 +185,6 @@ class QM9(OnlineGraphDataset):
             os.path.join(self.raw_dir, f"{split_name}.csv"), index_col=0
         )
         target_df.drop(columns=["mol_id"], inplace=True)
-
         with open(self.raw_paths[1]) as f:
             target = [
                 [float(x) for x in line.split(",")[1:20]]
@@ -199,39 +200,25 @@ class QM9(OnlineGraphDataset):
         suppl = Chem.SDMolSupplier(self.raw_paths[0], removeHs=False, sanitize=False)
 
         data_list = []
-        for i, mol in enumerate(tqdm(suppl)):
-            if i in skip:
+        for i, mol in enumerate(tqdm(suppl, desc="Processing QM9 molecules")):
+            if i in skip or i not in target_df.index:
                 continue
             data = molecule2graph(mol)
-            # QM9-specific labels
+            # Add node-level attributes
+            for attr in GUIDANCE_ATTRS:
+                setattr(data, attr, y[i, GUIDANCE_ATTRS.index(attr)])
+            # Add num_nodes explicitly
+            data.num_nodes = data.atom_labels.size(0)
             data_list.append(data)
 
         pyg_batch = Batch.from_data_list(data_list)
 
-        # pyg_batch.smiles = [data.smiles for data in data_list]
-        # pyg_batch.names = [data.name for data in data_list]
-        # graph_attrs = ["smiles", "name"]
-
-        for guidance_name in GUIDANCE_ATTRS:
-            setattr(
-                pyg_batch,
-                guidance_name,
-                y[:, GUIDANCE_ATTRS.index(guidance_name)],
-            )
-
         graph_storage = Graph.from_pyg_batch(
             pyg_batch,
-            node_attrs=[
-                "atom_labels",
-                "explicit_hydrogens",
-                "implicit_hydrogens",
-                "charges",
-                "radical_electrons",
-            ]
-            + GUIDANCE_ATTRS,
-            edge_attrs=["bond_labels"],
+            node_attrs=NODE_ATTRS,
+            edge_attrs=EDGE_ATTRS,
             # TODO: graph attrs cannot be added bc they are strings
-            # graph_attrs=graph_attrs,
+            graph_attrs=GUIDANCE_ATTRS,
         )
         torch.save(
             graph_storage.model_dump(),
@@ -241,56 +228,15 @@ class QM9(OnlineGraphDataset):
     @staticmethod
     def is_valid(data: nx.Graph) -> bool:
         """Convert PyG graph back to RDKit molecule and validate it."""
-        mol = Chem.RWMol()
-        # Add atoms
-        for atom_label in data.atom_labels:
-            atom = Chem.Atom(int(atom_label.item()))
-            mol.AddAtom(atom)
-        logger.info(f"Added atoms to mol: {mol}")
-
-        # Add bonds
-        edge_index = data.edge_index
-        bond_labels = data.bond_labels
-        for i in range(edge_index.shape[1]):
-            src, dst = edge_index[:, i]
-            bond_type = bond_labels[i].item()
-            # Only add bond if source index is less than destination
-            # to avoid adding same bond twice
-            if src < dst:
-                try:
-                    mol.AddBond(int(src), int(dst), list(BOND_TYPES.keys())[bond_type])
-                except Exception as e:
-                    logger.error(f"Error adding bond: {e}")
-                    return False
-        logger.info(f"Added bonds to mol: {mol}")
-
-        # Set atom properties
-        for i, (exp_h, imp_h, charge, radical) in enumerate(zip(
-            data.explicit_hydrogens,
-            data.implicit_hydrogens,
-            data.charges,
-            data.radical_electrons
-        )):
-            try:
-                atom = mol.GetAtomWithIdx(i)
-                atom.SetNumExplicitHs(int(exp_h.item()))
-                atom.SetFormalCharge(int(charge.item()))
-                atom.SetNumRadicalElectrons(int(radical.item()))
-            except Exception as e:
-                # Plot networkx graph
-                import networkx as nx
-                import matplotlib.pyplot as plt
-                G = nx.from_pyg_batch(data)
-                nx.draw(G, with_labels=True)
-                plt.savefig("invalid_mol.png")
-                logger.error(f"Error setting atom properties: {e}")
-                return False
-        logger.info(f"Set atom properties: {mol}")
-
-        try:
-            Chem.SanitizeMol(mol)
-            logger.success(f"Sanitized mol: {mol}")
-            return True
-        except Exception as e:
-            logger.error(f"Invalid molecule: {e}")
-            return False
+        graph = from_networkx(data)
+        # Convert nx Graph to PyG Batch
+        mol = graph2molecule(
+            node_labels=graph.atom_labels,
+            edge_index=graph.edge_index,
+            edge_labels=graph.bond_labels,
+            explicit_hydrogens=graph.explicit_hydrogens,
+            charges=graph.charges,
+            num_radical_electrons=graph.radical_electrons,
+            stereo=graph.stereo,
+        )
+        return mol is not None
