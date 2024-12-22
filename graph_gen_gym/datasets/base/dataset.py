@@ -105,12 +105,12 @@ class OnlineGraphDataset(GraphDataset):
         pre_filter: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
     ):
-        if data_store is None:
+        if data_store is None and split is not None:
             try:
                 data_store = load_from_cache(self.identifier, split, mmap=memmap)
             except FileNotFoundError:
                 download_to_cache(self.url_for_split(split), self.identifier, split)
-            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+                data_store = load_from_cache(self.identifier, split, mmap=memmap)
         super().__init__(data_store, pre_filter=pre_filter, pre_transform=pre_transform)
 
     @abstractmethod
