@@ -43,7 +43,13 @@ class NetworkXView:
 
     def __getitem__(self, idx: int) -> nx.Graph:
         pyg_graph = self._base_dataset[idx]
-        return to_networkx(pyg_graph, to_undirected=True)
+        return to_networkx(
+            pyg_graph,
+            node_attrs=list(self._base_dataset._data_store.node_attr.keys()),
+            edge_attrs=list(self._base_dataset._data_store.edge_attr.keys()),
+            graph_attrs=list(self._base_dataset._data_store.graph_attr.keys()),
+            to_undirected=True,
+        )
 
 
 class GraphDataset(AbstractDataset):
