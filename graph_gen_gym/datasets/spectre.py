@@ -1,10 +1,10 @@
-
 import networkx as nx
 import numpy as np
 from loguru import logger
 from scipy import stats
 
-from graph_gen_gym.datasets.base import OnlineGraphDataset, Graph
+from graph_gen_gym.datasets.base import OnlineGraphDataset
+
 
 class PlanarGraphDataset(OnlineGraphDataset):
     _URL_FOR_SPLIT = {
@@ -16,8 +16,10 @@ class PlanarGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    def is_valid(self, graph: nx.Graph) -> bool:
+    @staticmethod
+    def is_valid(graph: nx.Graph) -> bool:
         return nx.is_connected(graph) and nx.is_planar(graph)
+
 
 class SBMGraphDataset(OnlineGraphDataset):
     _URL_FOR_SPLIT = {
@@ -29,7 +31,8 @@ class SBMGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    def is_valid(self, graph: nx.Graph) -> bool:
+    @staticmethod
+    def is_valid(graph: nx.Graph) -> bool:
         import graph_tool.all as gt
         from scipy.stats import chi2
 
@@ -79,7 +82,8 @@ class SBMGraphDataset(OnlineGraphDataset):
         p = p.mean()
         return p > 0.9
 
-    def is_valid_alt(self, graph: nx.Graph) -> bool:
+    @staticmethod
+    def is_valid_alt(graph: nx.Graph) -> bool:
         partition_methods = [
             lambda g: {
                 node: cluster

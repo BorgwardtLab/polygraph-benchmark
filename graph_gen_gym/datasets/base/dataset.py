@@ -22,7 +22,9 @@ class AbstractDataset(ABC):
     def to_nx(self) -> "NetworkXView":
         return NetworkXView(self)
 
-    def is_valid(self, graph: nx.Graph) -> bool:
+    @staticmethod
+    @abstractmethod
+    def is_valid(graph: nx.Graph) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -30,6 +32,7 @@ class AbstractDataset(ABC):
 
     @abstractmethod
     def __len__(self) -> int: ...
+
 
 class NetworkXView:
     def __init__(self, base_dataset: AbstractDataset):

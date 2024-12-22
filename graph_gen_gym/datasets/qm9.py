@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 from typing import Callable, List, Optional
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 import torch
@@ -237,7 +238,8 @@ class QM9(OnlineGraphDataset):
             os.path.join(self.raw_dir, f"{split_name}.pt"),
         )
 
-    def is_valid(self, data: Data) -> bool:
+    @staticmethod
+    def is_valid(data: nx.Graph) -> bool:
         """Convert PyG graph back to RDKit molecule and validate it."""
         mol = Chem.RWMol()
         # Add atoms

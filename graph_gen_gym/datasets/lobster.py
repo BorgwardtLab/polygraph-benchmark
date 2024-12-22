@@ -15,7 +15,8 @@ class LobsterGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    def is_valid(self, graph: nx.Graph) -> bool:
+    @staticmethod
+    def is_valid(graph: nx.Graph) -> bool:
         """Based on https://github.com/lrjconan/GRAN/blob/fc9c04a3f002c55acf892f864c03c6040947bc6b/utils/eval_helper.py#L426C3-L446C17"""
         graph = deepcopy(graph)
         if nx.is_tree(graph):
