@@ -3,6 +3,7 @@
 
 Implementation of Graphs base classes.
 """
+
 import os
 from typing import Any, Dict, List, Optional, Union
 
