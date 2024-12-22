@@ -4,15 +4,16 @@ Implementation of datasets.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Union, Optional, Callable
+from typing import Callable, List, Optional, Union
 
 import networkx as nx
-from torch_geometric.data import Data, Batch
+import numpy as np
+from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
-from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache
-import numpy as np
+from graph_gen_gym.datasets.base.graph import Graph
+
 
 class AbstractDataset(ABC):
     @property
@@ -72,28 +73,10 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
-    def sample(self, n_samples: int, replace: bool = False) -> "GraphDataset":
-        """Sample n_samples from the dataset, preserving the original class type.
-
-        Args:
-            n_samples: Number of samples to draw
-            replace: Whether to sample with replacement
-
-        Returns:
-            A new dataset of the same class containing the sampled graphs
-        """
+    def sample(self, n_samples: int, replace: bool = False) -> list[Graph]:
         idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
         data_list = self[idx_to_sample]
-        pyg_batch = Batch.from_data_list(data_list)
-
-        # Create a new dataset of the same class with the sampled data
-        sampled_dataset = type(self)(
-            data_store=Graph.from_pyg_batch(pyg_batch),
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform
-        )
-
-        return sampled_dataset
+        return data_list
 
 
 class OnlineGraphDataset(GraphDataset):
