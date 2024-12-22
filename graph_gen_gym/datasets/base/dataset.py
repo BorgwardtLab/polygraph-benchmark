@@ -7,13 +7,12 @@ from abc import ABC, abstractmethod
 from typing import List, Union, Optional, Callable
 
 import networkx as nx
-from torch_geometric.data import Data
+from torch_geometric.data import Data, Batch
 from torch_geometric.utils import to_networkx
 
 from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache
 import numpy as np
-from torch_geometric.data import Batch
 
 class AbstractDataset(ABC):
     @property
@@ -31,7 +30,6 @@ class AbstractDataset(ABC):
 
     @abstractmethod
     def __len__(self) -> int: ...
-
 
 class NetworkXView:
     def __init__(self, base_dataset: AbstractDataset):

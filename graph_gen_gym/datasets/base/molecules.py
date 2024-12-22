@@ -50,6 +50,7 @@ def build_molecule(
     explicit_hydrogens: torch.Tensor | None = None,
     charges: torch.Tensor | None = None,
     num_radical_electrons: torch.Tensor | None = None,
+    pos=None
 ) -> Chem.RWMol:
     assert edge_index.shape[1] == len(edge_labels)
     assert edge_labels.ndim == 1
@@ -80,6 +81,12 @@ def build_molecule(
                     Chem.rdchem.BondType.SINGLE,
                 )
                 current_atom_idx += 1
+                
+    if pos is not None:
+        conf = Chem.Conformer(mol.GetNumAtoms())
+        for node_idx, atom_pos in enumerate(pos):
+            conf.SetAtomPosition(node_idx_to_atom_idx[node_idx], atom_pos.tolist())
+        mol.AddConformer(conf)
 
     added_bonds = set()
     for bond, bond_type in zip(edge_index.T, edge_labels):
@@ -92,6 +99,10 @@ def build_molecule(
                 node_idx_to_atom_idx[b],
                 BOND_DICT[bond_type.item()],
             )
+
+    if pos is not None:
+        Chem.rdmolops.AssignStereochemistryFrom3D(mol)
+
     return mol
 
 

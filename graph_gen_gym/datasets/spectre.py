@@ -4,8 +4,7 @@ import numpy as np
 from loguru import logger
 from scipy import stats
 
-from graph_gen_gym.datasets.base import OnlineGraphDataset
-
+from graph_gen_gym.datasets.base import OnlineGraphDataset, Graph
 
 class PlanarGraphDataset(OnlineGraphDataset):
     _URL_FOR_SPLIT = {
