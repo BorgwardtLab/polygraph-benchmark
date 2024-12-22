@@ -59,7 +59,7 @@ def test_loading(ds_cls):
 @pytest.mark.parametrize("ds_cls", VALIDATABLE_DATASETS)
 def test_graph_properties_slow(ds_cls):
     for split in ["train", "val", "test"]:
-        ds = ds_cls(split, use_precomputed=False)
+        ds = ds_cls(split)
         assert hasattr(ds, "is_valid")
         assert all(g.number_of_nodes() > 0 for g in ds.to_nx())
         assert all(g.number_of_edges() > 0 for g in ds.to_nx())
