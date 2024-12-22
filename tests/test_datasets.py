@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import torch
 from torch_geometric.data import Data
-
+from tqdm.rich import tqdm
 
 from graph_gen_gym.datasets import (
     QM9,
@@ -27,7 +27,10 @@ ALL_DATASETS = [
     QM9,
 ]
 
-USE_PRECOMPUTED_DATASETS = [QM9]
+VALIDATABLE_DATASETS = [PlanarGraphDataset, LobsterGraphDataset, QM9]
+
+REPROCESSABLE_DATASETS = [QM9]
+
 
 @pytest.mark.parametrize(
     "ds_cls",
@@ -51,26 +54,31 @@ def test_loading(ds_cls):
             isinstance(g, nx.Graph) for g in nx_graphs
         ), "to_nx should return NetworkX graphs"
 
+
 @pytest.mark.skip
-@pytest.mark.parametrize("ds_cls", [PlanarGraphDataset, LobsterGraphDataset, QM9])
+@pytest.mark.parametrize("ds_cls", VALIDATABLE_DATASETS)
 def test_graph_properties_slow(ds_cls):
     for split in ["train", "val", "test"]:
-        ds = ds_cls(split)
+        ds = ds_cls(split, use_precomputed=False)
         assert hasattr(ds, "is_valid")
         assert all(g.number_of_nodes() > 0 for g in ds.to_nx())
         assert all(g.number_of_edges() > 0 for g in ds.to_nx())
-        assert all(ds.is_valid(g) for g in ds.to_nx())
+        assert all(
+            ds.is_valid(g)
+            for g in tqdm(ds.to_nx(), desc=f"Validating {ds_cls.__name__} {split}")
+        )
 
-# @pytest.mark.parametrize("ds_cls", [PlanarGraphDataset, LobsterGraphDataset, QM9])
-@pytest.mark.parametrize("ds_cls", [QM9])
+
+@pytest.mark.parametrize("ds_cls", VALIDATABLE_DATASETS)
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
+        assert hasattr(ds_cls, "is_valid")
         sampled_graphs = ds.sample(sample_size)
-        assert hasattr(sampled_graphs, "is_valid")
-        assert all(g.number_of_nodes() > 0 for g in sampled_graphs.to_nx())
-        assert all(g.number_of_edges() > 0 for g in sampled_graphs.to_nx())
-        assert all(sampled_graphs.is_valid(g) for g in sampled_graphs)
+        valid = []
+        for g in tqdm(sampled_graphs, desc=f"Validating {ds_cls.__name__}"):
+            valid.append(ds_cls.is_valid(g))
+        assert all(valid)
 
 
 @pytest.mark.skip
@@ -134,8 +142,9 @@ def test_split_disjointness(ds_cls):
         assert result["novel"].mle == 1
         prev_splits.extend(graphs)
 
+
 @pytest.mark.skip
-@pytest.mark.parametrize("ds_cls", USE_PRECOMPUTED_DATASETS)
+@pytest.mark.parametrize("ds_cls", REPROCESSABLE_DATASETS)
 def test_precomputed_false(ds_cls):
     # TODO: add attribute dimension checks
     for split in ["train", "val", "test"]:
