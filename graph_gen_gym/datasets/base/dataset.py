@@ -5,7 +5,7 @@ Implementation of datasets.
 
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -57,13 +57,9 @@ class GraphDataset(AbstractDataset):
     def __init__(
         self,
         data_store: Graph,
-        pre_filter: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
     ):
         super().__init__()
         self._data_store = data_store
-        self.pre_filter = pre_filter
-        self.pre_transform = pre_transform
 
     def __getitem__(self, idx: Union[int, List[int]]) -> Union[Graph, List[Graph]]:
         if isinstance(idx, int):
@@ -94,8 +90,6 @@ class OnlineGraphDataset(GraphDataset):
         split: str,
         memmap: bool = False,
         data_store: Optional[Graph] = None,
-        pre_filter: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
     ):
         if data_store is None and split is not None:
             try:
@@ -103,7 +97,7 @@ class OnlineGraphDataset(GraphDataset):
             except FileNotFoundError:
                 download_to_cache(self.url_for_split(split), self.identifier, split)
                 data_store = load_from_cache(self.identifier, split, mmap=memmap)
-        super().__init__(data_store, pre_filter=pre_filter, pre_transform=pre_transform)
+        super().__init__(data_store)
 
     @abstractmethod
     def url_for_split(self, split: str): ...

@@ -105,18 +105,12 @@ class QM9(OnlineGraphDataset):
         split: Optional[str] = None,
         use_precomputed: bool = True,
         data_store: Optional[Graph] = None,
-        pre_filter: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
     ):
         if not use_precomputed:
             self.download_raw_data()
             self.split_raw_data()
-            self.process_split(
-                split, pre_filter=pre_filter, pre_transform=pre_transform
-            )
-        super().__init__(
-            split, data_store, pre_filter=pre_filter, pre_transform=pre_transform
-        )
+            self.process_split(split)
+        super().__init__(data_store)
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
@@ -178,7 +172,7 @@ class QM9(OnlineGraphDataset):
         val.to_csv(os.path.join(self.raw_dir, "val.csv"))
         test.to_csv(os.path.join(self.raw_dir, "test.csv"))
 
-    def process_split(self, split_name, pre_filter, pre_transform):
+    def process_split(self, split_name):
         RDLogger.DisableLog("rdApp.*")
 
         target_df = pd.read_csv(
