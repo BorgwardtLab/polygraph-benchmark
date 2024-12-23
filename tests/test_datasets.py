@@ -18,16 +18,14 @@ from graph_gen_gym.datasets.base import AbstractDataset
 from graph_gen_gym.metrics.base import VUN
 
 ALL_DATASETS = [
-    PlanarGraphDataset,
-    SBMGraphDataset,
-    LobsterGraphDataset,
+    QM9,
     SmallEgoGraphDataset,
     EgoGraphDataset,
+    SBMGraphDataset,
+    PlanarGraphDataset,
+    LobsterGraphDataset,
     DobsonDoigGraphDataset,
-    QM9,
 ]
-
-VALIDATABLE_DATASETS = [PlanarGraphDataset, LobsterGraphDataset, QM9]
 
 REPROCESSABLE_DATASETS = [QM9]
 
@@ -40,9 +38,9 @@ def test_loading(ds_cls):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
         assert isinstance(ds, AbstractDataset), "Should inherit from AbstraactDataset"
-        assert len(ds) > 0
+        assert len(ds) > 0, "Dataset should have at least one item"
         pyg_graphs = list(ds)
-        assert len(pyg_graphs) == len(ds)
+        assert len(pyg_graphs) == len(ds), "Dataset should return same number of items"
         assert all(
             isinstance(item, Data) for item in pyg_graphs
         ), "Dataset should return PyG graphs"
@@ -56,7 +54,7 @@ def test_loading(ds_cls):
 
 
 @pytest.mark.skip
-@pytest.mark.parametrize("ds_cls", VALIDATABLE_DATASETS)
+@pytest.mark.parametrize("ds_cls", ALL_DATASETS)
 def test_graph_properties_slow(ds_cls):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
@@ -69,7 +67,8 @@ def test_graph_properties_slow(ds_cls):
         )
 
 
-@pytest.mark.parametrize("ds_cls", VALIDATABLE_DATASETS)
+@pytest.mark.parametrize("ds_cls", ALL_DATASETS)
+# @pytest.mark.parametrize("ds_cls", [PlanarGraphDataset])
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
@@ -78,7 +77,12 @@ def test_graph_properties_fast(ds_cls, sample_size):
         valid = []
         for g in tqdm(sampled_graphs, desc=f"Validating {ds_cls.__name__}"):
             valid.append(ds_cls.is_valid(g))
-        assert all(valid)
+        if ds_cls.__name__ == "SBMGraphDataset":
+            # Check that most graphs are valid, since the validity check is not
+            # perfect
+            assert np.sum(valid) / len(valid) >= 0.5
+        else:
+            assert all(valid)
 
 
 @pytest.mark.skip
