@@ -48,6 +48,9 @@ EDGE_ATTRS = ["bond_labels"]
 
 
 def are_smiles_equivalent(smiles1, smiles2):
+    if smiles1 == smiles2:
+        return True
+
     # Convert SMILES to mol objects
     mol1 = Chem.MolFromSmiles(smiles1)
     mol2 = Chem.MolFromSmiles(smiles2)
@@ -79,8 +82,8 @@ def graph2molecule(
     explicit_hydrogens: torch.Tensor | None = None,
     charges: torch.Tensor | None = None,
     num_radical_electrons: torch.Tensor | None = None,
-    pos=None,
-    stereo=None,
+    pos: torch.Tensor | None = None,
+    stereo: torch.Tensor | None = None,
 ) -> Chem.RWMol:
     assert edge_index.shape[1] == len(edge_labels)
     assert edge_labels.ndim == 1
@@ -298,9 +301,16 @@ def molecule2graph(
     Chem.rdmolops.AssignStereochemistryFrom3D(mol)
     stereo_tensor = torch.tensor([atom.GetChiralTag().real for atom in mol.GetAtoms()])
 
+    pos = None
+    if mol.GetNumConformers() > 0:
+        conformer = mol.GetConformer()
+        pos = torch.tensor(
+            [conformer.GetAtomPosition(i) for i in range(mol.GetNumAtoms())]
+        )
+
     # Build edge information
     bonds = list(mol.GetBonds())
-    if bonds:  # Check if there are any bonds
+    if bonds:
         edge_index = torch.tensor(
             [(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()) for bond in bonds]
             + [(bond.GetEndAtomIdx(), bond.GetBeginAtomIdx()) for bond in bonds]
@@ -322,4 +332,5 @@ def molecule2graph(
         charges=charge_tensor,
         radical_electrons=radical_tensor,
         stereo=stereo_tensor,
+        pos=pos,
     )
