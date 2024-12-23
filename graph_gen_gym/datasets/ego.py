@@ -1,3 +1,5 @@
+import networkx as nx
+
 from graph_gen_gym.datasets.base import OnlineGraphDataset
 
 
@@ -11,6 +13,10 @@ class EgoGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
+    @staticmethod
+    def is_valid(graph: nx.Graph):
+        return graph.number_of_nodes() > 0 and graph.number_of_edges() > 0
+
 
 class SmallEgoGraphDataset(OnlineGraphDataset):
     _URL_FOR_SPLIT = {
@@ -21,3 +27,7 @@ class SmallEgoGraphDataset(OnlineGraphDataset):
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
+
+    @staticmethod
+    def is_valid(graph: nx.Graph):
+        return graph.number_of_nodes() > 0 and graph.number_of_edges() > 0
