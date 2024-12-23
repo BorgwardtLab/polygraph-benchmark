@@ -68,7 +68,6 @@ def test_graph_properties_slow(ds_cls):
 
 
 @pytest.mark.parametrize("ds_cls", ALL_DATASETS)
-# @pytest.mark.parametrize("ds_cls", [PlanarGraphDataset])
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
