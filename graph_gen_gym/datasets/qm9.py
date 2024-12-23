@@ -27,6 +27,7 @@ from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.molecules import (
     EDGE_ATTRS,
     NODE_ATTRS,
+    are_smiles_equivalent,
     graph2molecule,
     molecule2graph,
 )
@@ -203,6 +204,23 @@ class QM9(OnlineGraphDataset):
                 setattr(data, attr, y[i, GUIDANCE_ATTRS.index(attr)])
             # Add num_nodes explicitly
             data.num_nodes = data.atom_labels.size(0)
+            smiles_mol = Chem.MolToSmiles(mol)
+            smiles_graph = Chem.MolToSmiles(
+                graph2molecule(
+                    node_labels=data.atom_labels,
+                    edge_index=data.edge_index,
+                    edge_labels=data.bond_labels,
+                    explicit_hydrogens=data.explicit_hydrogens,
+                    charges=data.charges,
+                    num_radical_electrons=data.radical_electrons,
+                    stereo=data.stereo,
+                    pos=data.pos,
+                )
+            )
+            assert are_smiles_equivalent(
+                smiles_mol,
+                smiles_graph,
+            ), f"Molecule {i} is not equivalent to its graph representation, mol: {smiles_mol}, from graph: {smiles_graph}"
             data_list.append(data)
 
         pyg_batch = Batch.from_data_list(data_list)
@@ -214,6 +232,7 @@ class QM9(OnlineGraphDataset):
             # TODO: graph attrs cannot be added bc they are strings
             graph_attrs=GUIDANCE_ATTRS,
         )
+
         torch.save(
             graph_storage.model_dump(),
             os.path.join(self.raw_dir, f"{split_name}.pt"),
