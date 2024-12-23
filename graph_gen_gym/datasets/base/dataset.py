@@ -4,6 +4,7 @@ Implementation of datasets.
 """
 
 from abc import ABC, abstractmethod
+from functools import partial
 from typing import Callable, List, Optional, Union
 
 import networkx as nx
@@ -25,8 +26,7 @@ class AbstractDataset(ABC):
 
     @staticmethod
     @abstractmethod
-    def is_valid(graph: nx.Graph) -> bool:
-        raise NotImplementedError
+    def is_valid(graph: nx.Graph) -> bool: ...
 
     @abstractmethod
     def __getitem__(self, idx: int) -> Data: ...
@@ -73,10 +73,19 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
-    def sample(self, n_samples: int, replace: bool = False) -> list[Graph]:
+    def sample(self, n_samples: int, replace: bool = False) -> list[nx.Graph]:
         idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
         data_list = self[idx_to_sample]
-        return data_list
+        to_nx = partial(
+            to_networkx,
+            node_attrs=list(self._data_store.node_attr.keys()),
+            edge_attrs=list(self._data_store.edge_attr.keys()),
+            graph_attrs=list(self._data_store.graph_attr.keys()),
+            to_undirected=True,
+        )
+        if isinstance(data_list, list):
+            return [to_nx(g) for g in data_list]
+        return to_nx(data_list)
 
 
 class OnlineGraphDataset(GraphDataset):
