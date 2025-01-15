@@ -16,7 +16,7 @@ from loguru import logger
 from rdkit import Chem, RDLogger
 from torch_geometric.data import Batch, download_url, extract_zip
 from torch_geometric.utils import from_networkx
-from tqdm import tqdm
+from tqdm.rich import tqdm
 
 from graph_gen_gym.datasets.base.caching import (
     identifier_to_path,
@@ -27,6 +27,7 @@ from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.molecules import (
     EDGE_ATTRS,
     NODE_ATTRS,
+    add_hydrogens_and_stereochemistry,
     are_smiles_equivalent,
     graph2molecule,
     molecule2graph,
@@ -81,12 +82,17 @@ GUIDANCE_ATTRS = [
     "c",
 ]
 
+# These are a collection of molecules that have unclear stereochemistry,
+# as such we discard them.
+UNCLEAR_STEREO_SPECS = [38359, 75031]
+
 
 class QM9(OnlineGraphDataset):
     """QM9 dataset.
     The backbone of this implementation is taking from the PyG implementation of
     the QM9 dataset and the implementation from the DiGress paper
-    https://github.com/cvignac/DiGress.
+    https://github.com/cvignac/DiGress. We have removed molecules with unclear
+    stereochemistry.
     """
 
     _URL_FOR_SPLIT = {
@@ -110,8 +116,9 @@ class QM9(OnlineGraphDataset):
         if not use_precomputed:
             self.download_raw_data()
             self.split_raw_data()
-            self.process_split(split)
-        super().__init__(data_store)
+            data_store = self.process_split(split)
+
+        super().__init__(split=split, data_store=data_store)
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
@@ -174,6 +181,7 @@ class QM9(OnlineGraphDataset):
         test.to_csv(os.path.join(self.raw_dir, "test.csv"))
 
     def process_split(self, split_name):
+        # Distinguish between molecules that fail sanitization from input file, sanitization after reconstruction, and assert failure despite passing sanitization.
         RDLogger.DisableLog("rdApp.*")
 
         target_df = pd.read_csv(
@@ -192,39 +200,55 @@ class QM9(OnlineGraphDataset):
         with open(self.raw_paths[2], "r") as f:
             skip = [int(x.split()[0]) - 1 for x in f.read().split("\n")[9:-2]]
 
-        suppl = Chem.SDMolSupplier(self.raw_paths[0], removeHs=False, sanitize=False)
+        skip = skip + UNCLEAR_STEREO_SPECS
+
+        suppl = Chem.SDMolSupplier(
+            self.raw_paths[0],
+            removeHs=False,
+            sanitize=True,
+        )
 
         data_list = []
         for i, mol in enumerate(tqdm(suppl, desc="Processing QM9 molecules")):
-            if i in skip or i not in target_df.index:
+            if i in skip or i not in target_df.index or mol is None:
                 continue
+
+            if len(Chem.GetMolFrags(mol)) > 1:
+                logger.warning(f"Fragmented molecule {i}")
+                continue
+
+            mol = add_hydrogens_and_stereochemistry(mol)
+            smiles_mol = Chem.MolToSmiles(mol, canonical=True)
+
             data = molecule2graph(mol)
-            # Add node-level attributes
+            mol_reconstructed = graph2molecule(
+                node_labels=data.atom_labels,
+                edge_index=data.edge_index,
+                bond_types=data.bond_types,
+                stereo_types=data.stereo_types,
+                charges=data.charges,
+                num_radical_electrons=data.radical_electrons,
+                pos=data.pos,
+            )
+            smiles_graph = Chem.MolToSmiles(mol_reconstructed)
+            try:
+                assert are_smiles_equivalent(
+                    smiles_mol,
+                    smiles_graph,
+                ), f"Molecule {i} is not equivalent to its graph representation, mol: {smiles_mol}, from graph: {smiles_graph}"
+                data_list.append(data)
+            except AssertionError as e:
+                logger.error(f"Error checking if molecules are equivalent: {e}")
+
+            # Add graph-level attributes
             for attr in GUIDANCE_ATTRS:
                 setattr(data, attr, y[i, GUIDANCE_ATTRS.index(attr)])
+
             # Add num_nodes explicitly
             data.num_nodes = data.atom_labels.size(0)
-            smiles_mol = Chem.MolToSmiles(mol)
-            smiles_graph = Chem.MolToSmiles(
-                graph2molecule(
-                    node_labels=data.atom_labels,
-                    edge_index=data.edge_index,
-                    edge_labels=data.bond_labels,
-                    explicit_hydrogens=data.explicit_hydrogens,
-                    charges=data.charges,
-                    num_radical_electrons=data.radical_electrons,
-                    stereo=data.stereo,
-                    pos=data.pos,
-                )
-            )
-            assert are_smiles_equivalent(
-                smiles_mol,
-                smiles_graph,
-            ), f"Molecule {i} is not equivalent to its graph representation, mol: {smiles_mol}, from graph: {smiles_graph}"
-            data_list.append(data)
-
+        logger.info(f"Processed {len(data_list)} molecules")
         pyg_batch = Batch.from_data_list(data_list)
-
+        logger.info(f"Created PyG batch with {pyg_batch.num_graphs} graphs")
         graph_storage = Graph.from_pyg_batch(
             pyg_batch,
             node_attrs=NODE_ATTRS,
@@ -232,11 +256,15 @@ class QM9(OnlineGraphDataset):
             # TODO: graph attrs cannot be added bc they are strings
             graph_attrs=GUIDANCE_ATTRS,
         )
-
+        logger.info(f"Created Graph storage with {graph_storage.num_graphs} graphs")
         torch.save(
             graph_storage.model_dump(),
             os.path.join(self.raw_dir, f"{split_name}.pt"),
         )
+        logger.info(
+            f"Saved Graph storage to {os.path.join(self.raw_dir, f'{split_name}.pt')}"
+        )
+        return graph_storage
 
     @staticmethod
     def is_valid(data: nx.Graph) -> bool:
@@ -246,10 +274,10 @@ class QM9(OnlineGraphDataset):
         mol = graph2molecule(
             node_labels=graph.atom_labels,
             edge_index=graph.edge_index,
-            edge_labels=graph.bond_labels,
-            explicit_hydrogens=graph.explicit_hydrogens,
+            bond_types=graph.bond_types,
+            stereo_types=graph.stereo_types,
             charges=graph.charges,
             num_radical_electrons=graph.radical_electrons,
-            stereo=graph.stereo,
+            pos=graph.pos,
         )
         return mol is not None
