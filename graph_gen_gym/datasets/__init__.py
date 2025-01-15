@@ -6,14 +6,14 @@ from .spectre import PlanarGraphDataset, SBMGraphDataset
 from .proteins import DobsonDoigGraphDataset
 
 __all__ = [
-    'AbstractDataset',
-    'GraphDataset',
-    'OnlineGraphDataset',
-    'QM9',
-    'DobsonDoigGraphDataset',
-    'EgoGraphDataset',
-    'SmallEgoGraphDataset',
-    'LobsterGraphDataset',
-    'PlanarGraphDataset',
-    'SBMGraphDataset',
+    "AbstractDataset",
+    "GraphDataset",
+    "OnlineGraphDataset",
+    "QM9",
+    "DobsonDoigGraphDataset",
+    "EgoGraphDataset",
+    "SmallEgoGraphDataset",
+    "LobsterGraphDataset",
+    "PlanarGraphDataset",
+    "SBMGraphDataset",
 ]

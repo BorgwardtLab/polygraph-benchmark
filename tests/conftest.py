@@ -4,7 +4,8 @@
 The conftest.py file is used to define fixtures and other configurations for
 pytest at the start of the session.
 """
-import graph_tool.all as _   # noqa
+
+import graph_tool.all as _  # noqa
 
 import subprocess
 import urllib.request
@@ -92,9 +93,11 @@ def setup_logging(request):
     )
     return logger
 
+
 @pytest.fixture(scope="session", autouse=True)
 def sample_size(request):
     return request.config.getoption(SAMPLE_SIZE_OPTION)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def orca_executable(tmpdir_factory):

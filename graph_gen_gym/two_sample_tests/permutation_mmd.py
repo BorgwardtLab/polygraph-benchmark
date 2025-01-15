@@ -8,6 +8,7 @@ from graph_gen_gym.utils.mmd_utils import full_gram_from_blocks, mmd_from_gram
 
 __all__ = ["BootStrapMMDTest", "BootStrapMaxMMDTest"]
 
+
 class _BootStrapTestBase:
     def __init__(
         self,

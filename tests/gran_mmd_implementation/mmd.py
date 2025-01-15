@@ -1,4 +1,5 @@
 """Taken from https://github.com/lrjconan/GRAN/blob/fc9c04a3f002c55acf892f864c03c6040947bc6b/utils/dist_helper.py"""
+
 ###############################################################################
 #
 # Adapt from https://github.com/JiaxuanYou/graph-generation
@@ -13,6 +14,7 @@ from functools import partial
 
 import numpy as np
 from scipy.linalg import toeplitz
+
 
 def l2(x, y):
     dist = np.linalg.norm(x - y, 2)

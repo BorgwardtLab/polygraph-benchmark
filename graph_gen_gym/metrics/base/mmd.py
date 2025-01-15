@@ -9,7 +9,13 @@ from graph_gen_gym.utils.kernels import DescriptorKernel, GramBlocks
 from graph_gen_gym.utils.mmd_utils import mmd_from_gram
 
 
-__all__ = ["DescriptorMMD2", "MaxDescriptorMMD2", "MMDInterval", "DescriptorMMD2Interval", "MaxDescriptorMMD2Interval"]
+__all__ = [
+    "DescriptorMMD2",
+    "MaxDescriptorMMD2",
+    "MMDInterval",
+    "DescriptorMMD2Interval",
+    "MaxDescriptorMMD2Interval",
+]
 
 
 MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
@@ -105,8 +111,7 @@ class _DescriptorMMD2Interval(ABC):
         return mmd_samples
 
     @abstractmethod
-    def compute(*args, **kwargs) -> MMDInterval:
-        ...
+    def compute(*args, **kwargs) -> MMDInterval: ...
 
 
 class DescriptorMMD2Interval(_DescriptorMMD2Interval):
@@ -122,8 +127,9 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval):
             subsample_size=subsample_size,
             num_samples=num_samples,
         )
-        low, high = np.quantile(mmd_samples, (1 - coverage) / 2, axis=0), np.quantile(
-            mmd_samples, coverage + (1 - coverage) / 2, axis=0
+        low, high = (
+            np.quantile(mmd_samples, (1 - coverage) / 2, axis=0),
+            np.quantile(mmd_samples, coverage + (1 - coverage) / 2, axis=0),
         )
         avg = np.mean(mmd_samples, axis=0)
         std = np.std(mmd_samples, axis=0)
@@ -152,8 +158,9 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
         )
         assert mmd_samples.ndim == 2
         mmd_samples = np.max(mmd_samples, axis=1)
-        low, high = np.quantile(mmd_samples, (1 - coverage) / 2, axis=0), np.quantile(
-            mmd_samples, coverage + (1 - coverage) / 2, axis=0
+        low, high = (
+            np.quantile(mmd_samples, (1 - coverage) / 2, axis=0),
+            np.quantile(mmd_samples, coverage + (1 - coverage) / 2, axis=0),
         )
         avg = np.mean(mmd_samples, axis=0)
         std = np.std(mmd_samples, axis=0)
