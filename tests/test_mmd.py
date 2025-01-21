@@ -25,7 +25,11 @@ from graph_gen_gym.metrics.gran import (
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
 )
-from graph_gen_gym.metrics.gin import GraphNeuralNetworkFrechetDistance, LinearGraphNeuralNetworkMMD2, RBFGraphNeuralNetworkMMD2
+from graph_gen_gym.metrics.gin import (
+    GraphNeuralNetworkFrechetDistance,
+    LinearGraphNeuralNetworkMMD2,
+    RBFGraphNeuralNetworkMMD2,
+)
 from graph_gen_gym.metrics.base import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
@@ -50,7 +54,7 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     if baseline_method is orbit_stats_all:
-        baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)     # noqa
+        baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)  # noqa
 
     mmd = mmd_cls(planar)
     assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls
@@ -58,6 +62,7 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
     assert np.isclose(
         mmd.compute(planar[64:]), baseline_method(planar[:64], planar[64:])
     )
+
 
 @pytest.mark.skip
 @pytest.mark.parametrize(
@@ -182,6 +187,7 @@ def test_max_mmd(request, datasets, kernel, variant):
     unpooled_mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric_arr = unpooled_mmd.compute(planar.to_nx())
     assert np.isclose(metric, np.max(metric_arr))
+
 
 @pytest.mark.skip
 def test_gin_metrics_unattributed(datasets):

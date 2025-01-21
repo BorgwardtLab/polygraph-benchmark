@@ -4,14 +4,16 @@ Implementation of datasets.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Union
+from functools import partial
+from typing import List, Optional, Union
 
 import networkx as nx
+import numpy as np
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
-from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache
+from graph_gen_gym.datasets.base.graph import Graph
 
 
 class AbstractDataset(ABC):
@@ -22,16 +24,15 @@ class AbstractDataset(ABC):
     def to_nx(self) -> "NetworkXView":
         return NetworkXView(self)
 
-    def is_valid(self, graph: nx.Graph) -> bool:
-        raise NotImplementedError
+    @staticmethod
+    @abstractmethod
+    def is_valid(graph: nx.Graph) -> bool: ...
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Data:
-        ...
+    def __getitem__(self, idx: int) -> Data: ...
 
     @abstractmethod
-    def __len__(self) -> int:
-        ...
+    def __len__(self) -> int: ...
 
 
 class NetworkXView:
@@ -43,11 +44,20 @@ class NetworkXView:
 
     def __getitem__(self, idx: int) -> nx.Graph:
         pyg_graph = self._base_dataset[idx]
-        return to_networkx(pyg_graph, to_undirected=True)
+        return to_networkx(
+            pyg_graph,
+            node_attrs=list(self._base_dataset._data_store.node_attr.keys()),
+            edge_attrs=list(self._base_dataset._data_store.edge_attr.keys()),
+            graph_attrs=list(self._base_dataset._data_store.graph_attr.keys()),
+            to_undirected=True,
+        )
 
 
 class GraphDataset(AbstractDataset):
-    def __init__(self, data_store: Graph):
+    def __init__(
+        self,
+        data_store: Graph,
+    ):
         super().__init__()
         self._data_store = data_store
 
@@ -59,16 +69,35 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
+    def sample(self, n_samples: int, replace: bool = False) -> list[nx.Graph]:
+        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
+        data_list = self[idx_to_sample]
+        to_nx = partial(
+            to_networkx,
+            node_attrs=list(self._data_store.node_attr.keys()),
+            edge_attrs=list(self._data_store.edge_attr.keys()),
+            graph_attrs=list(self._data_store.graph_attr.keys()),
+            to_undirected=True,
+        )
+        if isinstance(data_list, list):
+            return [to_nx(g) for g in data_list]
+        return to_nx(data_list)
+
 
 class OnlineGraphDataset(GraphDataset):
-    def __init__(self, split: str, memmap: bool = False):
-        try:
-            storage = load_from_cache(self.identifier, split, mmap=memmap)
-        except FileNotFoundError:
-            download_to_cache(self.url_for_split(split), self.identifier, split)
-            storage = load_from_cache(self.identifier, split, mmap=memmap)
-        super().__init__(storage)
+    def __init__(
+        self,
+        split: str,
+        memmap: bool = False,
+        data_store: Optional[Graph] = None,
+    ):
+        if data_store is None and split is not None:
+            try:
+                data_store = load_from_cache(self.identifier, split, mmap=memmap)
+            except FileNotFoundError:
+                download_to_cache(self.url_for_split(split), self.identifier, split)
+                data_store = load_from_cache(self.identifier, split, mmap=memmap)
+        super().__init__(data_store)
 
     @abstractmethod
-    def url_for_split(self, split: str):
-        ...
+    def url_for_split(self, split: str): ...

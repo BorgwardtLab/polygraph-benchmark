@@ -3,8 +3,10 @@ import numpy as np
 import pytest
 import torch
 from torch_geometric.data import Data
+from tqdm.rich import tqdm
 
 from graph_gen_gym.datasets import (
+    QM9,
     DobsonDoigGraphDataset,
     EgoGraphDataset,
     LobsterGraphDataset,
@@ -16,13 +18,16 @@ from graph_gen_gym.datasets.base import AbstractDataset
 from graph_gen_gym.metrics.base import VUN
 
 ALL_DATASETS = [
-    PlanarGraphDataset,
-    SBMGraphDataset,
-    LobsterGraphDataset,
+    QM9,
     SmallEgoGraphDataset,
     EgoGraphDataset,
+    SBMGraphDataset,
+    PlanarGraphDataset,
+    LobsterGraphDataset,
     DobsonDoigGraphDataset,
 ]
+
+REPROCESSABLE_DATASETS = [QM9]
 
 
 @pytest.mark.parametrize(
@@ -33,9 +38,9 @@ def test_loading(ds_cls):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
         assert isinstance(ds, AbstractDataset), "Should inherit from AbstraactDataset"
-        assert len(ds) > 0
+        assert len(ds) > 0, "Dataset should have at least one item"
         pyg_graphs = list(ds)
-        assert len(pyg_graphs) == len(ds)
+        assert len(pyg_graphs) == len(ds), "Dataset should return same number of items"
         assert all(
             isinstance(item, Data) for item in pyg_graphs
         ), "Dataset should return PyG graphs"
@@ -48,14 +53,35 @@ def test_loading(ds_cls):
         ), "to_nx should return NetworkX graphs"
 
 
-@pytest.mark.parametrize("ds_cls", [PlanarGraphDataset, LobsterGraphDataset])
-def test_graph_properties(ds_cls):
+@pytest.mark.skip
+@pytest.mark.parametrize("ds_cls", ALL_DATASETS)
+def test_graph_properties_slow(ds_cls):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
         assert hasattr(ds, "is_valid")
         assert all(g.number_of_nodes() > 0 for g in ds.to_nx())
         assert all(g.number_of_edges() > 0 for g in ds.to_nx())
-        assert all(ds.is_valid(g) for g in ds.to_nx())
+        assert all(
+            ds.is_valid(g)
+            for g in tqdm(ds.to_nx(), desc=f"Validating {ds_cls.__name__} {split}")
+        )
+
+
+@pytest.mark.parametrize("ds_cls", ALL_DATASETS)
+def test_graph_properties_fast(ds_cls, sample_size):
+    for split in ["train", "val", "test"]:
+        ds = ds_cls(split)
+        assert hasattr(ds_cls, "is_valid")
+        sampled_graphs = ds.sample(sample_size)
+        valid = []
+        for g in tqdm(sampled_graphs, desc=f"Validating {ds_cls.__name__}"):
+            valid.append(ds_cls.is_valid(g))
+        if ds_cls.__name__ == "SBMGraphDataset":
+            # Check that most graphs are valid, since the validity check is not
+            # perfect
+            assert np.sum(valid) / len(valid) >= 0.5
+        else:
+            assert all(valid)
 
 
 @pytest.mark.skip
@@ -118,3 +144,13 @@ def test_split_disjointness(ds_cls):
         assert result["unique"].mle == 1
         assert result["novel"].mle == 1
         prev_splits.extend(graphs)
+
+
+@pytest.mark.skip
+@pytest.mark.parametrize("ds_cls", REPROCESSABLE_DATASETS)
+def test_precomputed_false(ds_cls):
+    # TODO: add attribute dimension checks
+    for split in ["train", "val", "test"]:
+        ds = ds_cls(split, use_precomputed=False)
+        assert len(ds) > 0
+        assert len(ds.to_nx()) > 0

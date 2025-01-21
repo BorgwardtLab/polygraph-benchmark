@@ -1,14 +1,93 @@
-from typing import Literal
 import torch
-from torch_geometric.data import Data
 from rdkit import Chem
+from torch_geometric.data import Data
+
+BOND_TYPES = [
+    Chem.rdchem.BondType.UNSPECIFIED,
+    Chem.rdchem.BondType.SINGLE,
+    Chem.rdchem.BondType.DOUBLE,
+    Chem.rdchem.BondType.TRIPLE,
+    Chem.rdchem.BondType.QUADRUPLE,
+    Chem.rdchem.BondType.QUINTUPLE,
+    Chem.rdchem.BondType.HEXTUPLE,
+    Chem.rdchem.BondType.ONEANDAHALF,
+    Chem.rdchem.BondType.TWOANDAHALF,
+    Chem.rdchem.BondType.THREEANDAHALF,
+    Chem.rdchem.BondType.FOURANDAHALF,
+    Chem.rdchem.BondType.FIVEANDAHALF,
+    Chem.rdchem.BondType.AROMATIC,
+    Chem.rdchem.BondType.IONIC,
+    Chem.rdchem.BondType.HYDROGEN,
+    Chem.rdchem.BondType.THREECENTER,
+    Chem.rdchem.BondType.DATIVEONE,
+    Chem.rdchem.BondType.DATIVE,
+    Chem.rdchem.BondType.DATIVEL,
+    Chem.rdchem.BondType.DATIVER,
+    Chem.rdchem.BondType.OTHER,
+    Chem.rdchem.BondType.ZERO,
+]
+
+BOND_STEREO_TYPES = [
+    Chem.rdchem.BondStereo.STEREONONE,
+    Chem.rdchem.BondStereo.STEREOZ,
+    Chem.rdchem.BondStereo.STEREOE,
+    Chem.rdchem.BondStereo.STEREOCIS,
+    Chem.rdchem.BondStereo.STEREOTRANS,
+    Chem.rdchem.BondStereo.STEREOANY,
+    Chem.rdchem.BondStereo.STEREOATROPCCW,
+    Chem.rdchem.BondStereo.STEREOATROPCW,
+]
+
+# Generalized atom vocabulary for all molecules
+N_UNIQUE_ATOMS = 119
+ATOM_TYPES = {
+    i: Chem.GetPeriodicTable().GetElementSymbol(i) for i in range(1, N_UNIQUE_ATOMS)
+}
+
+# Graph attributes for molecular graphs
+NODE_ATTRS = [
+    "atom_labels",
+    "radical_electrons",
+    "charges",
+]
+EDGE_ATTRS = ["bond_types", "stereo_types"]
 
 
-BOND_DICT = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE,
-                 Chem.rdchem.BondType.AROMATIC]
+def get_canonical_bond_stereo(bond: Chem.Bond) -> int:
+    """Get canonical (order-invariant) stereo representation for a bond.
+
+    This function takes a bond and returns its stereo configuration in a canonical way that is
+    independent of atom ordering. For double bonds with E/Z stereochemistry, it ensures that
+    the stereo designation (E or Z) is consistent regardless of which end of the bond is considered
+    the "beginning". If the begin atom index is greater than the end atom index, it swaps the
+    E/Z designation to maintain consistency.
+
+    Args:
+        bond: An RDKit bond object
+
+    Returns:
+        The canonical bond stereo designation as a Chem.BondStereo enum value
+    """
+    stereo = bond.GetStereo()
+    if stereo == Chem.BondStereo.STEREONONE:
+        return Chem.BondStereo.STEREONONE
+
+    # Get the indices in a canonical order
+    begin_idx = bond.GetBeginAtomIdx()
+    end_idx = bond.GetEndAtomIdx()
+    if begin_idx > end_idx:
+        # Swap the interpretation if atoms are in reverse order
+        if stereo == Chem.BondStereo.STEREOZ:
+            return Chem.BondStereo.STEREOE
+        elif stereo == Chem.BondStereo.STEREOE:
+            return Chem.BondStereo.STEREOZ
+    return stereo
 
 
 def are_smiles_equivalent(smiles1, smiles2):
+    if smiles1 == smiles2:
+        return True
+
     # Convert SMILES to mol objects
     mol1 = Chem.MolFromSmiles(smiles1)
     mol2 = Chem.MolFromSmiles(smiles2)
@@ -33,120 +112,150 @@ def mol2smiles(mol, canonical: bool = False):
     return Chem.MolToSmiles(mol, canonical=canonical)
 
 
-def build_molecule(node_labels, edge_index, edge_labels, atom_decoder, explicit_hydrogens=None, charges=None, num_radical_electrons=None, pos=None):
-    assert edge_index.shape[1] == len(edge_labels)
-    assert edge_labels.ndim == 1
-
+def graph2molecule(
+    node_labels: torch.Tensor,
+    edge_index: torch.Tensor,
+    bond_types: torch.Tensor,
+    stereo_types: torch.Tensor,
+    charges: torch.Tensor | None = None,
+    num_radical_electrons: torch.Tensor | None = None,
+    pos: torch.Tensor | None = None,
+) -> Chem.RWMol:
+    assert edge_index.shape[1] == len(bond_types)
+    assert bond_types.shape[0] == stereo_types.shape[0]
     node_idx_to_atom_idx = {}
     current_atom_idx = 0
     mol = Chem.RWMol()
     for node_idx, atom in enumerate(node_labels):
-        a = Chem.Atom(atom_decoder[atom.item()])
+        a = Chem.Atom(ATOM_TYPES[atom.item()])
         mol.AddAtom(a)
         node_idx_to_atom_idx[node_idx] = current_atom_idx
+
+        atom_obj = mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx])
+
         if charges is not None:
-            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetFormalCharge(charges[node_idx].item())
+            atom_obj.SetFormalCharge(charges[node_idx].item())
         if num_radical_electrons is not None:
-            mol.GetAtomWithIdx(node_idx_to_atom_idx[node_idx]).SetNumRadicalElectrons(num_radical_electrons[node_idx].item())
+            atom_obj.SetNumRadicalElectrons(num_radical_electrons[node_idx].item())
+        atom_obj.SetNoImplicit(True)
         current_atom_idx += 1
-        if explicit_hydrogens is not None:
-            num_hydrogens = explicit_hydrogens[node_idx].item()
-            for _ in range(num_hydrogens):
-                mol.AddAtom(Chem.Atom("H"))
-                mol.AddBond(current_atom_idx, node_idx_to_atom_idx[node_idx], Chem.rdchem.BondType.SINGLE)
-                current_atom_idx += 1
+
+    edges_processed = set()
+    for i, (bond, bond_type, stereo_type) in enumerate(
+        zip(edge_index.T, bond_types, stereo_types)
+    ):
+        a, b = bond[0].item(), bond[1].item()
+        if (a, b) in edges_processed or (b, a) in edges_processed:
+            continue
+
+        new_bond = (
+            mol.AddBond(
+                node_idx_to_atom_idx[a],
+                node_idx_to_atom_idx[b],
+                BOND_TYPES[bond_type],
+            )
+            - 1
+        )
+        bond_obj = mol.GetBondWithIdx(new_bond)
+
+        begin_atom = bond_obj.GetBeginAtom()
+        end_atom = bond_obj.GetEndAtom()
+
+        begin_neighbors = [
+            n.GetIdx()
+            for n in begin_atom.GetNeighbors()
+            if n.GetIdx() != end_atom.GetIdx()
+        ]
+        end_neighbors = [
+            n.GetIdx()
+            for n in end_atom.GetNeighbors()
+            if n.GetIdx() != begin_atom.GetIdx()
+        ]
+
+        if len(begin_neighbors) > 0 and len(end_neighbors) > 0:
+            bond_obj.SetStereoAtoms(begin_neighbors[0], end_neighbors[0])
+
+            if stereo_type in [
+                Chem.BondStereo.STEREOCIS,
+                Chem.BondStereo.STEREOTRANS,
+            ]:
+                if len(begin_neighbors) > 0 and len(end_neighbors) > 0:
+                    bond_obj.SetStereo(BOND_STEREO_TYPES[stereo_type])
+            else:
+                bond_obj.SetStereo(BOND_STEREO_TYPES[stereo_type])
+
+        edges_processed.add((a, b))
 
     if pos is not None:
         conf = Chem.Conformer(mol.GetNumAtoms())
         for node_idx, atom_pos in enumerate(pos):
             conf.SetAtomPosition(node_idx_to_atom_idx[node_idx], atom_pos.tolist())
         mol.AddConformer(conf)
+        Chem.AssignStereochemistryFrom3D(mol, replaceExistingTags=False)
 
-    added_bonds = set()
-    for bond, bond_type in zip(edge_index.T, edge_labels):
-        a, b = bond[0].item(), bond[1].item()
-        if a != b and (a, b) not in added_bonds:
-            added_bonds.add((a, b))
-            added_bonds.add((b, a))
-            mol.AddBond(node_idx_to_atom_idx[a], node_idx_to_atom_idx[b], BOND_DICT[bond_type.item()])
-
-    if pos is not None:
-        Chem.rdmolops.AssignStereochemistryFrom3D(mol)
-
+    Chem.SanitizeMol(mol)
     return mol
 
 
-class AddHydrogenTransform:
-    def __init__(self, add_hydrogen: Literal["all", "explicit"] = "all", hydrogen_label: int = 0, single_bond_label: int = 0):
-        """Transform to add hydrogen nodes to molecular graphs.
+def molecule2graph(
+    mol: Chem.RWMol,
+) -> Data:
+    """Convert molecule to graph representation.
 
-        :param add_hydrogen: Whether to add all hydrogens, or only those that have been marked as explicit, defaults to "all"
-        :type add_hydrogen: Literal[&quot;all&quot;, &quot;explicit&quot;], optional
-        :param hydrogen_label: The integer node label used to denote hydrogen atoms, defaults to 0
-        :type hydrogen_label: int, optional
-        :param single_bond_label: The integer edge label used to denote single bonds, defaults to 0
-        :type single_bond_label: int, optional
-        """
-        self._variant = add_hydrogen
-        self._hydrogen_label = hydrogen_label
-        self._single_bond_label = single_bond_label
+    Args:
+        mol: Input molecule
+    """
+    mol = Chem.AddHs(mol, addCoords=True)
+    Chem.AssignStereochemistryFrom3D(mol)
+    Chem.rdmolops.SetBondStereoFromDirections(mol)
 
-    def __call__(self, graph: Data) -> Data:
-        """Add hydrogen nodes to molecular graph."""
-        if not (hasattr(graph, "atom_labels") and hasattr(graph, "bond_labels") and hasattr(graph, "explicit_hydrogens") and hasattr(graph, "implicit_hydrogens") and hasattr(graph, "radical_electrons") and hasattr(graph, "charges")):
-            raise ValueError("Molecular graph must have attributes: atom_labels, bond_labels, implicit_hydrogens, explicit_hydrogens, radical_electrons, charges.")
+    node_labels = torch.tensor([atom.GetAtomicNum() for atom in mol.GetAtoms()])
 
-        if self._variant == "explicit":
-            hydrogens_to_add = graph.explicit_hydrogens
-        elif self._variant == "all":
-            hydrogens_to_add = graph.explicit_hydrogens + graph.implicit_hydrogens
-        else:
-            raise NotImplementedError(f"Only valid modes are 'all' and 'explicit', got {self._variant}")
+    charge_tensor = torch.tensor([atom.GetFormalCharge() for atom in mol.GetAtoms()])
+    radical_tensor = torch.tensor(
+        [atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()]
+    )
 
-        total_nodes_to_add = hydrogens_to_add.sum().item()
-        total_edges_to_add = 2 * total_nodes_to_add
-
-        new_edge_index = torch.zeros((2, graph.edge_index.shape[1] + total_edges_to_add), dtype=graph.edge_index.dtype, device=graph.edge_index.device)
-        new_edge_index[:, :graph.edge_index.shape[1]] = graph.edge_index
-
-        new_atom_labels = torch.full((graph.num_nodes + total_nodes_to_add,), self._hydrogen_label, dtype=graph.atom_labels.dtype, device=graph.atom_labels.device)
-        new_atom_labels[:len(graph.atom_labels)] = graph.atom_labels
-
-        new_bond_labels = torch.full((len(graph.bond_labels) + total_edges_to_add,), self._single_bond_label, dtype=graph.atom_labels.dtype, device=graph.atom_labels.device)
-        new_bond_labels[:len(graph.bond_labels)] = graph.bond_labels
-
-        new_implicit_hydrogens = torch.zeros(len(graph.implicit_hydrogens) + total_nodes_to_add, dtype=graph.implicit_hydrogens.dtype, device=graph.implicit_hydrogens.device)
-        if self._variant != "all":
-            # only keep implicit hydrogens if we do not add them as nodes
-            new_implicit_hydrogens[:len(graph.implicit_hydrogens)] = graph.implicit_hydrogens
-
-        new_explicit_hydrogens = torch.zeros(len(graph.explicit_hydrogens) + total_nodes_to_add, dtype=graph.explicit_hydrogens.dtype, device=graph.explicit_hydrogens.device)
-        # All explicit hydrogens are now part of the graph, so we do not keep the old explicit hydrogens
-
-        new_radical_electrons = torch.zeros(len(graph.radical_electrons) + total_nodes_to_add, dtype=graph.radical_electrons.dtype, device=graph.radical_electrons.device)
-        new_radical_electrons[:len(graph.radical_electrons)] = graph.radical_electrons
-
-        new_charges = torch.zeros(len(graph.charges) + total_nodes_to_add, dtype=graph.charges.dtype, device=graph.charges.device)
-        new_charges[:len(graph.charges)] = graph.charges
-
-        current_edge_idx = graph.edge_index.shape[1]
-        current_hydrogen_id = graph.num_nodes
-        for node_idx, num_to_add in enumerate(hydrogens_to_add):
-            for _ in range(num_to_add):
-                new_edge_index[0, current_edge_idx] = node_idx
-                new_edge_index[1, current_edge_idx] = current_hydrogen_id
-                new_edge_index[1, current_edge_idx + 1] = node_idx
-                new_edge_index[0, current_edge_idx + 1] = current_hydrogen_id
-                current_edge_idx += 2
-                current_hydrogen_id += 1
-
-        assert current_edge_idx == new_edge_index.shape[1]
-        return Data(
-            edge_index=new_edge_index,
-            atom_labels=new_atom_labels,
-            bond_labels=new_bond_labels,
-            implicit_hydrogens=new_implicit_hydrogens,
-            explicit_hydrogens=new_explicit_hydrogens,
-            radical_electrons=new_radical_electrons,
-            charges=new_charges
+    pos = None
+    if mol.GetNumConformers() > 0:
+        conformer = mol.GetConformer()
+        pos = torch.tensor(
+            [conformer.GetAtomPosition(i) for i in range(mol.GetNumAtoms())]
         )
+
+    bonds = list(mol.GetBonds())
+    edge_index = torch.tensor(
+        [(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()) for bond in bonds]
+        + [(bond.GetEndAtomIdx(), bond.GetBeginAtomIdx()) for bond in bonds]
+    ).T
+
+    edge_attrs = torch.tensor(
+        [BOND_TYPES.index(bond.GetBondType()) for bond in bonds] * 2
+    )
+
+    stereo_attrs = []
+    for bond in bonds:
+        stereo_attrs.append(BOND_STEREO_TYPES.index(get_canonical_bond_stereo(bond)))
+
+    stereo_attrs = stereo_attrs * 2
+    stereo_attrs = torch.tensor(stereo_attrs)
+
+    # Add edge labels to edge_attrs
+    edge_attr = torch.cat(
+        [edge_attrs.unsqueeze(-1), stereo_attrs.unsqueeze(-1)], dim=-1
+    )
+    return Data(
+        edge_index=edge_index,
+        atom_labels=node_labels,
+        bond_types=edge_attr[:, 0],
+        stereo_types=edge_attr[:, 1],
+        charges=charge_tensor,
+        radical_electrons=radical_tensor,
+        pos=pos,
+    )
+
+
+def add_hydrogens_and_stereochemistry(mol: Chem.RWMol):
+    mol = Chem.AddHs(mol, addCoords=True)
+    Chem.AssignStereochemistryFrom3D(mol)
+    return mol

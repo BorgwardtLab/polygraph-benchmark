@@ -28,7 +28,6 @@ __all__ = [
 ]
 
 
-
 class RBFGraphNeuralNetworkMMD2(MaxDescriptorMMD2):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(

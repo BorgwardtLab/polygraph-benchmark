@@ -3,6 +3,7 @@ import networkx as nx
 import dgl
 import numpy as np
 from scipy.linalg import toeplitz
+
 try:
     import pyemd
 except ImportError:
@@ -15,6 +16,7 @@ import os
 from functools import partial
 from sklearn.metrics.pairwise import pairwise_kernels
 from eden.graph import vectorize
+
 try:
     import grakel
     from grakel.kernels import WeisfeilerLehman, VertexHistogram
@@ -23,77 +25,82 @@ except ImportError:
     WeisfeilerLehman = None
     VertexHistogram = None
 
+
 def time_function(func):
     def wrapper(*args, **kwargs):
         start = time.time()
         results = func(*args, **kwargs)
         end = time.time()
         return results, end - start
+
     return wrapper
 
-class MMDEval():
+
+class MMDEval:
     # Largely taken from the GraphRNN github: https://github.com/JiaxuanYou/graph-generation
     # I just rearranged to make it a little cleaner.
     def __init__(self, **kwargs):
-        statistic = kwargs.get('statistic')
-        if statistic == 'degree':
+        statistic = kwargs.get("statistic")
+        if statistic == "degree":
             self.descriptor = Degree(**kwargs)
-        elif statistic == 'clustering':
+        elif statistic == "clustering":
             self.descriptor = Clustering(**kwargs)
-        elif statistic == 'orbits':
+        elif statistic == "orbits":
             self.descriptor = Orbits(**kwargs)
-        elif statistic == 'spectral':
+        elif statistic == "spectral":
             self.descriptor = Spectral(**kwargs)
         else:
-            raise Exception('unsupported statistic'.format())
-
+            raise Exception("unsupported statistic".format())
 
     def evaluate(self, generated_dataset=None, reference_dataset=None):
         # import ipdb; ipdb.set_trace()
         reference_dataset = self.extract_dataset(reference_dataset)
         generated_dataset = self.extract_dataset(generated_dataset)
         if len(reference_dataset) == 0 or len(generated_dataset) == 0:
-            return {f'{self.descriptor.name}_mmd': 0}, 0
+            return {f"{self.descriptor.name}_mmd": 0}, 0
 
         start = time.time()
         metric = self.descriptor.evaluate(generated_dataset, reference_dataset)
         total = time.time() - start
-        return {f'{self.descriptor.name}_mmd': metric}, total
-
+        return {f"{self.descriptor.name}_mmd": metric}, total
 
     def extract_dataset(self, dataset):
-        assert isinstance(dataset, (list, tuple)), f'Unsupported type {type(dataset)} for \
-                dataset, expected list of nx.Graph or dgl.DGLGraph'
+        assert isinstance(
+            dataset, (list, tuple)
+        ), f"Unsupported type {type(dataset)} for \
+                dataset, expected list of nx.Graph or dgl.DGLGraph"
         if isinstance(dataset[0], nx.Graph):
             pass
         elif isinstance(dataset[0], dgl.DGLGraph):
             dataset = [nx.Graph(g.cpu().to_networkx()) for g in dataset]
         else:
-            raise Exception(f'Unsupported element type {type(dataset[0])} for dataset, \
-                expected list of nx.Graph or dgl.DGLGraph')
+            raise Exception(
+                f"Unsupported element type {type(dataset[0])} for dataset, \
+                expected list of nx.Graph or dgl.DGLGraph"
+            )
 
         return [g for g in dataset if g.number_of_nodes() != 0]
 
 
-class Descriptor():
-    def __init__(self, is_parallel=True, bins=100, kernel='gaussian_emd', **kwargs):
+class Descriptor:
+    def __init__(self, is_parallel=True, bins=100, kernel="gaussian_emd", **kwargs):
         self.is_parallel = is_parallel
         self.bins = bins
-        self.max_workers = kwargs.get('max_workers')
+        self.max_workers = kwargs.get("max_workers")
 
-        if kernel == 'gaussian_emd':
+        if kernel == "gaussian_emd":
             self.distance = self.emd
         # elif kernel == 'gaussian_tv':
         #     self.distance = self.gaussian_tv
-        elif kernel == 'gaussian_rbf':
+        elif kernel == "gaussian_rbf":
             self.distance = self.l2
-            self.name += '_rbf'
+            self.name += "_rbf"
         else:
             raise Exception(kernel)
 
-        sigma_type = kwargs.get('sigma', 'single')
-        if sigma_type == 'range':
-            self.name += '_range'
+        sigma_type = kwargs.get("sigma", "single")
+        if sigma_type == "range":
+            self.name += "_range"
             self.sigmas += [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
             self.__get_sigma_mult_factor = self.mean_pairwise_distance
 
@@ -113,10 +120,10 @@ class Descriptor():
         return 1
 
     def evaluate(self, generated_dataset, reference_dataset):
-        ''' Compute the distance between the distributions of two unordered sets of graphs.
+        """Compute the distance between the distributions of two unordered sets of graphs.
         Args:
           graph_ref_list, graph_target_list: two lists of networkx graphs to be evaluated
-        '''
+        """
         sample_pred = self.extract_features(generated_dataset)
         sample_ref = self.extract_features(reference_dataset)
 
@@ -151,7 +158,6 @@ class Descriptor():
 
         return x, y
 
-
     def emd(self, x, y, distance_scaling=1.0):
         support_size = max(len(x), len(y))
         x, y = self.pad_histogram(x, y)
@@ -160,18 +166,18 @@ class Descriptor():
         distance_mat = d_mat / distance_scaling
 
         dist = pyemd.emd(x, y, distance_mat)
-        return dist ** 2
+        return dist**2
 
     def l2(self, x, y, **kwargs):
         x, y = self.pad_histogram(x, y)
         dist = np.linalg.norm(x - y, 2)
-        return dist ** 2
+        return dist**2
 
-    def gaussian_tv(self, x, y): #, sigma=1.0, *args, **kwargs):
+    def gaussian_tv(self, x, y):  # , sigma=1.0, *args, **kwargs):
         x, y = self.pad_histogram(x, y)
 
         dist = np.abs(x - y).sum() / 2.0
-        return dist ** 2
+        return dist**2
 
     def kernel_parallel_unpacked(self, x, samples2, kernel):
         dist = []
@@ -183,23 +189,30 @@ class Descriptor():
         return self.kernel_parallel_unpacked(*t)
 
     def disc(self, samples1, samples2, **kwargs):
-        ''' Discrepancy between 2 samples
-        '''
+        """Discrepancy between 2 samples"""
         tot_dist = []
         if not self.is_parallel:
             for s1 in samples1:
                 for s2 in samples2:
                     tot_dist += [self.distance(s1, s2)]
         else:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
-                for dist in executor.map(self.kernel_parallel_worker,
-                        [(s1, samples2, partial(self.distance, **kwargs)) for s1 in samples1]):
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
+                for dist in executor.map(
+                    self.kernel_parallel_worker,
+                    [
+                        (s1, samples2, partial(self.distance, **kwargs))
+                        for s1 in samples1
+                    ],
+                ):
                     tot_dist += [dist]
         return np.array(tot_dist)
 
+
 class Degree(Descriptor):
     def __init__(self, *args, **kwargs):
-        self.name = 'degree'
+        self.name = "degree"
         self.sigmas = [1.0]
         self.distance_scaling = 1.0
         super().__init__(*args, **kwargs)
@@ -207,7 +220,9 @@ class Degree(Descriptor):
     def extract_features(self, dataset):
         res = []
         if self.is_parallel:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
                 for deg_hist in executor.map(self.degree_worker, dataset):
                     res.append(deg_hist)
         else:
@@ -221,20 +236,23 @@ class Degree(Descriptor):
     def degree_worker(self, G):
         return np.array(nx.degree_histogram(G))
 
+
 class Clustering(Descriptor):
     def __init__(self, *args, **kwargs):
-        self.name = 'clustering'
+        self.name = "clustering"
         self.sigmas = [1.0 / 10]
         super().__init__(*args, **kwargs)
         self.distance_scaling = self.bins
 
-
     def extract_features(self, dataset):
         res = []
         if self.is_parallel:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=self.max_workers) as executor:
-                for clustering_hist in executor.map(self.clustering_worker,
-                    [(G, self.bins) for G in dataset]):
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
+                for clustering_hist in executor.map(
+                    self.clustering_worker, [(G, self.bins) for G in dataset]
+                ):
                     res.append(clustering_hist)
         else:
             for g in dataset:
@@ -248,17 +266,20 @@ class Clustering(Descriptor):
         G, bins = param
         clustering_coeffs_list = list(nx.clustering(G).values())
         hist, _ = np.histogram(
-                clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False)
+            clustering_coeffs_list, bins=bins, range=(0.0, 1.0), density=False
+        )
         return hist
+
 
 class Orbits(Descriptor):
     motif_to_indices = {
-            '3path' : [1, 2],
-            '4cycle' : [8],
+        "3path": [1, 2],
+        "4cycle": [8],
     }
-    COUNT_START_STR = 'orbit counts: \n'
+    COUNT_START_STR = "orbit counts: \n"
+
     def __init__(self, *args, **kwargs):
-        self.name = 'orbits'
+        self.name = "orbits"
         self.sigmas = [30.0]
         self.distance_scaling = 1
         self.orca_path = kwargs.pop("orca_path")
@@ -275,21 +296,30 @@ class Orbits(Descriptor):
     def orca(self, graph):
         try:
             with tempfile.NamedTemporaryFile("w", delete=False) as f:
-                f.write(str(graph.number_of_nodes()) + ' ' + str(graph.number_of_edges()) + '\n')
-                for (u, v) in self.edge_list_reindexed(graph):
-                    f.write(str(u) + ' ' + str(v) + '\n')
+                f.write(
+                    str(graph.number_of_nodes())
+                    + " "
+                    + str(graph.number_of_edges())
+                    + "\n"
+                )
+                for u, v in self.edge_list_reindexed(graph):
+                    f.write(str(u) + " " + str(v) + "\n")
                 f.close()
 
-            output = sp.check_output([self.orca_path, 'node', '4', f.name, 'std'])
-            output = output.decode('utf8').strip()
+            output = sp.check_output([self.orca_path, "node", "4", f.name, "std"])
+            output = output.decode("utf8").strip()
             idx = output.find(self.COUNT_START_STR) + len(self.COUNT_START_STR)
             output = output[idx:]
-            node_orbit_counts = np.array([list(map(int, node_cnts.strip().split(' ')))
-                for node_cnts in output.strip('\n').split('\n')])
+            node_orbit_counts = np.array(
+                [
+                    list(map(int, node_cnts.strip().split(" ")))
+                    for node_cnts in output.strip("\n").split("\n")
+                ]
+            )
 
         finally:
             # Ensure the temporary file is deleted even if an exception occurs
-            if 'f' in locals() and os.path.exists(f.name):
+            if "f" in locals() and os.path.exists(f.name):
                 os.unlink(f.name)
 
         return node_orbit_counts
@@ -302,13 +332,14 @@ class Orbits(Descriptor):
             idx += 1
 
         edges = []
-        for (u, v) in G.edges():
+        for u, v in G.edges():
             edges.append((id2idx[str(u)], id2idx[str(v)]))
         return edges
 
+
 class Spectral(Descriptor):
     def __init__(self, *args, **kwargs):
-        self.name = 'spectral'
+        self.name = "spectral"
         self.sigmas = [1.0]
         self.distance_scaling = 1
         super().__init__(*args, **kwargs)
@@ -316,7 +347,9 @@ class Spectral(Descriptor):
     def extract_features(self, dataset):
         res = []
         if self.is_parallel:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
                 for spectral_density in executor.map(self.spectral_worker, dataset):
                     res.append(spectral_density)
         else:
@@ -332,52 +365,96 @@ class Spectral(Descriptor):
         return spectral_pmf
 
 
-class WLMMDEvaluation():
+class WLMMDEvaluation:
     def evaluate(self, generated_dataset=None, reference_dataset=None):
         # prepare - dont include in timing
-        generated_dataset = [nx.Graph(g.cpu().to_networkx()) for g in generated_dataset if g.number_of_nodes() != 0]
-        reference_dataset = [nx.Graph(g.cpu().to_networkx()) for g in reference_dataset if g.number_of_nodes() != 0]
+        generated_dataset = [
+            nx.Graph(g.cpu().to_networkx())
+            for g in generated_dataset
+            if g.number_of_nodes() != 0
+        ]
+        reference_dataset = [
+            nx.Graph(g.cpu().to_networkx())
+            for g in reference_dataset
+            if g.number_of_nodes() != 0
+        ]
 
         if len(reference_dataset) == 0 or len(generated_dataset) == 0:
-            return {'wl_mmd': 0}, 0
+            return {"wl_mmd": 0}, 0
 
-        [nx.set_node_attributes(g, dict(g.degree()), 'degree') for g in generated_dataset]  # degree labels
-        [nx.set_node_attributes(g, dict(g.degree()), 'degree') for g in reference_dataset]  # degree labels
+        [
+            nx.set_node_attributes(g, dict(g.degree()), "degree")
+            for g in generated_dataset
+        ]  # degree labels
+        [
+            nx.set_node_attributes(g, dict(g.degree()), "degree")
+            for g in reference_dataset
+        ]  # degree labels
 
         return self.evaluate_(generated_dataset, reference_dataset)
 
     @time_function
     def evaluate_(self, generated_dataset, reference_dataset):
-        gk = WeisfeilerLehman(n_iter=4, base_graph_kernel=VertexHistogram, normalize=True)
+        gk = WeisfeilerLehman(
+            n_iter=4, base_graph_kernel=VertexHistogram, normalize=True
+        )
 
-        K_RR = gk.fit_transform(grakel.graph_from_networkx(reference_dataset, node_labels_tag='degree'))
+        K_RR = gk.fit_transform(
+            grakel.graph_from_networkx(reference_dataset, node_labels_tag="degree")
+        )
         for g in reference_dataset:
             del g
 
-        K_GR = gk.transform(grakel.graph_from_networkx(generated_dataset, node_labels_tag='degree'))
-        K_GG = gk.fit_transform(grakel.graph_from_networkx(generated_dataset, node_labels_tag='degree'))
+        K_GR = gk.transform(
+            grakel.graph_from_networkx(generated_dataset, node_labels_tag="degree")
+        )
+        K_GG = gk.fit_transform(
+            grakel.graph_from_networkx(generated_dataset, node_labels_tag="degree")
+        )
         for g in generated_dataset:
             del g
 
         mmd = K_GG.mean() + K_RR.mean() - 2 * K_GR.mean()
 
-        return {'wl_mmd': mmd}
+        return {"wl_mmd": mmd}
 
 
-class NSPDKEvaluation():
+class NSPDKEvaluation:
     def evaluate(self, generated_dataset=None, reference_dataset=None):
         # prepare - dont include in timing
-        generated_dataset_nx = [nx.Graph(g.cpu().to_networkx()) for g in generated_dataset if g.number_of_nodes() != 0]
-        reference_dataset_nx = [nx.Graph(g.cpu().to_networkx()) for g in reference_dataset if g.number_of_nodes() != 0]
+        generated_dataset_nx = [
+            nx.Graph(g.cpu().to_networkx())
+            for g in generated_dataset
+            if g.number_of_nodes() != 0
+        ]
+        reference_dataset_nx = [
+            nx.Graph(g.cpu().to_networkx())
+            for g in reference_dataset
+            if g.number_of_nodes() != 0
+        ]
 
         if len(reference_dataset_nx) == 0 or len(generated_dataset_nx) == 0:
-            return {'nspdk_mmd': 0}, 0
+            return {"nspdk_mmd": 0}, 0
 
-        if 'attr' not in generated_dataset[0].ndata:
-            [nx.set_node_attributes(g, {key: str(val) for key, val in dict(g.degree()).items()}, 'label') for g in generated_dataset_nx]  # degree labels
-            [nx.set_node_attributes(g, {key: str(val) for key, val in dict(g.degree()).items()}, 'label') for g in reference_dataset_nx]  # degree labels
-            [nx.set_edge_attributes(g, '1', 'label') for g in generated_dataset_nx]  # degree labels
-            [nx.set_edge_attributes(g, '1', 'label') for g in reference_dataset_nx]  # degree labels
+        if "attr" not in generated_dataset[0].ndata:
+            [
+                nx.set_node_attributes(
+                    g, {key: str(val) for key, val in dict(g.degree()).items()}, "label"
+                )
+                for g in generated_dataset_nx
+            ]  # degree labels
+            [
+                nx.set_node_attributes(
+                    g, {key: str(val) for key, val in dict(g.degree()).items()}, "label"
+                )
+                for g in reference_dataset_nx
+            ]  # degree labels
+            [
+                nx.set_edge_attributes(g, "1", "label") for g in generated_dataset_nx
+            ]  # degree labels
+            [
+                nx.set_edge_attributes(g, "1", "label") for g in reference_dataset_nx
+            ]  # degree labels
 
         else:
             self.set_features(generated_dataset, generated_dataset_nx)
@@ -387,16 +464,21 @@ class NSPDKEvaluation():
 
     def set_features(self, dset_dgl, dset_nx):
         for g_dgl, g_nx in zip(dset_dgl, dset_nx):
-            feat_dict = {node: str(g_dgl.ndata['attr'][node].nonzero().item()) for node in range(g_dgl.number_of_nodes())}
-            nx.set_node_attributes(g_nx, feat_dict, 'label')
+            feat_dict = {
+                node: str(g_dgl.ndata["attr"][node].nonzero().item())
+                for node in range(g_dgl.number_of_nodes())
+            }
+            nx.set_node_attributes(g_nx, feat_dict, "label")
 
-            srcs, dests, eids = g_dgl.edges('all')
+            srcs, dests, eids = g_dgl.edges("all")
             feat_dict = {}
             for src, dest, eid in zip(srcs, dests, eids):
-                feat_dict[(src.item(), dest.item())] = str(g_dgl.edata['attr'][eid].nonzero().item())
+                feat_dict[(src.item(), dest.item())] = str(
+                    g_dgl.edata["attr"][eid].nonzero().item()
+                )
                 # feat_dict = {edge: g.edata['attr'][edge].nonzero() for edge in range(g.number_of_edges())}
             # print(feat_dict)
-            nx.set_edge_attributes(g_nx, feat_dict, 'label')
+            nx.set_edge_attributes(g_nx, feat_dict, "label")
 
     @time_function
     def evaluate_(self, generated_dataset, reference_dataset):
@@ -408,10 +490,10 @@ class NSPDKEvaluation():
         for g in generated_dataset:
             del g
 
-        K_RR = pairwise_kernels(ref, ref, metric='linear', n_jobs=4)
-        K_GG = pairwise_kernels(gen, gen, metric='linear', n_jobs=4)
-        K_GR = pairwise_kernels(ref, gen, metric='linear', n_jobs=4)
+        K_RR = pairwise_kernels(ref, ref, metric="linear", n_jobs=4)
+        K_GG = pairwise_kernels(gen, gen, metric="linear", n_jobs=4)
+        K_GR = pairwise_kernels(ref, gen, metric="linear", n_jobs=4)
 
         mmd = K_GG.mean() + K_RR.mean() - 2 * K_GR.mean()
 
-        return {'nspdk_mmd': mmd}
+        return {"nspdk_mmd": mmd}

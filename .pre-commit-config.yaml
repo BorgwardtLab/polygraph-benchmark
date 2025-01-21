@@ -13,4 +13,4 @@ repos:
   hooks:
     # Run the linter and fix the issues.
     - id: ruff
-      args: [ --fix, --exit-non-zero-on-fix]
+      args: [ --fix, --exit-non-zero-on-fix, --config=pyproject.toml]

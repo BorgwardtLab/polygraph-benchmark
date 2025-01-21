@@ -18,22 +18,18 @@ class DescriptorKernel(ABC):
         self._descriptor_fn = descriptor_fn
 
     @abstractmethod
-    def pre_gram_block(self, x: Any, y: Any) -> np.ndarray:
-        ...
+    def pre_gram_block(self, x: Any, y: Any) -> np.ndarray: ...
 
     @abstractmethod
-    def get_subkernel(self, idx: int) -> "DescriptorKernel":
-        ...
+    def get_subkernel(self, idx: int) -> "DescriptorKernel": ...
 
     @property
     @abstractmethod
-    def is_adative(self) -> bool:
-        ...
+    def is_adative(self) -> bool: ...
 
     @property
     @abstractmethod
-    def num_kernels(self) -> int:
-        ...
+    def num_kernels(self) -> int: ...
 
     def featurize(self, graphs: Iterable[nx.Graph]) -> Any:
         return self._descriptor_fn(graphs)
