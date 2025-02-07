@@ -1,5 +1,4 @@
 from collections import namedtuple
-from itertools import islice
 from typing import Callable, Collection
 
 import networkx as nx
@@ -11,14 +10,6 @@ __all__ = ["FittedFrechetDistance", "FrechetDistance"]
 
 GaussianParameters = namedtuple("GaussianParameters", ["mean", "covariance"])
 
-
-def batched(iterable, n):
-    it = iter(iterable)
-    while True:
-        batch = tuple(islice(it, n))
-        if not batch:
-            return
-        yield batch
 
 
 def compute_wasserstein_distance(
