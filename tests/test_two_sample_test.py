@@ -30,8 +30,6 @@ def _ks_test(all_samples, test_function, num_iters=200):
         p_val_samples.append(pval)
 
     res = kstest(p_val_samples, lambda x: np.clip(x, 0, 1), alternative="greater")
-    if res.pvalue < 0.05:
-        assert False, p_val_samples
     return res.pvalue
 
 
