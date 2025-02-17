@@ -1,5 +1,4 @@
 """Taken from https://github.com/lrjconan/GRAN/blob/fc9c04a3f002c55acf892f864c03c6040947bc6b/utils/eval_helper.py"""
-
 ###############################################################################
 #
 # Some code is adapted from https://github.com/JiaxuanYou/graph-generation
@@ -373,7 +372,9 @@ def orbit_stats_all(graph_ref_list, graph_pred_list, executable_path):
     total_counts_ref = []
     total_counts_pred = []
 
-    _ = [G for G in graph_pred_list if not G.number_of_nodes() == 0]
+    _ = [
+        G for G in graph_pred_list if not G.number_of_nodes() == 0
+    ]
 
     for G in graph_ref_list:
         orbit_counts = orca(G, executable_path)
