@@ -96,6 +96,7 @@ class RandomGIN:
         device: str = "cpu",
         node_feat_loc: Optional[List[str]] = None,
         edge_feat_loc: Optional[List[str]] = None,
+        seed: Optional[int] = None,
     ):
         self.model = GIN(
             num_layers=num_layers,
@@ -107,6 +108,7 @@ class RandomGIN:
             num_mlp_layers=num_mlp_layers,
             output_dim=output_dim,
             init=init,
+            seed=seed,
         )
         self._device = device
         self.model = self.model.to(device)

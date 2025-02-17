@@ -6,6 +6,15 @@ import networkx as nx
 import pytest
 from typing import List
 
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent / "ggm_implementation"))
+import dgl     # noqa: E402
+import torch     # noqa: E402
+from ggm_implementation.evaluator import Evaluator     # noqa: E402
+
+
 @pytest.fixture
 def attributed_networkx_graphs():
     # Create 4 simple graphs with 2D node attributes and 3D edge attributes
@@ -71,14 +80,6 @@ def attributed_networkx_graphs():
     return [g1, g2, g3, g4]
 
 def test_gin_metrics_unattributed(datasets):
-    import sys
-    from pathlib import Path
-
-    sys.path.append(str(Path(__file__).parent / "ggm_implementation"))
-    import dgl
-    import torch
-    from ggm_implementation.evaluator import Evaluator
-
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
     planar_dgl = list(map(dgl.from_networkx, planar))
@@ -94,30 +95,34 @@ def test_gin_metrics_unattributed(datasets):
     )
 
     torch.manual_seed(42)
-    our_rbf_mmd = RBFGraphNeuralNetworkMMD2(planar).compute(sbm)
+    our_rbf_mmd = RBFGraphNeuralNetworkMMD2(planar, seed=None).compute(sbm)
     assert np.isclose(our_rbf_mmd, mmd_rbf)
 
     torch.manual_seed(42)
-    our_linear_mmd = LinearGraphNeuralNetworkMMD2(planar).compute(sbm)
+    our_linear_mmd = LinearGraphNeuralNetworkMMD2(planar, seed=None).compute(sbm)
     assert np.isclose(our_linear_mmd, mmd_linear)
 
     torch.manual_seed(42)
-    our_fid = GraphNeuralNetworkFrechetDistance(planar).compute(sbm)
+    our_fid = GraphNeuralNetworkFrechetDistance(planar, seed=None).compute(sbm)
     assert np.isclose(our_fid, fid)
+
+
+@pytest.mark.parametrize("metric_cls", [RBFGraphNeuralNetworkMMD2, LinearGraphNeuralNetworkMMD2, GraphNeuralNetworkFrechetDistance])
+def test_gin_seeding(datasets, metric_cls):
+    planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
+    metric_1 = metric_cls(planar, seed=42).compute(sbm)
+    metric_2 = metric_cls(planar, seed=42).compute(sbm)
+    metric_3 = metric_cls(planar, seed=43).compute(sbm)
+    assert np.isclose(metric_1, metric_2)
+    assert not np.isclose(metric_1, metric_3)
+
+
 
 @pytest.mark.parametrize("node_attributed", [True, False])
 @pytest.mark.parametrize("edge_attributed", [True, False])
 def test_gin_metrics_attributed(attributed_networkx_graphs: List[nx.Graph], node_attributed: bool, edge_attributed: bool):
-    import sys
-    from pathlib import Path
-
-    sys.path.append(str(Path(__file__).parent / "ggm_implementation"))
-    import dgl
-    import torch
-    from ggm_implementation.evaluator import Evaluator
-
-    import numpy as np
-
     g1, g2, g3, g4 = attributed_networkx_graphs
 
     ds1 = [g1, g2] * 10
@@ -157,27 +162,27 @@ def test_gin_metrics_attributed(attributed_networkx_graphs: List[nx.Graph], node
         edge_feat_dim = 0
 
     torch.manual_seed(42)
-    our_rbf_mmd = RBFGraphNeuralNetworkMMD2(ds1, node_feat_loc=node_feat_loc, node_feat_dim=node_feat_dim, edge_feat_loc=edge_feat_loc, edge_feat_dim=edge_feat_dim).compute(ds2)
+    our_rbf_mmd = RBFGraphNeuralNetworkMMD2(ds1, node_feat_loc=node_feat_loc, node_feat_dim=node_feat_dim, edge_feat_loc=edge_feat_loc, edge_feat_dim=edge_feat_dim, seed=None).compute(ds2)
     assert np.isclose(our_rbf_mmd, mmd_rbf)
 
     torch.manual_seed(42)
-    our_linear_mmd = LinearGraphNeuralNetworkMMD2(ds1, node_feat_loc=node_feat_loc, node_feat_dim=node_feat_dim, edge_feat_loc=edge_feat_loc, edge_feat_dim=edge_feat_dim).compute(ds2)
+    our_linear_mmd = LinearGraphNeuralNetworkMMD2(ds1, node_feat_loc=node_feat_loc, node_feat_dim=node_feat_dim, edge_feat_loc=edge_feat_loc, edge_feat_dim=edge_feat_dim, seed=None).compute(ds2)
     assert np.isclose(our_linear_mmd, mmd_linear)
 
     torch.manual_seed(42)
-    our_fid = GraphNeuralNetworkFrechetDistance(ds1, node_feat_loc=node_feat_loc, node_feat_dim=node_feat_dim, edge_feat_loc=edge_feat_loc, edge_feat_dim=edge_feat_dim).compute(ds2)
+    our_fid = GraphNeuralNetworkFrechetDistance(ds1, node_feat_loc=node_feat_loc, node_feat_dim=node_feat_dim, edge_feat_loc=edge_feat_loc, edge_feat_dim=edge_feat_dim, seed=None).compute(ds2)
     assert np.isclose(our_fid, fid)
 
     # Finally, check that the unattributed case is not the same as the attributed case
     if node_attributed or edge_attributed:
         torch.manual_seed(42)
-        unattributed_mmd = RBFGraphNeuralNetworkMMD2(ds1).compute(ds2)
+        unattributed_mmd = RBFGraphNeuralNetworkMMD2(ds1, seed=None).compute(ds2)
         assert not np.isclose(unattributed_mmd, mmd_rbf)
 
         torch.manual_seed(42)
-        unattributed_linear_mmd = LinearGraphNeuralNetworkMMD2(ds1).compute(ds2)
+        unattributed_linear_mmd = LinearGraphNeuralNetworkMMD2(ds1, seed=None).compute(ds2)
         assert not np.isclose(unattributed_linear_mmd, mmd_linear)
 
         torch.manual_seed(42)
-        unattributed_fid = GraphNeuralNetworkFrechetDistance(ds1).compute(ds2)
+        unattributed_fid = GraphNeuralNetworkFrechetDistance(ds1, seed=None).compute(ds2)
         assert not np.isclose(unattributed_fid, fid)

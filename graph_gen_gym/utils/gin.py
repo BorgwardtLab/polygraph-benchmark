@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 from torch_geometric.nn.conv import MessagePassing
-
+import math
 
 class GINConv(MessagePassing):
     """
@@ -164,6 +164,7 @@ class GIN(nn.Module):
         final_dropout=0.0,
         learn_eps=False,
         output_dim=1,
+        seed=None,
         **kwargs,
     ):
         """model parameters setting
@@ -193,9 +194,24 @@ class GIN(nn.Module):
 
         super().__init__()
 
+        if seed is not None:
+            if kwargs["init"] != "orthogonal":
+                raise ValueError("Seeding has no effect on non-orthogonal initialization.")
+
+            generator = torch.Generator()
+            generator.manual_seed(seed)
+        else:
+            generator = None
+
         def init_weights_orthogonal(m):
             if isinstance(m, nn.Linear):
-                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.orthogonal_(m.weight, generator=generator)
+                # Use standard initialization for bias
+                if m.bias is not None and generator is not None:
+                    fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
+                    bound = 1 / math.sqrt(fan_in)
+                    nn.init.uniform_(m.bias, -bound, bound, generator=generator)
+
             elif isinstance(m, MLP):
                 if hasattr(m, "linears"):
                     m.linears.apply(init_weights_orthogonal)
