@@ -25,11 +25,6 @@ from graph_gen_gym.metrics.gran import (
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
 )
-from graph_gen_gym.metrics.gin import (
-    GraphNeuralNetworkFrechetDistance,
-    LinearGraphNeuralNetworkMMD2,
-    RBFGraphNeuralNetworkMMD2,
-)
 from graph_gen_gym.metrics.base import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
@@ -187,40 +182,3 @@ def test_max_mmd(request, datasets, kernel, variant):
     unpooled_mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric_arr = unpooled_mmd.compute(planar.to_nx())
     assert np.isclose(metric, np.max(metric_arr))
-
-
-@pytest.mark.skip
-def test_gin_metrics_unattributed(datasets):
-    import sys
-    from pathlib import Path
-
-    sys.path.append(str(Path(__file__).parent / "ggm_implementation"))
-    import dgl
-    import torch
-    from ggm_implementation.evaluator import Evaluator
-
-    planar, sbm = datasets
-    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
-    planar_dgl = list(map(dgl.from_networkx, planar))
-    sbm_dgl = list(map(dgl.from_networkx, sbm))
-
-    torch.manual_seed(42)
-    baseline_eval = Evaluator("gin", device="cpu")
-    baseline_result = baseline_eval.evaluate_all(sbm_dgl, planar_dgl)
-    fid, mmd_rbf, mmd_linear = (
-        baseline_result["fid"],
-        baseline_result["mmd_rbf"],
-        baseline_result["mmd_linear"],
-    )
-
-    torch.manual_seed(42)
-    our_rbf_mmd = RBFGraphNeuralNetworkMMD2(planar).compute(sbm)
-    assert np.isclose(our_rbf_mmd, mmd_rbf)
-
-    torch.manual_seed(42)
-    our_linear_mmd = LinearGraphNeuralNetworkMMD2(planar).compute(sbm)
-    assert np.isclose(our_linear_mmd, mmd_linear)
-
-    torch.manual_seed(42)
-    our_fid = GraphNeuralNetworkFrechetDistance(planar).compute(sbm)
-    assert np.isclose(our_fid, fid)

@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, Optional
+from typing import Callable, Iterable, Optional, List
 
 import networkx as nx
 import numpy as np
@@ -94,8 +94,8 @@ class RandomGIN:
         output_dim: int = 1,
         init: str = "orthogonal",
         device: str = "cpu",
-        node_feat_loc: Optional[str] = None,
-        edge_feat_loc: Optional[str] = None,
+        node_feat_loc: Optional[List[str]] = None,
+        edge_feat_loc: Optional[List[str]] = None,
     ):
         self.model = GIN(
             num_layers=num_layers,
@@ -123,7 +123,14 @@ class RandomGIN:
 
     @torch.inference_mode()
     def __call__(self, graphs: Iterable[nx.Graph]):
-        pyg_graphs = [from_networkx(g) for g in graphs]
+        pyg_graphs = [
+            from_networkx(
+                g,
+                group_node_attrs=self.node_feat_loc,
+                group_edge_attrs=self.edge_feat_loc,
+            )
+            for g in graphs
+        ]
 
         if self.node_feat_loc is None:  # Use degree as features
             feats = (
@@ -138,14 +145,22 @@ class RandomGIN:
                 .to(self._device)
             )
         else:
-            # TODO: Implement loading node features from networkx graphs
-            assert False
+            feats = torch.cat(
+                [
+                    g.x
+                    for g in pyg_graphs
+                ]
+            ).to(self._device)
 
         if self.edge_feat_loc is None:
             edge_attr = None
         else:
-            # TODO: Implement loading edge features from networkx graphs
-            assert False
+            edge_attr = torch.cat(
+                [
+                    g.edge_attr
+                    for g in pyg_graphs
+                ]
+            ).to(self._device)
 
         batch = Batch.from_data_list(pyg_graphs).to(self._device)
 
