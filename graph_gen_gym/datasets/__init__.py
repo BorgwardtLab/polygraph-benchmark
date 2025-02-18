@@ -4,6 +4,7 @@ from .ego import EgoGraphDataset, SmallEgoGraphDataset
 from .lobster import LobsterGraphDataset
 from .spectre import PlanarGraphDataset, SBMGraphDataset
 from .proteins import DobsonDoigGraphDataset
+from .point_clouds import PointCloudGraphDataset
 
 __all__ = [
     "AbstractDataset",
@@ -16,4 +17,5 @@ __all__ = [
     "LobsterGraphDataset",
     "PlanarGraphDataset",
     "SBMGraphDataset",
+    "PointCloudGraphDataset",
 ]
