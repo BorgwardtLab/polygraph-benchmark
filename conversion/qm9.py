@@ -176,16 +176,16 @@ def process_split(raw_paths, raw_dir, split_name):
                 smiles_mol,
                 smiles_graph,
             ), f"Molecule {i} is not equivalent to its graph representation, mol: {smiles_mol}, from graph: {smiles_graph}"
-            data_list.append(data)
         except AssertionError as e:
             logger.error(f"Error checking if molecules are equivalent: {e}")
-
+            continue
         # Add graph-level attributes
         for attr in GUIDANCE_ATTRS:
             setattr(data, attr, y[i, GUIDANCE_ATTRS.index(attr)])
 
         # Add num_nodes explicitly
         data.num_nodes = data.atom_labels.size(0)
+        data_list.append(data)
     logger.info(f"Processed {len(data_list)} molecules")
     pyg_batch = Batch.from_data_list(data_list)
     logger.info(f"Created PyG batch with {pyg_batch.num_graphs} graphs")
