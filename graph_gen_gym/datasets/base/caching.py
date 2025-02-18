@@ -1,13 +1,13 @@
 import os
 import urllib
+from typing import Any, Sequence
 
 import torch
 from appdirs import user_cache_dir
+from loguru import logger
 
 from graph_gen_gym import __version__
 from graph_gen_gym.datasets.base.graph import Graph
-from typing import Any, Sequence
-from loguru import logger
 
 
 def identifier_to_path(identifier: str):

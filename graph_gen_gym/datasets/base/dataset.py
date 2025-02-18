@@ -5,7 +5,7 @@ Implementation of datasets.
 
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Optional, Union
+from typing import List, Union
 
 import networkx as nx
 import numpy as np
@@ -89,9 +89,8 @@ class OnlineGraphDataset(GraphDataset):
         self,
         split: str,
         memmap: bool = False,
-        data_store: Optional[Graph] = None,
     ):
-        if data_store is None and split is not None:
+        if split is not None:
             try:
                 data_store = load_from_cache(self.identifier, split, mmap=memmap)
             except FileNotFoundError:
