@@ -59,7 +59,6 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
     )
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "mmd_cls,stat",
     [
