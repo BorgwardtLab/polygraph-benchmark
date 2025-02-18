@@ -229,9 +229,6 @@ class GIN(nn.Module):
         self.ginlayers = torch.nn.ModuleList()
         self.batch_norms = torch.nn.ModuleList()
 
-        # self.preprocess_nodes = PreprocessNodeAttrs(
-        #     node_attrs=node_preprocess, output_dim=node_preprocess_output_dim)
-        # print(input_dim)
         for layer in range(self.num_layers - 1):
             if layer == 0:
                 mlp = MLP(
@@ -324,11 +321,4 @@ class GIN(nn.Module):
                 x = F.relu(x)
                 hidden_rep.append(x)
 
-            # perform pooling over all nodes in each graph in every layer
-            # graph_embed = torch.Tensor([]).to(self.device)
-            # for i, h in enumerate(hidden_rep):
-            #     pooled_h = self.pool(g, h)
-            #     graph_embed = torch.cat([graph_embed, pooled_h], dim = 1)
-
-            # return graph_embed
             return self.pool(x=hidden_rep[-1], batch=batch)
