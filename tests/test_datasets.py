@@ -1,3 +1,4 @@
+import os
 import networkx as nx
 import numpy as np
 import pytest
@@ -16,6 +17,7 @@ from graph_gen_gym.datasets import (
 )
 from graph_gen_gym.datasets.base import AbstractDataset
 from graph_gen_gym.metrics.base import VUN
+from graph_gen_gym.datasets.base.caching import clear_cache, identifier_to_path
 
 ALL_DATASETS = [
     QM9,
@@ -28,6 +30,22 @@ ALL_DATASETS = [
 ]
 
 REPROCESSABLE_DATASETS = [QM9]
+
+
+@pytest.mark.parametrize(
+    "ds_cls",
+    ALL_DATASETS,
+)
+def test_cache(ds_cls):
+    ds = ds_cls("train")
+    assert os.path.exists(identifier_to_path(ds.identifier))
+    clear_cache(ds.identifier)
+    assert not os.path.exists(identifier_to_path(ds.identifier))
+    ds = ds_cls("train")
+    assert os.path.exists(identifier_to_path(ds.identifier))
+    _ = ds[0]
+    assert isinstance(ds[0], Data)
+    _ = ds_cls("train")
 
 
 @pytest.mark.parametrize(

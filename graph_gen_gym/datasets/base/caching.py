@@ -8,6 +8,7 @@ from loguru import logger
 
 from graph_gen_gym import __version__
 from graph_gen_gym.datasets.base.graph import Graph
+import shutil
 
 
 def identifier_to_path(identifier: str):
@@ -18,6 +19,11 @@ def identifier_to_path(identifier: str):
         cache_dir = os.path.join(cache_dir, str(__version__))
     os.makedirs(cache_dir, exist_ok=True)
     return os.path.join(cache_dir, identifier)
+
+
+def clear_cache(identifier: str):
+    path = identifier_to_path(identifier)
+    shutil.rmtree(path)
 
 
 def download_to_cache(url: str, identifier: str, split: str = "data"):
@@ -31,17 +37,6 @@ def download_to_cache(url: str, identifier: str, split: str = "data"):
         )
     logger.debug(f"Downloading data to {path}")
     urllib.request.urlretrieve(url, path)
-
-
-def write_to_cache(data: Graph, identifier: str, split: str = "data"):
-    path = identifier_to_path(identifier)
-    os.makedirs(path, exist_ok=True)
-    path = os.path.join(f"{split}.pt")
-    if os.path.exists(path):
-        raise FileExistsError(f"Tried to write data to {path}, but path already exists")
-    primitive_data = data.model_dump()
-    logger.debug(f"Writing data to {path}")
-    torch.save(primitive_data, path)
 
 
 def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) -> Graph:
