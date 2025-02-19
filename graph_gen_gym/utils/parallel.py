@@ -1,0 +1,112 @@
+# -*- coding: utf-8 -*-
+"""parallel.py
+
+This script contains utility functions for parallel processing.
+"""
+
+import contextlib
+import time
+from typing import Any, Callable, Generator, Iterable, List
+
+import joblib
+from joblib import Parallel, delayed
+from rich.progress import Progress, TaskID
+
+
+def flatten_lists(lists: List[List[Any]]) -> List[Any]:
+    flattened = []
+    for sublist in lists:
+        if isinstance(sublist, list):
+            flattened.extend(sublist)
+        else:
+            flattened.append(sublist)
+    return flattened
+
+
+def make_chunks(lst: List[Any], n: int) -> List[List[Any]]:
+    chunks = [lst[i : i + n] for i in range(0, len(lst), n)]
+    return chunks
+
+
+@contextlib.contextmanager
+def rich_joblib(progress: Progress, task_id: TaskID) -> Generator[None, None, None]:
+    """Context manager to patch joblib to report into Rich progress bar."""
+
+    class RichBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, **kwargs)
+            self.completed_batches = 0
+
+        def __call__(self, *args: Any, **kwargs: Any) -> None:
+            self.completed_batches += 1
+            progress.update(
+                task_id,
+                advance=self.batch_size,
+            )
+            return super().__call__(*args, **kwargs)
+
+    old_batch_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = RichBatchCompletionCallback
+    try:
+        yield
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old_batch_callback
+
+
+def distribute_function(
+    func: Callable,
+    X: Iterable,
+    n_jobs: int,
+    description: str = "",
+    total: int = 1,
+    use_enumerate: bool = False,
+    **kwargs,
+) -> Any:
+    if total == 1:
+        total = len(X)  # type: ignore
+
+    if n_jobs == 1:
+        if use_enumerate:
+            return [func(idx, x, **kwargs) for idx, x in enumerate(X)]
+        else:
+            return [func(x, **kwargs) for x in X]
+
+    with Progress() as progress:
+        task_id = progress.add_task(description, total=total)
+        with rich_joblib(progress, task_id):
+            if use_enumerate:
+                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
+                    delayed(func)(idx, x, **kwargs) for idx, x in enumerate(X)
+                )
+            else:
+                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
+                    delayed(func)(x, **kwargs) for x in X
+                )
+    return Xt
+
+
+def retry(max_retries: int = 3, delay: float = 1.0):
+    """
+    Decorator that retries a function if it raises an exception.
+
+    Args:
+        max_retries: Maximum number of retry attempts
+        delay: Time to wait between retries in seconds
+    """
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            retries = 0
+            while retries < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    retries += 1
+                    if retries == max_retries:
+                        raise e
+                    time.sleep(delay)
+            return None
+
+        return wrapper
+
+    return decorator

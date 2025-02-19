@@ -252,6 +252,7 @@ def molecule2graph(
         charges=charge_tensor,
         radical_electrons=radical_tensor,
         pos=pos,
+        num_nodes=len(node_labels),
     )
 
 
