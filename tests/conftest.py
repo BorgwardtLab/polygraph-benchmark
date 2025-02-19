@@ -9,6 +9,7 @@ import graph_tool.all as _  # noqa
 
 import subprocess
 import urllib.request
+from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -152,3 +153,29 @@ def degree_adaptive_rbf_kernel():
 @pytest.fixture(scope="session", autouse=True)
 def clustering_laplace_kernel():
     return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
+
+
+@pytest.fixture(scope="session")
+def runtime_stats(request):
+    stats = defaultdict(lambda: {"ours": [], "baseline_parallel": [], "baseline": []})
+    yield stats
+
+    # Get capsys through the config
+    capsys = request.node.config.pluginmanager.get_plugin("capturemanager")
+    with capsys.global_and_fixture_disabled():
+        print("\n" + "="*50)
+        print("Runtime Comparisons")
+        print("="*50)
+        for test_name, times in stats.items():
+            our_avg = np.mean(times["ours"])
+            baseline_parallel_avg = np.mean(times["baseline_parallel"])
+            baseline_avg = np.mean(times["baseline"])
+            speedup_parallel = baseline_parallel_avg / our_avg
+            speedup_sequential = baseline_avg / our_avg
+            print(f"\n{test_name}:")
+            print(f"  Our implementation: {our_avg:.4f}s (avg)")
+            print(f"  Baseline (parallel): {baseline_parallel_avg:.4f}s (avg)")
+            print(f"  Baseline (sequential): {baseline_avg:.4f}s (avg)")
+            print(f"  Speedup (parallel): {speedup_parallel:.2f}x")
+            print(f"  Speedup (sequential): {speedup_sequential:.2f}x")
+        print("\n" + "="*50)

@@ -6,6 +6,7 @@ from gran_mmd_implementation.stats import (
     orbit_stats_all,
     spectral_stats,
 )
+import time
 
 from graph_gen_gym.metrics.gran import (
     GRANClusteringMMD2,
@@ -32,6 +33,8 @@ from graph_gen_gym.metrics.base import (
     MaxDescriptorMMD2Interval,
     MMDInterval,
 )
+
+from graph_gen_gym.datasets import ProceduralPlanarGraphDataset
 
 
 @pytest.mark.parametrize(
@@ -181,3 +184,43 @@ def test_max_mmd(request, datasets, kernel, variant):
     unpooled_mmd = DescriptorMMD2(sbm.to_nx(), kernel, variant)
     metric_arr = unpooled_mmd.compute(planar.to_nx())
     assert np.isclose(metric, np.max(metric_arr))
+
+
+@pytest.mark.skip
+@pytest.mark.parametrize(
+    "mmd_cls,baseline_method",
+    [
+        (GRANSpectralMMD2, spectral_stats),
+        (GRANOrbitMMD2, orbit_stats_all),
+        (GRANClusteringMMD2, clustering_stats),
+        (GRANDegreeMMD2, degree_stats),
+    ],
+)
+@pytest.mark.parametrize("parallel_baseline", [True, False])
+def test_measure_runtime(mmd_cls, baseline_method, orca_executable, runtime_stats, parallel_baseline):
+    if parallel_baseline and mmd_cls is GRANOrbitMMD2:
+        pytest.skip("GRAN doesn't implement parallel orbit stats")
+
+    ds1 = ProceduralPlanarGraphDataset("ds1", 1024, seed=42)
+    ds2 = ProceduralPlanarGraphDataset("ds2", 1024, seed=42)
+    ds1, ds2 = list(ds1.to_nx()), list(ds2.to_nx())
+
+    if baseline_method is orbit_stats_all:
+        patched_baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)  # noqa
+    else:
+        patched_baseline_method = lambda x, y: baseline_method(x, y, is_parallel=parallel_baseline)  # noqa
+
+
+    for _ in range(1):
+        t0 = time.time()
+        mmd = mmd_cls(ds1)
+        our_estimate = mmd.compute(ds2)
+        t1 = time.time()
+        runtime_stats[mmd_cls.__name__]["ours"].append(t1 - t0)
+
+        t0 = time.time()
+        baseline_estimate = patched_baseline_method(ds1, ds2)
+        t1 = time.time()
+        runtime_stats[mmd_cls.__name__]["baseline_parallel" if parallel_baseline else "baseline"].append(t1 - t0)
+
+        assert np.isclose(our_estimate, baseline_estimate)
