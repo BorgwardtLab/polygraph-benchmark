@@ -12,7 +12,7 @@ import numpy as np
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
-from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache
+from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache, write_to_cache
 from graph_gen_gym.datasets.base.graph import Graph
 
 
@@ -100,3 +100,21 @@ class OnlineGraphDataset(GraphDataset):
 
     @abstractmethod
     def url_for_split(self, split: str): ...
+
+
+class ProceduralGraphDataset(GraphDataset):
+    def __init__(self, split: str, config_hash: str, memmap: bool = False):
+        self._identifier = config_hash
+        try:
+            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+        except FileNotFoundError:
+            write_to_cache(self.identifier, split, self.generate_data())
+            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+        super().__init__(data_store)
+
+    @property
+    def identifier(self) -> str:
+        return f"{self.__module__}.{self.__class__.__qualname__}.{self._identifier}"
+
+    @abstractmethod
+    def generate_data(self) -> Graph: ...

@@ -3,7 +3,7 @@ from typing import List
 import networkx as nx
 import pytest
 
-from graph_gen_gym.datasets.spectre import PlanarGraphDataset
+from graph_gen_gym.datasets import PlanarGraphDataset
 from graph_gen_gym.metrics.base import VUN
 
 

@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from graph_gen_gym.datasets.spectre import PlanarGraphDataset
+from graph_gen_gym.datasets import PlanarGraphDataset
 from graph_gen_gym.metrics.base import FrechetDistance
 from graph_gen_gym.utils.graph_descriptors import OrbitCounts
 

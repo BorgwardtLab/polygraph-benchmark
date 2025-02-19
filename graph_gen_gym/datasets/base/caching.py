@@ -39,6 +39,13 @@ def download_to_cache(url: str, identifier: str, split: str = "data"):
     urllib.request.urlretrieve(url, path)
 
 
+def write_to_cache(identifier: str, split: str, data: Graph):
+    path = identifier_to_path(identifier)
+    os.makedirs(path, exist_ok=True)
+    path = os.path.join(path, f"{split}.pt")
+    logger.debug(f"Writing data to {path}")
+    torch.save(data.model_dump(), path)
+
 def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) -> Graph:
     path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
     if not os.path.exists(path):
