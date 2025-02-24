@@ -219,5 +219,5 @@ if __name__ == "__main__":
     train, val, test = split_raw_data(raw_paths, args.destination)
     os.makedirs(args.destination, exist_ok=True)
     process_split(raw_paths, args.destination, "test")
-    process_split(raw_paths, args.destination, "val")
+    process_split(raw_paths, args.destination, "valid")
     process_split(raw_paths, args.destination, "train")
