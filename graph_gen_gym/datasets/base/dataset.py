@@ -90,12 +90,11 @@ class OnlineGraphDataset(GraphDataset):
         split: str,
         memmap: bool = False,
     ):
-        if split is not None:
-            try:
-                data_store = load_from_cache(self.identifier, split, mmap=memmap)
-            except FileNotFoundError:
-                download_to_cache(self.url_for_split(split), self.identifier, split)
-                data_store = load_from_cache(self.identifier, split, mmap=memmap)
+        try:
+            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+        except FileNotFoundError:
+            download_to_cache(self.url_for_split(split), self.identifier, split)
+            data_store = load_from_cache(self.identifier, split, mmap=memmap)
         super().__init__(data_store)
 
     @abstractmethod
