@@ -29,6 +29,12 @@ class QM9(OnlineGraphDataset):
         "test": "https://datashare.biochem.mpg.de/s/IddnVKmUuZg7ayN/download",
     }
 
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
@@ -47,3 +53,6 @@ class QM9(OnlineGraphDataset):
             pos=graph.pos,
         )
         return mol is not None
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]

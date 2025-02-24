@@ -219,6 +219,12 @@ class SBMGraphDataset(OnlineGraphDataset):
         "test": "https://datashare.biochem.mpg.de/s/DwEdatPuPZ60Bpd/download",
     }
 
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
@@ -229,3 +235,6 @@ class SBMGraphDataset(OnlineGraphDataset):
     @staticmethod
     def is_valid_alt(graph: nx.Graph) -> bool:
         return is_sbm_graph_alt(graph)
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]

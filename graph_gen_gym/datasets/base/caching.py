@@ -1,6 +1,6 @@
 import os
 import urllib
-from typing import Any, Sequence
+from typing import Any, Sequence, Optional
 
 import torch
 from appdirs import user_cache_dir
@@ -9,7 +9,15 @@ from loguru import logger
 from graph_gen_gym import __version__
 from graph_gen_gym.datasets.base.graph import Graph
 import shutil
+import hashlib
 
+
+def file_hash(path: str) -> str:
+    with open(path, "rb") as f:
+        data_hash = hashlib.md5()
+        while chunk := f.read(8192):
+            data_hash.update(chunk)
+    return data_hash.hexdigest()
 
 def identifier_to_path(identifier: str):
     cache_dir = os.environ.get("GRAPH_GEN_GYM_CACHE_DIR")
@@ -46,10 +54,13 @@ def write_to_cache(identifier: str, split: str, data: Graph):
     logger.debug(f"Writing data to {path}")
     torch.save(data.model_dump(), path)
 
-def load_from_cache(identifier: str, split: str = "data", mmap: bool = False) -> Graph:
+def load_from_cache(identifier: str, split: str = "data", mmap: bool = False, data_hash: Optional[str] = None) -> Graph:
     path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
     if not os.path.exists(path):
         raise FileNotFoundError
+    if data_hash is not None and file_hash(path) != data_hash:
+        raise ValueError(f"Hash mismatch for {path}. Expected {data_hash}, got {file_hash}")
+
     logger.debug(f"Loading data from {path}")
     data = torch.load(path, weights_only=True, mmap=mmap)
     return Graph(**data)

@@ -55,7 +55,7 @@ def test_cache(ds_cls):
 def test_loading(ds_cls):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
-        assert isinstance(ds, AbstractDataset), "Should inherit from AbstraactDataset"
+        assert isinstance(ds, AbstractDataset), "Should inherit from AbstractDataset"
         assert len(ds) > 0, "Dataset should have at least one item"
         pyg_graphs = list(ds)
         assert len(pyg_graphs) == len(ds), "Dataset should return same number of items"

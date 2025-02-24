@@ -49,9 +49,18 @@ class PlanarGraphDataset(OnlineGraphDataset):
         "test": "https://datashare.biochem.mpg.de/s/DNwtgo3mlOErxHX/download",
     }
 
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
     @staticmethod
     def is_valid(graph: nx.Graph) -> bool:
         return nx.is_connected(graph) and nx.is_planar(graph)
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]

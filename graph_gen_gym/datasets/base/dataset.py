@@ -91,15 +91,17 @@ class OnlineGraphDataset(GraphDataset):
         memmap: bool = False,
     ):
         try:
-            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+            data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
         except FileNotFoundError:
             download_to_cache(self.url_for_split(split), self.identifier, split)
-            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+            data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
         super().__init__(data_store)
 
     @abstractmethod
     def url_for_split(self, split: str): ...
 
+    @abstractmethod
+    def hash_for_split(self, split: str) -> str: ...
 
 class ProceduralGraphDataset(GraphDataset):
     def __init__(self, split: str, config_hash: str, memmap: bool = False):

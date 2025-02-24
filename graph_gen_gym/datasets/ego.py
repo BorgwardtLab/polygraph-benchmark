@@ -10,12 +10,21 @@ class EgoGraphDataset(OnlineGraphDataset):
         "test": "https://datashare.biochem.mpg.de/s/bASBL8VCUVm2jai/download",
     }
 
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
     @staticmethod
     def is_valid(graph: nx.Graph):
         return graph.number_of_nodes() > 0 and graph.number_of_edges() > 0
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]
 
 
 class SmallEgoGraphDataset(OnlineGraphDataset):
@@ -25,9 +34,18 @@ class SmallEgoGraphDataset(OnlineGraphDataset):
         "test": "https://datashare.biochem.mpg.de/s/ey00DsRG1Zm7SQt/download",
     }
 
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
     @staticmethod
     def is_valid(graph: nx.Graph):
         return graph.number_of_nodes() > 0 and graph.number_of_edges() > 0
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]
