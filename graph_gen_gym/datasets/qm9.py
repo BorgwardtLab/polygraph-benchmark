@@ -24,9 +24,9 @@ class QM9(OnlineGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/arwIdLS7ABHt78e/download",
-        "val": "https://datashare.biochem.mpg.de/s/HQFS0Lkam4Cyf4d/download",
-        "test": "https://datashare.biochem.mpg.de/s/IddnVKmUuZg7ayN/download",
+        "train": "https://datashare.biochem.mpg.de/s/OcGj065QUzbIgvM/download",
+        "valid": "https://datashare.biochem.mpg.de/s/bzuxQ3uZnPSTjMZ/download",
+        "test": "https://datashare.biochem.mpg.de/s/xMJYUrAjz4D1tIj/download",
     }
 
     _HASH_FOR_SPLIT = {
