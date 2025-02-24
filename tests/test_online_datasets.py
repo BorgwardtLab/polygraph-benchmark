@@ -5,6 +5,7 @@ import pytest
 import torch
 from torch_geometric.data import Data
 from tqdm.rich import tqdm
+import warnings
 
 from graph_gen_gym.datasets import (
     QM9,
@@ -31,6 +32,27 @@ ALL_DATASETS = [
 
 REPROCESSABLE_DATASETS = [QM9]
 
+@pytest.mark.parametrize(
+    "ds_cls",
+    [PlanarGraphDataset, SBMGraphDataset],
+)
+def test_sample_graph_size(ds_cls):
+    ds = ds_cls("train")
+    with warnings.catch_warnings():
+        samples = ds.sample_graph_size(n_samples=100)
+        assert isinstance(samples, list)
+        assert isinstance(samples[0], int)
+        assert len(samples) == 100
+        assert np.all(np.array(samples) > 0)
+
+        single_sample = ds.sample_graph_size()
+        assert isinstance(single_sample, int)
+        assert single_sample > 0
+
+    ds_val = ds_cls("val")
+    with pytest.warns(UserWarning):
+        # This should warn because usually we want to sample from the training set
+        _ = ds_val.sample_graph_size()
 
 @pytest.mark.parametrize(
     "ds_cls",

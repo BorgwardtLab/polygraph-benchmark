@@ -5,7 +5,8 @@ Implementation of datasets.
 
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Union
+from typing import List, Union, Optional
+import warnings
 
 import networkx as nx
 import numpy as np
@@ -69,6 +70,15 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
+    def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
+        samples = []
+        for _ in range(n_samples if n_samples is not None else 1):
+            idx = np.random.randint(len(self))
+            node_left, node_right = self._data_store.indexing_info.node_slices[idx].tolist()
+            samples.append(node_right - node_left)
+
+        return samples if n_samples is not None else samples[0]
+
     def sample(self, n_samples: int, replace: bool = False) -> list[nx.Graph]:
         idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
         data_list = self[idx_to_sample]
@@ -95,13 +105,20 @@ class OnlineGraphDataset(GraphDataset):
         except FileNotFoundError:
             download_to_cache(self.url_for_split(split), self.identifier, split)
             data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
+        self._split = split
         super().__init__(data_store)
+
+    def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
+        if self._split != "train":
+            warnings.warn(f"Sampling from {self._split} set, not training set.")
+        return super().sample_graph_size(n_samples)
 
     @abstractmethod
     def url_for_split(self, split: str): ...
 
     @abstractmethod
     def hash_for_split(self, split: str) -> str: ...
+
 
 class ProceduralGraphDataset(GraphDataset):
     def __init__(self, split: str, config_hash: str, memmap: bool = False):
