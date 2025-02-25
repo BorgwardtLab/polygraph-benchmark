@@ -74,9 +74,30 @@ GUIDANCE_ATTRS = [
     "c",
 ]
 
-# These are a collection of molecules that have unclear stereochemistry,
-# as such we discard them.
-UNCLEAR_STEREO_SPECS = [38359, 75031]
+# Removed stereochemistry-dependent molecules.
+UNCLEAR_STEREO_SPECS = [
+    38359,
+    75031,
+    42056,
+    43391,
+    17957,
+    39605,
+    75045,
+    93167,
+    38365,
+    39614,
+    42059,
+    42062,
+    42068,
+    42069,
+    42117,
+    45903,
+    47263,
+    47264,
+    75406,
+    93166,
+    95588,
+]
 
 raw_url = (
     "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/" "molnet_publish/qm9.zip"
