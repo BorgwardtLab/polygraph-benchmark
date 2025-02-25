@@ -184,13 +184,3 @@ def test_split_disjointness(ds_cls):
         assert result["unique"].mle == 1
         assert result["novel"].mle == 1
         prev_splits.extend(graphs)
-
-
-@pytest.mark.skip
-@pytest.mark.parametrize("ds_cls", REPROCESSABLE_DATASETS)
-def test_precomputed_false(ds_cls):
-    # TODO: add attribute dimension checks
-    for split in ["train", "val", "test"]:
-        ds = ds_cls(split, use_precomputed=False)
-        assert len(ds) > 0
-        assert len(ds.to_nx()) > 0
