@@ -1,17 +1,19 @@
-from .qm9 import QM9
-from .base.dataset import GraphDataset, OnlineGraphDataset, AbstractDataset
+from .base.dataset import AbstractDataset, GraphDataset, OnlineGraphDataset
 from .ego import EgoGraphDataset, SmallEgoGraphDataset
 from .lobster import LobsterGraphDataset, ProceduralLobsterGraphDataset
-from .sbm import SBMGraphDataset, ProceduralSBMGraphDataset
+from .molecules import MOSES, QM9, Guacamol
 from .planar import PlanarGraphDataset, ProceduralPlanarGraphDataset
-from .proteins import DobsonDoigGraphDataset
 from .point_clouds import PointCloudGraphDataset
+from .proteins import DobsonDoigGraphDataset
+from .sbm import ProceduralSBMGraphDataset, SBMGraphDataset
 
 __all__ = [
     "AbstractDataset",
     "GraphDataset",
     "OnlineGraphDataset",
     "QM9",
+    "MOSES",
+    "Guacamol",
     "DobsonDoigGraphDataset",
     "EgoGraphDataset",
     "SmallEgoGraphDataset",

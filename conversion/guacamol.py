@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 
 import torch
 from loguru import logger
 from rdkit import Chem, RDLogger
-from rdkit.Chem.rdchem import BondType as BT
 from torch_geometric.data import Batch, download_url
 
 from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.molecules import (
+    EDGE_ATTRS,
     NODE_ATTRS,
     add_hydrogens_and_stereochemistry,
     graph2molecule,
@@ -25,55 +24,16 @@ from graph_gen_gym.utils.parallel import (
     retry,
 )
 
-TRAIN_HASH = "05ad85d871958a05c02ab51a4fde8530"
-VALID_HASH = "e53db4bff7dc4784123ae6df72e3b1f0"
-TEST_HASH = "677b757ccec4809febd83850b43e1616"
-
-
 TRAIN_URL = "https://figshare.com/ndownloader/files/13612760"
 TEST_URL = "https://figshare.com/ndownloader/files/13612757"
 VALID_URL = "https://figshare.com/ndownloader/files/13612766"
 ALL_URL = "https://figshare.com/ndownloader/files/13612745"
 
 
-ATOM_ENCODER = {
-    "C": 0,
-    "N": 1,
-    "O": 2,
-    "F": 3,
-    "B": 4,
-    "Br": 5,
-    "Cl": 6,
-    "I": 7,
-    "P": 8,
-    "S": 9,
-    "Se": 10,
-    "Si": 11,
-    "H": 12,
-}
-ATOM_DECODER = ["C", "N", "O", "F", "B", "Br", "Cl", "I", "P", "S", "Se", "Si", "H"]
-BOND_ENCODER = {BT.SINGLE: 0, BT.DOUBLE: 1, BT.TRIPLE: 2, BT.AROMATIC: 3}
-
-
 def files_exist(files) -> bool:
     # NOTE: We return `False` in case `files` is empty, leading to a
     # re-processing of files on every instantiation.
     return len(files) != 0 and all([os.path.exists(f) for f in files])
-
-
-def compare_hash(output_file: str, correct_hash: str) -> bool:
-    """
-    Computes the md5 hash of a SMILES file and check it against a given one
-    Returns false if hashes are different
-    """
-    output_hash = hashlib.md5(open(output_file, "rb").read()).hexdigest()
-    if output_hash != correct_hash:
-        logger.error(
-            f"{output_file} file has different hash, {output_hash}, than expected, {correct_hash}!"
-        )
-        return False
-
-    return True
 
 
 def download(raw_dir):
@@ -96,23 +56,11 @@ def download(raw_dir):
     valid_path = os.path.join(raw_dir, "guacamol_v1_valid.smiles")
     if not os.path.exists(valid_path):
         valid_path = download_url(VALID_URL, raw_dir)
-        os.rename(valid_path, os.path.join(raw_dir, "guacamol_v1_valid.smiles"))
+        os.rename(valid_path, os.path.join(raw_dir, "guacamol_v1_val.smiles"))
     else:
         logger.info(
             f"Skipping download of valid set, file already exists: {valid_path}"
         )
-
-    # check the hashes
-    # Check whether the md5-hashes of the generated smiles files match
-    # the precomputed hashes, this ensures everyone works with the same splits.
-    valid_hashes = [
-        compare_hash(train_path, TRAIN_HASH),
-        compare_hash(valid_path, VALID_HASH),
-        compare_hash(test_path, TEST_HASH),
-    ]
-
-    if not all(valid_hashes):
-        raise SystemExit("Invalid hashes for the dataset files")
 
 
 def check_smiles_graph_mapping(smiles):
@@ -137,7 +85,6 @@ def check_smiles_graph_mapping_worker(smile_idx, smile):
         node_labels=data.atom_labels,
         edge_index=data.edge_index,
         bond_types=data.bond_types,
-        stereo_types=data.stereo_types,
         charges=data.charges,
         num_radical_electrons=data.radical_electrons,
         pos=data.pos,
@@ -179,6 +126,7 @@ def process(
     graph_storage = Graph.from_pyg_batch(
         pyg_batch,
         node_attrs=NODE_ATTRS,
+        edge_attrs=EDGE_ATTRS,
     ).model_dump()
 
     torch.save(
@@ -199,5 +147,5 @@ if __name__ == "__main__":
 
     download(args.destination)
     process("test", args.destination, args.n_jobs, args.limit, args.chunk_size)
-    process("valid", args.destination, args.n_jobs, args.limit, args.chunk_size)
+    process("val", args.destination, args.n_jobs, args.limit, args.chunk_size)
     process("train", args.destination, args.n_jobs, args.limit, args.chunk_size)

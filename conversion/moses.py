@@ -10,11 +10,11 @@ import rdkit  # noqa
 import torch
 from loguru import logger
 from rdkit import Chem, RDLogger
-from rdkit.Chem.rdchem import BondType as BT
 from torch_geometric.data import Batch, download_url
 
 from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.molecules import (
+    EDGE_ATTRS,
     NODE_ATTRS,
     add_hydrogens_and_stereochemistry,
     graph2molecule,
@@ -60,7 +60,6 @@ def check_smiles_graph_mapping_worker(smile_idx, smile):
         node_labels=data.atom_labels,
         edge_index=data.edge_index,
         bond_types=data.bond_types,
-        stereo_types=data.stereo_types,
         charges=data.charges,
         num_radical_electrons=data.radical_electrons,
         pos=data.pos,
@@ -88,16 +87,13 @@ def download(train_url, test_url, val_url, raw_dir):
 
     train_path = download_file(train_url, raw_dir, "train_moses.csv", "train")
     test_path = download_file(test_url, raw_dir, "val_moses.csv", "test")
-    valid_path = download_file(val_url, raw_dir, "test_moses.csv", "valid")
+    valid_path = download_file(val_url, raw_dir, "test_moses.csv", "val")
 
 
-def process(split, raw_dir, n_jobs, limit, chunk_size):
+def process(split, out_dir, n_jobs, limit, chunk_size):
     RDLogger.DisableLog("rdApp.*")
-    types = {atom: i for i, atom in enumerate(atom_decoder)}
 
-    bonds = {BT.SINGLE: 0, BT.DOUBLE: 1, BT.TRIPLE: 2, BT.AROMATIC: 3}
-
-    path = osp.join(raw_dir, raw_file_names[0])
+    path = osp.join(out_dir, f"{split}_moses.csv")
     smiles_list = pd.read_csv(path)["SMILES"].values.tolist()
 
     data_list = []
@@ -125,12 +121,13 @@ def process(split, raw_dir, n_jobs, limit, chunk_size):
     graph_storage = Graph.from_pyg_batch(
         pyg_batch,
         node_attrs=NODE_ATTRS,
+        edge_attrs=EDGE_ATTRS,
     ).model_dump()
-
     torch.save(
         graph_storage,
-        os.path.join(raw_dir, f"{split}.pt"),
+        os.path.join(out_dir, f"{split}.pt"),
     )
+    logger.info(f"Saved graph storage to {os.path.join(out_dir, f'{split}.pt')}")
 
 
 if __name__ == "__main__":
@@ -140,10 +137,10 @@ if __name__ == "__main__":
     parser.add_argument("--destination", type=str, required=True)
     parser.add_argument("--n_jobs", type=int, default=10)
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--chunk_size", type=int, default=100)
+    parser.add_argument("--chunk_size", type=int, default=1000)
     args = parser.parse_args()
 
     download(train_url, test_url, val_url, args.destination)
     process("test", args.destination, args.n_jobs, args.limit, args.chunk_size)
-    process("valid", args.destination, args.n_jobs, args.limit, args.chunk_size)
+    process("val", args.destination, args.n_jobs, args.limit, args.chunk_size)
     process("train", args.destination, args.n_jobs, args.limit, args.chunk_size)

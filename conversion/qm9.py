@@ -165,7 +165,6 @@ def process_split(raw_paths, raw_dir, split_name):
             node_labels=data.atom_labels,
             edge_index=data.edge_index,
             bond_types=data.bond_types,
-            stereo_types=data.stereo_types,
             charges=data.charges,
             num_radical_electrons=data.radical_electrons,
             pos=data.pos,
@@ -219,5 +218,5 @@ if __name__ == "__main__":
     train, val, test = split_raw_data(raw_paths, args.destination)
     os.makedirs(args.destination, exist_ok=True)
     process_split(raw_paths, args.destination, "test")
-    process_split(raw_paths, args.destination, "valid")
+    process_split(raw_paths, args.destination, "val")
     process_split(raw_paths, args.destination, "train")
