@@ -35,6 +35,7 @@ from graph_gen_gym.utils.kernels import (
 NO_SKIP_OPTION = "--no-skip"
 SAMPLE_SIZE_OPTION = "--sample-size"
 LOG_LEVEL_OPTION = "--test-log-level"
+SKIP_SLOW_OPTION = "--skip-slow"
 
 
 def pytest_addoption(parser):
@@ -57,6 +58,12 @@ def pytest_addoption(parser):
         default="WARNING",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         help="set the logging level",
+    )
+    parser.addoption(
+        SKIP_SLOW_OPTION,
+        action="store_true",
+        default=False,
+        help="skip slow tests",
     )
 
 
@@ -87,11 +94,12 @@ def setup_logging(request):
         level=log_level,
         encoding="utf-8",
     )
-    logger.success(f"Logging level set to {log_level}")
-    logger.success(f"Sample size set to {request.config.getoption(SAMPLE_SIZE_OPTION)}")
+    logger.success(f"--log-level set to {log_level}")
     logger.success(
-        f"Skipping tests operator set to {request.config.getoption(NO_SKIP_OPTION)}"
+        f"--sample-size set to {request.config.getoption(SAMPLE_SIZE_OPTION)}"
     )
+    logger.success(f"--no-skip set to {request.config.getoption(NO_SKIP_OPTION)}")
+    logger.success(f"--skip-slow set to {request.config.getoption(SKIP_SLOW_OPTION)}")
     return logger
 
 
@@ -163,9 +171,9 @@ def runtime_stats(request):
     # Get capsys through the config
     capsys = request.node.config.pluginmanager.get_plugin("capturemanager")
     with capsys.global_and_fixture_disabled():
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("Runtime Comparisons")
-        print("="*50)
+        print("=" * 50)
         for test_name, times in stats.items():
             our_avg = np.mean(times["ours"])
             baseline_parallel_avg = np.mean(times["baseline_parallel"])
@@ -178,4 +186,9 @@ def runtime_stats(request):
             print(f"  Baseline (sequential): {baseline_avg:.4f}s (avg)")
             print(f"  Speedup (parallel): {speedup_parallel:.2f}x")
             print(f"  Speedup (sequential): {speedup_sequential:.2f}x")
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
+
+
+@pytest.fixture(scope="session")
+def skip_slow(request):
+    return request.config.getoption(SKIP_SLOW_OPTION)

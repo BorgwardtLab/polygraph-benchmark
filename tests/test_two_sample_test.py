@@ -52,6 +52,7 @@ def test_bootstrap_test(datasets, degree_linear_kernel):
     assert p > 0.05
 
 
+@pytest.mark.skipif("config.getoption('--skip-slow')")
 @pytest.mark.parametrize("kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"])
 def test_multi_bootstrap_test(request, datasets, kernel):
     planar, sbm = datasets
@@ -71,6 +72,7 @@ def test_multi_bootstrap_test(request, datasets, kernel):
         assert p > 0.05
 
 
+@pytest.mark.skipif("config.getoption('--skip-slow')")
 @pytest.mark.parametrize("kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"])
 def test_max_bootstrap_test(request, datasets, kernel):
     planar, sbm = datasets
