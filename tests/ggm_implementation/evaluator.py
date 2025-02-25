@@ -25,7 +25,7 @@ class Evaluator():
 
             try:
                 num_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-                self.logger.info(f'number of parameters: {num_parameters}')
+                self.logger.debug(f'number of parameters: {num_parameters}')
             except:
                 pass
 
