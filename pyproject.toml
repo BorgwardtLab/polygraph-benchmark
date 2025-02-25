@@ -24,7 +24,6 @@ dependencies = [
     "appdirs",
     "loguru",
     "python-louvain",
-    "orbit_count @ git+ssh://git@github.com/BorgwardtLab/orca-bindings.git",
     "rdkit",
     "pandas",
 ]
@@ -39,7 +38,6 @@ dev = [
     "ruff",
     "pre-commit",
     "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git", # Required for testing equivalence to Thompson et al.
-    "torch>=2.4, <2.5",
     "ipykernel",
 ]
 gpu = [
@@ -48,6 +46,11 @@ gpu = [
     "nvidia-cuda-nvrtc-cu12==12.4",
     "nvidia-cuda-cupti-cu12==12.4",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]  # look for packages in the current directory
+include = ["graph_gen_gym*"]  # include all packages starting with graph_gen_gym
+exclude = ["conversion"]  # keep your existing exclude
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
