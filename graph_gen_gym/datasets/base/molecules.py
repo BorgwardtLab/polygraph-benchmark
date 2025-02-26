@@ -81,6 +81,24 @@ def mol2smiles(mol, canonical: bool = False):
     return Chem.MolToSmiles(mol, canonical=canonical)
 
 
+def smiles_with_explicit_hydrogens(smiles: str, canonical: bool = True) -> str:
+    """Convert a SMILES string to a SMILES string with all hydrogens made explicit.
+
+    Args:
+        smiles: Input SMILES string
+        canonical: Whether to return canonical SMILES
+
+    Returns:
+        SMILES string with all hydrogens made explicit
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+
+    mol = Chem.AddHs(mol)
+    return Chem.MolToSmiles(mol, canonical=canonical, allHsExplicit=True)
+
+
 def graph2molecule(
     node_labels: torch.Tensor,
     edge_index: torch.Tensor,
@@ -112,6 +130,12 @@ def graph2molecule(
         a, b = bond[0].item(), bond[1].item()
         if (a, b) in edges_processed or (b, a) in edges_processed:
             continue
+
+        mol.AddBond(
+            node_idx_to_atom_idx[a],
+            node_idx_to_atom_idx[b],
+            BOND_TYPES[bond_type],
+        )
 
         edges_processed.add((a, b))
 
