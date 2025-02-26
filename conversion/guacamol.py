@@ -8,6 +8,7 @@ import torch
 from loguru import logger
 from rdkit import Chem, RDLogger
 from torch_geometric.data import Batch, download_url
+from tqdm.rich import tqdm
 
 from graph_gen_gym.datasets.base.graph import Graph
 from graph_gen_gym.datasets.base.molecules import (
@@ -16,6 +17,7 @@ from graph_gen_gym.datasets.base.molecules import (
     add_hydrogens_and_stereochemistry,
     graph2molecule,
     molecule2graph,
+    smiles_with_explicit_hydrogens,
 )
 from graph_gen_gym.utils.parallel import (
     distribute_function,
@@ -94,7 +96,12 @@ def check_smiles_graph_mapping_worker(smile_idx, smile):
     mol2 = Chem.MolFromSmiles(smile2)
     mol2 = add_hydrogens_and_stereochemistry(mol2)
     smile2 = Chem.MolToSmiles(mol2, canonical=True)
-    assert smile2 == reconstructed_smiles, (smile2, reconstructed_smiles)
+    assert smiles_with_explicit_hydrogens(smile2) == smiles_with_explicit_hydrogens(
+        reconstructed_smiles
+    ), (
+        smiles_with_explicit_hydrogens(smile2),
+        smiles_with_explicit_hydrogens(reconstructed_smiles),
+    )
     return data
 
 
@@ -102,9 +109,14 @@ def process(
     split: str, raw_dir: str, n_jobs: int, limit: int | None, chunk_size: int
 ) -> None:
     path = os.path.join(raw_dir, f"guacamol_v1_{split}.smiles")
-    smile_list = open(path).readlines()
+    smile_list = [
+        line.strip()
+        for line in tqdm(open(path).readlines(), desc=f"Processing {split} smiles")
+    ]
+
     if limit is not None:
         smile_list = smile_list[:limit]
+    logger.info(f"Processing {len(smile_list)} smiles")
 
     chunks = make_chunks(
         [(idx, item) for idx, item in enumerate(smile_list)], chunk_size
