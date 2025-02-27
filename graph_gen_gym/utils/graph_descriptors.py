@@ -189,6 +189,8 @@ class NormalizedDescriptor:
 
 
 class WeisfeilerLehmanDescriptor:
+    """This is meant to be used together with the LinearKernel."""
+
     def __init__(
         self,
         iterations: int = 3,
