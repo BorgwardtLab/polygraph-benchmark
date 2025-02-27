@@ -10,6 +10,7 @@ from graph_gen_gym import __version__
 from graph_gen_gym.datasets.base.graph import Graph
 import shutil
 import hashlib
+import filelock
 
 
 def file_hash(path: str) -> str:
@@ -37,33 +38,42 @@ def clear_cache(identifier: str):
 def download_to_cache(url: str, identifier: str, split: str = "data"):
     path = identifier_to_path(identifier)
     os.makedirs(path, exist_ok=True)
-    path = os.path.join(path, f"{split}.pt")
-    if os.path.exists(path):
-        logger.debug(f"Couldn't download data to {path} because it already exists")
-        raise FileExistsError(
-            f"Tried to download data to {path}, but path already exists"
-        )
-    logger.debug(f"Downloading data to {path}")
-    urllib.request.urlretrieve(url, path)
+    file_path = os.path.join(path, f"{split}.pt")
+    lock_path = file_path + ".lock"
+
+    with filelock.FileLock(lock_path):
+        if os.path.exists(file_path):
+            logger.debug(f"Couldn't download data to {file_path} because it already exists")
+            raise FileExistsError(
+                f"Tried to download data to {file_path}, but path already exists"
+            )
+        logger.debug(f"Downloading data to {file_path}")
+        urllib.request.urlretrieve(url, file_path)
 
 
 def write_to_cache(identifier: str, split: str, data: Graph):
     path = identifier_to_path(identifier)
     os.makedirs(path, exist_ok=True)
-    path = os.path.join(path, f"{split}.pt")
-    logger.debug(f"Writing data to {path}")
-    torch.save(data.model_dump(), path)
+    file_path = os.path.join(path, f"{split}.pt")
+    lock_path = file_path + ".lock"
+
+    with filelock.FileLock(lock_path):
+        logger.debug(f"Writing data to {file_path}")
+        torch.save(data.model_dump(), file_path)
 
 def load_from_cache(identifier: str, split: str = "data", mmap: bool = False, data_hash: Optional[str] = None) -> Graph:
-    path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
-    if not os.path.exists(path):
-        raise FileNotFoundError
-    if data_hash is not None and file_hash(path) != data_hash:
-        raise ValueError(f"Hash mismatch for {path}. Expected {data_hash}, got {file_hash}")
+    file_path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
+    lock_path = file_path + ".lock"
 
-    logger.debug(f"Loading data from {path}")
-    data = torch.load(path, weights_only=True, mmap=mmap)
-    return Graph(**data)
+    with filelock.FileLock(lock_path):
+        if not os.path.exists(file_path):
+            raise FileNotFoundError
+        if data_hash is not None and file_hash(file_path) != data_hash:
+            raise ValueError(f"Hash mismatch for {file_path}. Expected {data_hash}, got {file_hash(file_path)}")
+
+        logger.debug(f"Loading data from {file_path}")
+        data = torch.load(file_path, weights_only=True, mmap=mmap)
+        return Graph(**data)
 
 
 def to_list(value: Any) -> Sequence:
