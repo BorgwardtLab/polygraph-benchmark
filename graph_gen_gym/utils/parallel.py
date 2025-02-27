@@ -60,6 +60,7 @@ def distribute_function(
     description: str = "",
     total: int = 1,
     use_enumerate: bool = False,
+    show_progress: bool = True,
     **kwargs,
 ) -> Any:
     if total == 1:
@@ -71,17 +72,21 @@ def distribute_function(
         else:
             return [func(x, **kwargs) for x in X]
 
-    with Progress() as progress:
-        task_id = progress.add_task(description, total=total)
-        with rich_joblib(progress, task_id):
-            if use_enumerate:
-                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
-                    delayed(func)(idx, x, **kwargs) for idx, x in enumerate(X)
-                )
-            else:
-                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
-                    delayed(func)(x, **kwargs) for x in X
-                )
+    if use_enumerate:
+        parallel_execution = (
+            delayed(func)(idx, x, **kwargs) for idx, x in enumerate(X)
+        )
+    else:
+        parallel_execution = (delayed(func)(x, **kwargs) for x in X)
+
+    if show_progress:
+        with Progress() as progress:
+            task_id = progress.add_task(description, total=total)
+            with rich_joblib(progress, task_id):
+                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
+    else:
+        Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
+
     return Xt
 
 

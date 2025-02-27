@@ -200,6 +200,7 @@ class WeisfeilerLehmanDescriptor:
         offset: int = 1000000,
         n_jobs: int = 1,
         n_graphs_per_job: int = 100,
+        show_progress: bool = False,
     ):
         self._iterations = iterations
         self._sparse = sparse
@@ -208,6 +209,7 @@ class WeisfeilerLehmanDescriptor:
         self._offset = offset
         self._n_jobs = n_jobs
         self._n_graphs_per_job = n_graphs_per_job
+        self._show_progress = show_progress
 
     def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         graph_list = list(graphs)
@@ -225,6 +227,7 @@ class WeisfeilerLehmanDescriptor:
                     self._compute_wl_features_worker,
                     make_chunks(graph_list, self._n_graphs_per_job),
                     n_jobs=self._n_jobs,
+                    show_progress=self._show_progress,
                 )
             )
 
