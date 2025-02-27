@@ -12,6 +12,7 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
 from graph_gen_gym.utils.gin import GIN
+from graph_gen_gym.utils.parallel import distribute_function, flatten_lists, make_chunks
 
 
 class DegreeHistogram:
@@ -195,27 +196,44 @@ class WeisfeilerLehmanDescriptor:
         use_node_labels: bool = False,
         node_label_key: str = None,
         offset: int = 1000000,
+        n_jobs: int = 1,
+        n_graphs_per_job: int = 100,
     ):
         self._iterations = iterations
         self._sparse = sparse
         self._use_node_labels = use_node_labels
         self._node_label_key = node_label_key
         self._offset = offset
+        self._n_jobs = n_jobs
+        self._n_graphs_per_job = n_graphs_per_job
 
     def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         graph_list = list(graphs)
         n_graphs = len(graph_list)
 
         all_features = []
-        for graph in graph_list:
-            features = self._compute_wl_features(graph)
-            all_features.append(features)
+
+        if self._n_jobs == 1:
+            for graph in graph_list:
+                features = self._compute_wl_features(graph)
+                all_features.append(features)
+        else:
+            all_features = flatten_lists(
+                distribute_function(
+                    self._compute_wl_features_worker,
+                    make_chunks(graph_list, self._n_graphs_per_job),
+                    n_jobs=self._n_jobs,
+                )
+            )
 
         sparse_array = self._create_sparse_matrix(all_features, n_graphs)
         if self._sparse:
             return sparse_array
         else:
             return sparse_array.toarray()
+
+    def _compute_wl_features_worker(self, graphs: List[nx.Graph]) -> List[dict]:
+        return [self._compute_wl_features(graph) for graph in graphs]
 
     def _compute_wl_features(self, graph: nx.Graph) -> dict:
         if self._use_node_labels and self._node_label_key is not None:

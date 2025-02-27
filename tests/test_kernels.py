@@ -253,8 +253,9 @@ def test_weisfeiler_lehman_with_linear_kernel(sample_graphs, iterations, sparse)
 @pytest.mark.parametrize("iterations", [1, 2, 3])
 @pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("use_node_labels", [False, True])
+@pytest.mark.parametrize("n_jobs", [1, 2])
 def test_weisfeiler_lehman_with_molecules(
-    sample_molecules, iterations, sparse, use_node_labels
+    sample_molecules, iterations, sparse, use_node_labels, n_jobs
 ):
     """Test the Weisfeiler-Lehman kernel with QM9 molecules."""
     # Use the WeisfeilerLehmanDescriptor with QM9 molecules
@@ -264,6 +265,7 @@ def test_weisfeiler_lehman_with_molecules(
         sparse=sparse,
         use_node_labels=use_node_labels,
         node_label_key="element" if use_node_labels else None,
+        n_jobs=n_jobs,
     )
     kernel = LinearKernel(wl_descriptor)
 
