@@ -62,6 +62,7 @@ line-length = 80
 target-version = "py312"
 select = ["D"]
 ignore = ["E731"]
+exclude = ["tests/ggm_implementation", "tests/gran_mmd_implementation"]
 
 [tool.lint.ruff.pydocstyle]
 convention = "google"

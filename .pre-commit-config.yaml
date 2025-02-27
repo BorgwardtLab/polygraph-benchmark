@@ -14,4 +14,3 @@ repos:
     # Run the linter and fix the issues.
     - id: ruff
       args: [ --fix, --exit-non-zero-on-fix, --config=pyproject.toml]
-      exclude: ^(tests/ggm_implementation|tests/gran_mmd_implementation)/
