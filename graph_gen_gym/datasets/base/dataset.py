@@ -13,7 +13,11 @@ import numpy as np
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
-from graph_gen_gym.datasets.base.caching import download_to_cache, load_from_cache, write_to_cache
+from graph_gen_gym.datasets.base.caching import (
+    download_to_cache,
+    load_from_cache,
+    write_to_cache,
+)
 from graph_gen_gym.datasets.base.graph import Graph
 
 
@@ -79,19 +83,23 @@ class GraphDataset(AbstractDataset):
 
         return samples if n_samples is not None else samples[0]
 
-    def sample(self, n_samples: int, replace: bool = False) -> list[nx.Graph]:
+    def sample(
+        self, n_samples: int, replace: bool = False, as_nx: bool = True
+    ) -> list[nx.Graph]:
         idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
         data_list = self[idx_to_sample]
-        to_nx = partial(
-            to_networkx,
-            node_attrs=list(self._data_store.node_attr.keys()),
-            edge_attrs=list(self._data_store.edge_attr.keys()),
-            graph_attrs=list(self._data_store.graph_attr.keys()),
-            to_undirected=True,
-        )
-        if isinstance(data_list, list):
-            return [to_nx(g) for g in data_list]
-        return to_nx(data_list)
+        if as_nx:
+            to_nx = partial(
+                to_networkx,
+                node_attrs=list(self._data_store.node_attr.keys()),
+                edge_attrs=list(self._data_store.edge_attr.keys()),
+                graph_attrs=list(self._data_store.graph_attr.keys()),
+                to_undirected=True,
+            )
+            if isinstance(data_list, list):
+                return [to_nx(g) for g in data_list]
+            return to_nx(data_list)
+        return data_list
 
 
 class OnlineGraphDataset(GraphDataset):
