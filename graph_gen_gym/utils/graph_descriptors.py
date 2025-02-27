@@ -185,3 +185,90 @@ class NormalizedDescriptor:
     def __call__(self, graphs: Iterable[nx.Graph]):
         result = self._descriptor_fn(graphs)
         return self._scaler.transform(result)
+
+
+class WeisfeilerLehmanDescriptor:
+    def __init__(
+        self,
+        iterations: int = 3,
+        sparse: bool = True,
+        use_node_labels: bool = False,
+        node_label_key: str = None,
+        offset: int = 1000000,
+    ):
+        self._iterations = iterations
+        self._sparse = sparse
+        self._use_node_labels = use_node_labels
+        self._node_label_key = node_label_key
+        self._offset = offset
+
+    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
+        graph_list = list(graphs)
+        n_graphs = len(graph_list)
+
+        all_features = []
+        for graph in graph_list:
+            features = self._compute_wl_features(graph)
+            all_features.append(features)
+
+        sparse_array = self._create_sparse_matrix(all_features, n_graphs)
+        if self._sparse:
+            return sparse_array
+        else:
+            return sparse_array.toarray()
+
+    def _compute_wl_features(self, graph: nx.Graph) -> dict:
+        if self._use_node_labels and self._node_label_key is not None:
+            try:
+                labels = {
+                    node: data.get(self._node_label_key, 0)
+                    for node, data in graph.nodes(data=True)
+                }
+            except (KeyError, AttributeError):
+                labels = {node: graph.degree(node) for node in graph.nodes()}
+        else:
+            labels = {node: graph.degree(node) for node in graph.nodes()}
+
+        feature_counts = {}
+        self._update_feature_counts(feature_counts, labels.values(), 0)
+
+        for k in range(self._iterations):
+            labels = self._wl_iteration(graph, labels)
+
+            self._update_feature_counts(feature_counts, labels.values(), k + 1)
+
+        return feature_counts
+
+    def _wl_iteration(self, graph: nx.Graph, current_labels: dict) -> dict:
+        new_labels = {}
+        for node in graph.nodes():
+            neighbor_labels = [current_labels[nbr] for nbr in graph.neighbors(node)]
+            neighbor_labels.sort()
+
+            new_label = (current_labels[node], tuple(neighbor_labels))
+            new_labels[node] = new_label
+
+        label_dict = {label: i for i, label in enumerate(set(new_labels.values()))}
+        return {node: label_dict[new_labels[node]] for node in graph.nodes()}
+
+    def _update_feature_counts(
+        self, feature_counts: dict, labels: Iterable, iteration: int
+    ):
+        prefix = iteration * self._offset
+
+        for label in labels:
+            feature_idx = prefix + label
+            feature_counts[feature_idx] = feature_counts.get(feature_idx, 0) + 1
+
+    def _create_sparse_matrix(self, all_features: list, n_graphs: int) -> csr_array:
+        data = []
+        indices = []
+        indptr = [0]
+
+        for features in all_features:
+            for feature_idx, count in features.items():
+                indices.append(feature_idx)
+                data.append(count)
+            indptr.append(len(indices))
+
+        return csr_array((data, indices, indptr), shape=(n_graphs, 10000000))
