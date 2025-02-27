@@ -17,6 +17,7 @@ from graph_gen_gym.datasets.base.caching import (
     download_to_cache,
     load_from_cache,
     write_to_cache,
+    CacheLock,
 )
 from graph_gen_gym.datasets.base.graph import Graph
 
@@ -108,11 +109,12 @@ class OnlineGraphDataset(GraphDataset):
         split: str,
         memmap: bool = False,
     ):
-        try:
-            data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
-        except FileNotFoundError:
-            download_to_cache(self.url_for_split(split), self.identifier, split)
-            data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
+        with CacheLock(self.identifier):
+            try:
+                data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
+            except FileNotFoundError:
+                download_to_cache(self.url_for_split(split), self.identifier, split)
+                data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
         self._split = split
         super().__init__(data_store)
 
@@ -131,11 +133,12 @@ class OnlineGraphDataset(GraphDataset):
 class ProceduralGraphDataset(GraphDataset):
     def __init__(self, split: str, config_hash: str, memmap: bool = False):
         self._identifier = config_hash
-        try:
-            data_store = load_from_cache(self.identifier, split, mmap=memmap)
-        except FileNotFoundError:
-            write_to_cache(self.identifier, split, self.generate_data())
-            data_store = load_from_cache(self.identifier, split, mmap=memmap)
+        with CacheLock(self.identifier):
+            try:
+                data_store = load_from_cache(self.identifier, split, mmap=memmap)
+            except FileNotFoundError:
+                write_to_cache(self.identifier, split, self.generate_data())
+                data_store = load_from_cache(self.identifier, split, mmap=memmap)
         super().__init__(data_store)
 
     @property

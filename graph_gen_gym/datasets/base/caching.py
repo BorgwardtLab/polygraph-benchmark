@@ -10,7 +10,7 @@ from graph_gen_gym import __version__
 from graph_gen_gym.datasets.base.graph import Graph
 import shutil
 import hashlib
-
+import filelock
 
 def file_hash(path: str) -> str:
     with open(path, "rb") as f:
@@ -32,6 +32,19 @@ def identifier_to_path(identifier: str):
 def clear_cache(identifier: str):
     path = identifier_to_path(identifier)
     shutil.rmtree(path)
+
+
+class CacheLock:
+    def __init__(self, identifier: str):
+        lock_path = identifier_to_path(identifier) + ".lock"
+        self._lock = filelock.FileLock(lock_path)
+
+    def __enter__(self):
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._lock.release()
 
 
 def download_to_cache(url: str, identifier: str, split: str = "data"):
