@@ -1,27 +1,32 @@
 import os
+import warnings
+
 import networkx as nx
 import numpy as np
 import pytest
 import torch
 from torch_geometric.data import Data
 from tqdm.rich import tqdm
-import warnings
 
 from graph_gen_gym.datasets import (
+    MOSES,
     QM9,
     DobsonDoigGraphDataset,
     EgoGraphDataset,
+    Guacamol,
     LobsterGraphDataset,
     PlanarGraphDataset,
     SBMGraphDataset,
     SmallEgoGraphDataset,
 )
 from graph_gen_gym.datasets.base import AbstractDataset
-from graph_gen_gym.metrics.base import VUN
 from graph_gen_gym.datasets.base.caching import clear_cache, identifier_to_path
+from graph_gen_gym.metrics.base import VUN
 
 ALL_DATASETS = [
     QM9,
+    MOSES,
+    Guacamol,
     SmallEgoGraphDataset,
     EgoGraphDataset,
     SBMGraphDataset,
@@ -30,7 +35,6 @@ ALL_DATASETS = [
     DobsonDoigGraphDataset,
 ]
 
-REPROCESSABLE_DATASETS = [QM9]
 
 @pytest.mark.parametrize(
     "ds_cls",
@@ -54,6 +58,7 @@ def test_sample_graph_size(ds_cls):
         # This should warn because usually we want to sample from the training set
         _ = ds_val.sample_graph_size()
 
+
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -74,20 +79,25 @@ def test_cache(ds_cls):
     "ds_cls",
     ALL_DATASETS,
 )
-def test_loading(ds_cls):
+def test_loading(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
         assert isinstance(ds, AbstractDataset), "Should inherit from AbstractDataset"
         assert len(ds) > 0, "Dataset should have at least one item"
-        pyg_graphs = list(ds)
-        assert len(pyg_graphs) == len(ds), "Dataset should return same number of items"
+
+        sample_size = min(sample_size, len(ds))
+
+        pyg_graphs = ds.sample(sample_size, as_nx=False)
+        assert (
+            len(pyg_graphs) == sample_size
+        ), "Dataset should return same number of items"
         assert all(
             isinstance(item, Data) for item in pyg_graphs
         ), "Dataset should return PyG graphs"
-        nx_graphs = ds.to_nx()
-        assert len(nx_graphs) == len(
-            ds
-        ), "NetworkX conversion should preserve dataset size"
+        nx_graphs = ds.sample(sample_size, as_nx=True)
+        assert (
+            len(nx_graphs) == sample_size
+        ), "NetworkX conversion should preserve sample size"
         assert all(
             isinstance(g, nx.Graph) for g in nx_graphs
         ), "to_nx should return NetworkX graphs"
