@@ -222,7 +222,7 @@ def test_kernel_call_method(mock_descriptor_fn, sample_features):
 
 @pytest.mark.parametrize("iterations", [1, 2, 3])
 @pytest.mark.parametrize("sparse", [True, False])
-def test_weisfeiler_lehman_with_linear_kernel(sample_graphs, iterations, sparse):
+def test_weisfeiler_lehman(sample_graphs, iterations, sparse):
     wl_descriptor = WeisfeilerLehmanDescriptor(iterations=iterations, sparse=sparse)
     kernel = LinearKernel(wl_descriptor)
 
