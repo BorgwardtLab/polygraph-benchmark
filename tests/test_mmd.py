@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import pytest
 from gran_mmd_implementation.stats import (
@@ -6,8 +8,15 @@ from gran_mmd_implementation.stats import (
     orbit_stats_all,
     spectral_stats,
 )
-import time
 
+from graph_gen_gym.datasets import ProceduralPlanarGraphDataset
+from graph_gen_gym.metrics.base import (
+    DescriptorMMD2,
+    DescriptorMMD2Interval,
+    MaxDescriptorMMD2,
+    MaxDescriptorMMD2Interval,
+    MMDInterval,
+)
 from graph_gen_gym.metrics.gran import (
     GRANClusteringMMD2,
     GRANClusteringMMD2Interval,
@@ -26,15 +35,6 @@ from graph_gen_gym.metrics.gran import (
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
 )
-from graph_gen_gym.metrics.base import (
-    DescriptorMMD2,
-    DescriptorMMD2Interval,
-    MaxDescriptorMMD2,
-    MaxDescriptorMMD2Interval,
-    MMDInterval,
-)
-
-from graph_gen_gym.datasets import ProceduralPlanarGraphDataset
 
 
 @pytest.mark.parametrize(
@@ -197,7 +197,9 @@ def test_max_mmd(request, datasets, kernel, variant):
     ],
 )
 @pytest.mark.parametrize("parallel_baseline", [True, False])
-def test_measure_runtime(mmd_cls, baseline_method, orca_executable, runtime_stats, parallel_baseline):
+def test_measure_runtime(
+    mmd_cls, baseline_method, orca_executable, runtime_stats, parallel_baseline
+):
     if parallel_baseline and mmd_cls is GRANOrbitMMD2:
         pytest.skip("GRAN doesn't implement parallel orbit stats")
 
@@ -206,10 +208,13 @@ def test_measure_runtime(mmd_cls, baseline_method, orca_executable, runtime_stat
     ds1, ds2 = list(ds1.to_nx()), list(ds2.to_nx())
 
     if baseline_method is orbit_stats_all:
-        patched_baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)  # noqa
+        patched_baseline_method = lambda ref, pred: orbit_stats_all(  # noqa: E731
+            ref, pred, orca_executable
+        )  # noqa
     else:
-        patched_baseline_method = lambda x, y: baseline_method(x, y, is_parallel=parallel_baseline)  # noqa
-
+        patched_baseline_method = lambda x, y: baseline_method(  # noqa: E731
+            x, y, is_parallel=parallel_baseline
+        )  # noqa
 
     for _ in range(1):
         t0 = time.time()
@@ -221,6 +226,8 @@ def test_measure_runtime(mmd_cls, baseline_method, orca_executable, runtime_stat
         t0 = time.time()
         baseline_estimate = patched_baseline_method(ds1, ds2)
         t1 = time.time()
-        runtime_stats[mmd_cls.__name__]["baseline_parallel" if parallel_baseline else "baseline"].append(t1 - t0)
+        runtime_stats[mmd_cls.__name__][
+            "baseline_parallel" if parallel_baseline else "baseline"
+        ].append(t1 - t0)
 
         assert np.isclose(our_estimate, baseline_estimate)

@@ -2,12 +2,15 @@
 Based on https://github.com/uoguelph-mlrg/GGM-metrics, modified to use torch_geometric but identical computation-wise.
 """
 
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from loguru import logger
 from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
 from torch_geometric.nn.conv import MessagePassing
-import math
+
 
 class GINConv(MessagePassing):
     """
@@ -196,7 +199,9 @@ class GIN(nn.Module):
 
         if seed is not None:
             if kwargs["init"] != "orthogonal":
-                raise ValueError("Seeding has no effect on non-orthogonal initialization.")
+                raise ValueError(
+                    "Seeding has no effect on non-orthogonal initialization."
+                )
 
             generator = torch.Generator()
             generator.manual_seed(seed)
@@ -257,7 +262,7 @@ class GIN(nn.Module):
                 self.linears_prediction.append(nn.Linear(hidden_dim, output_dim))
 
         if kwargs["init"] == "orthogonal":
-            print("orthogonal")
+            logger.debug("Initializing GIN linear layers orthogonally")
             self.linears_prediction.apply(init_weights_orthogonal)
 
         self.drop = nn.Dropout(final_dropout)

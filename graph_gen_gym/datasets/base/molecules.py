@@ -50,38 +50,7 @@ NODE_ATTRS = [
     "radical_electrons",
     "charges",
 ]
-EDGE_ATTRS = ["bond_types", "stereo_types"]
-
-
-def get_canonical_bond_stereo(bond: Chem.Bond) -> int:
-    """Get canonical (order-invariant) stereo representation for a bond.
-
-    This function takes a bond and returns its stereo configuration in a canonical way that is
-    independent of atom ordering. For double bonds with E/Z stereochemistry, it ensures that
-    the stereo designation (E or Z) is consistent regardless of which end of the bond is considered
-    the "beginning". If the begin atom index is greater than the end atom index, it swaps the
-    E/Z designation to maintain consistency.
-
-    Args:
-        bond: An RDKit bond object
-
-    Returns:
-        The canonical bond stereo designation as a Chem.BondStereo enum value
-    """
-    stereo = bond.GetStereo()
-    if stereo == Chem.BondStereo.STEREONONE:
-        return Chem.BondStereo.STEREONONE
-
-    # Get the indices in a canonical order
-    begin_idx = bond.GetBeginAtomIdx()
-    end_idx = bond.GetEndAtomIdx()
-    if begin_idx > end_idx:
-        # Swap the interpretation if atoms are in reverse order
-        if stereo == Chem.BondStereo.STEREOZ:
-            return Chem.BondStereo.STEREOE
-        elif stereo == Chem.BondStereo.STEREOE:
-            return Chem.BondStereo.STEREOZ
-    return stereo
+EDGE_ATTRS = ["bond_types"]
 
 
 def are_smiles_equivalent(smiles1, smiles2):
@@ -112,17 +81,33 @@ def mol2smiles(mol, canonical: bool = False):
     return Chem.MolToSmiles(mol, canonical=canonical)
 
 
+def smiles_with_explicit_hydrogens(smiles: str, canonical: bool = True) -> str:
+    """Convert a SMILES string to a SMILES string with all hydrogens made explicit.
+
+    Args:
+        smiles: Input SMILES string
+        canonical: Whether to return canonical SMILES
+
+    Returns:
+        SMILES string with all hydrogens made explicit
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+
+    mol = Chem.AddHs(mol)
+    return Chem.MolToSmiles(mol, canonical=canonical, allHsExplicit=True)
+
+
 def graph2molecule(
     node_labels: torch.Tensor,
     edge_index: torch.Tensor,
     bond_types: torch.Tensor,
-    stereo_types: torch.Tensor,
     charges: torch.Tensor | None = None,
     num_radical_electrons: torch.Tensor | None = None,
     pos: torch.Tensor | None = None,
 ) -> Chem.RWMol:
     assert edge_index.shape[1] == len(bond_types)
-    assert bond_types.shape[0] == stereo_types.shape[0]
     node_idx_to_atom_idx = {}
     current_atom_idx = 0
     mol = Chem.RWMol()
@@ -141,48 +126,16 @@ def graph2molecule(
         current_atom_idx += 1
 
     edges_processed = set()
-    for i, (bond, bond_type, stereo_type) in enumerate(
-        zip(edge_index.T, bond_types, stereo_types)
-    ):
+    for i, (bond, bond_type) in enumerate(zip(edge_index.T, bond_types)):
         a, b = bond[0].item(), bond[1].item()
         if (a, b) in edges_processed or (b, a) in edges_processed:
             continue
 
-        new_bond = (
-            mol.AddBond(
-                node_idx_to_atom_idx[a],
-                node_idx_to_atom_idx[b],
-                BOND_TYPES[bond_type],
-            )
-            - 1
+        mol.AddBond(
+            node_idx_to_atom_idx[a],
+            node_idx_to_atom_idx[b],
+            BOND_TYPES[bond_type],
         )
-        bond_obj = mol.GetBondWithIdx(new_bond)
-
-        begin_atom = bond_obj.GetBeginAtom()
-        end_atom = bond_obj.GetEndAtom()
-
-        begin_neighbors = [
-            n.GetIdx()
-            for n in begin_atom.GetNeighbors()
-            if n.GetIdx() != end_atom.GetIdx()
-        ]
-        end_neighbors = [
-            n.GetIdx()
-            for n in end_atom.GetNeighbors()
-            if n.GetIdx() != begin_atom.GetIdx()
-        ]
-
-        if len(begin_neighbors) > 0 and len(end_neighbors) > 0:
-            bond_obj.SetStereoAtoms(begin_neighbors[0], end_neighbors[0])
-
-            if stereo_type in [
-                Chem.BondStereo.STEREOCIS,
-                Chem.BondStereo.STEREOTRANS,
-            ]:
-                if len(begin_neighbors) > 0 and len(end_neighbors) > 0:
-                    bond_obj.SetStereo(BOND_STEREO_TYPES[stereo_type])
-            else:
-                bond_obj.SetStereo(BOND_STEREO_TYPES[stereo_type])
 
         edges_processed.add((a, b))
 
@@ -229,26 +182,14 @@ def molecule2graph(
         + [(bond.GetEndAtomIdx(), bond.GetBeginAtomIdx()) for bond in bonds]
     ).T
 
-    edge_attrs = torch.tensor(
+    bond_types = torch.tensor(
         [BOND_TYPES.index(bond.GetBondType()) for bond in bonds] * 2
     )
 
-    stereo_attrs = []
-    for bond in bonds:
-        stereo_attrs.append(BOND_STEREO_TYPES.index(get_canonical_bond_stereo(bond)))
-
-    stereo_attrs = stereo_attrs * 2
-    stereo_attrs = torch.tensor(stereo_attrs)
-
-    # Add edge labels to edge_attrs
-    edge_attr = torch.cat(
-        [edge_attrs.unsqueeze(-1), stereo_attrs.unsqueeze(-1)], dim=-1
-    )
     return Data(
         edge_index=edge_index,
         atom_labels=node_labels,
-        bond_types=edge_attr[:, 0],
-        stereo_types=edge_attr[:, 1],
+        bond_types=bond_types,
         charges=charge_tensor,
         radical_electrons=radical_tensor,
         pos=pos,
@@ -259,4 +200,5 @@ def molecule2graph(
 def add_hydrogens_and_stereochemistry(mol: Chem.RWMol):
     mol = Chem.AddHs(mol, addCoords=True)
     Chem.AssignStereochemistryFrom3D(mol)
+    Chem.rdmolops.SetBondStereoFromDirections(mol)
     return mol
