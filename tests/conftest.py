@@ -11,6 +11,7 @@ import subprocess
 import urllib.request
 from collections import defaultdict
 
+import networkx as nx
 import numpy as np
 import pytest
 from loguru import logger
@@ -31,6 +32,7 @@ from graph_gen_gym.utils.kernels import (
     LinearKernel,
     RBFKernel,
 )
+from graph_gen_gym.datasets.molecules import QM9
 
 NO_SKIP_OPTION = "--no-skip"
 SAMPLE_SIZE_OPTION = "--sample-size"
@@ -189,6 +191,15 @@ def runtime_stats(request):
         print("\n" + "=" * 50)
 
 
-@pytest.fixture(scope="session")
-def skip_slow(request):
-    return request.config.getoption(SKIP_SLOW_OPTION)
+@pytest.fixture
+def sample_graphs():
+    g1 = nx.erdos_renyi_graph(10, 0.3, seed=42)
+    g2 = nx.erdos_renyi_graph(15, 0.2, seed=43)
+    g3 = nx.erdos_renyi_graph(12, 0.25, seed=44)
+    return [g1, g2, g3]
+
+
+@pytest.fixture
+def sample_molecules():
+    molecules = QM9("test").sample(5, as_nx=True)
+    return molecules
