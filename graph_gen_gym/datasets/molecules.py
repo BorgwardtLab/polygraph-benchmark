@@ -23,6 +23,15 @@ class MoleculeDataset(OnlineGraphDataset):
     stereochemistry.
     """
 
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]
+
     @staticmethod
     def is_valid(data: nx.Graph) -> bool:
         """Convert PyG graph back to RDKit molecule and validate it."""
