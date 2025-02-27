@@ -113,30 +113,6 @@ def graph2molecule(
         if (a, b) in edges_processed or (b, a) in edges_processed:
             continue
 
-        new_bond = (
-            mol.AddBond(
-                node_idx_to_atom_idx[a],
-                node_idx_to_atom_idx[b],
-                BOND_TYPES[bond_type],
-            )
-            - 1
-        )
-        bond_obj = mol.GetBondWithIdx(new_bond)
-
-        begin_atom = bond_obj.GetBeginAtom()
-        end_atom = bond_obj.GetEndAtom()
-
-        begin_neighbors = [
-            n.GetIdx()
-            for n in begin_atom.GetNeighbors()
-            if n.GetIdx() != end_atom.GetIdx()
-        ]
-        end_neighbors = [
-            n.GetIdx()
-            for n in end_atom.GetNeighbors()
-            if n.GetIdx() != begin_atom.GetIdx()
-        ]
-
         edges_processed.add((a, b))
 
     if pos is not None:

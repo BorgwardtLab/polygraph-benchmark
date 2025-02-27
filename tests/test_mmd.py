@@ -208,11 +208,11 @@ def test_measure_runtime(
     ds1, ds2 = list(ds1.to_nx()), list(ds2.to_nx())
 
     if baseline_method is orbit_stats_all:
-        patched_baseline_method = lambda ref, pred: orbit_stats_all(
+        patched_baseline_method = lambda ref, pred: orbit_stats_all(  # noqa: E731
             ref, pred, orca_executable
         )  # noqa
     else:
-        patched_baseline_method = lambda x, y: baseline_method(
+        patched_baseline_method = lambda x, y: baseline_method(  # noqa: E731
             x, y, is_parallel=parallel_baseline
         )  # noqa
 

@@ -85,9 +85,9 @@ def download(train_url, test_url, val_url, raw_dir):
             )
         return path
 
-    train_path = download_file(train_url, raw_dir, "train_moses.csv", "train")
-    test_path = download_file(test_url, raw_dir, "val_moses.csv", "test")
-    valid_path = download_file(val_url, raw_dir, "test_moses.csv", "val")
+    _ = download_file(train_url, raw_dir, "train_moses.csv", "train")
+    _ = download_file(test_url, raw_dir, "val_moses.csv", "test")
+    _ = download_file(val_url, raw_dir, "test_moses.csv", "val")
 
 
 def process(split, out_dir, n_jobs, limit, chunk_size):
@@ -97,7 +97,6 @@ def process(split, out_dir, n_jobs, limit, chunk_size):
     smiles_list = pd.read_csv(path)["SMILES"].values.tolist()
 
     data_list = []
-    smiles_kept = []
     if limit is not None:
         smiles_list = smiles_list[:limit]
 
