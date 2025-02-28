@@ -40,45 +40,6 @@ LOG_LEVEL_OPTION = "--test-log-level"
 SKIP_SLOW_OPTION = "--skip-slow"
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        NO_SKIP_OPTION,
-        action="store_true",
-        default=False,
-        help="also run skipped tests",
-    )
-    parser.addoption(
-        SAMPLE_SIZE_OPTION,
-        action="store",
-        default=5,
-        type=int,
-        help="number of samples to use in tests",
-    )
-    parser.addoption(
-        LOG_LEVEL_OPTION,
-        action="store",
-        default="WARNING",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="set the logging level",
-    )
-    parser.addoption(
-        SKIP_SLOW_OPTION,
-        action="store_true",
-        default=False,
-        help="skip slow tests",
-    )
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption(NO_SKIP_OPTION):
-        for test in items:
-            test.own_markers = [
-                marker
-                for marker in test.own_markers
-                if marker.name not in ("skip", "skipif")
-            ]
-
-
 @pytest.fixture(scope="session", autouse=True)
 def setup_logging(request):
     logger.remove()  # Remove existing handlers
@@ -163,6 +124,50 @@ def degree_adaptive_rbf_kernel():
 @pytest.fixture(scope="session", autouse=True)
 def clustering_laplace_kernel():
     return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def seed_session():
+    np.random.seed(42)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        NO_SKIP_OPTION,
+        action="store_true",
+        default=False,
+        help="also run skipped tests",
+    )
+    parser.addoption(
+        SAMPLE_SIZE_OPTION,
+        action="store",
+        default=5,
+        type=int,
+        help="number of samples to use in tests",
+    )
+    parser.addoption(
+        LOG_LEVEL_OPTION,
+        action="store",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="set the logging level",
+    )
+    parser.addoption(
+        SKIP_SLOW_OPTION,
+        action="store_true",
+        default=False,
+        help="skip slow tests",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption(NO_SKIP_OPTION):
+        for test in items:
+            test.own_markers = [
+                marker
+                for marker in test.own_markers
+                if marker.name not in ("skip", "skipif")
+            ]
 
 
 @pytest.fixture(scope="session")
