@@ -1,4 +1,3 @@
-import networkx as nx
 import numpy as np
 import pytest
 from scipy.sparse import csr_array
@@ -40,21 +39,6 @@ def mock_descriptor_fn():
         return np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
 
     return _descriptor_fn
-
-
-@pytest.fixture
-def sample_graphs():
-    g1 = nx.erdos_renyi_graph(10, 0.3, seed=42)
-    g2 = nx.erdos_renyi_graph(15, 0.2, seed=43)
-    g3 = nx.erdos_renyi_graph(12, 0.25, seed=44)
-    return [g1, g2, g3]
-
-
-@pytest.fixture
-def sample_features():
-    ref = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    gen = np.array([[0.5, 1.5], [2.5, 3.5], [4.5, 5.5], [6.5, 7.5]])
-    return ref, gen
 
 
 def test_descriptor_kernel_base(mock_descriptor_fn, sample_graphs):
