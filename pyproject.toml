@@ -40,6 +40,8 @@ dev = [
     "pre-commit",
     "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git", # Required for testing equivalence to Thompson et al.
     "ipykernel",
+    "grakel",
+    "pytest-profiling",
 ]
 gpu = [
     "dgl @ https://data.dgl.ai/wheels/torch-2.4/cu124/dgl-2.4.0%2Bcu124-cp310-cp310-manylinux1_x86_64.whl",
