@@ -75,13 +75,10 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
-    def sample_graph_size(
-        self, n_samples: Optional[int] = None, seed: int = 42
-    ) -> List[int]:
+    def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
         samples = []
-        rng = np.random.RandomState(seed)
         for _ in range(n_samples if n_samples is not None else 1):
-            idx = rng.randint(len(self))
+            idx = np.random.randint(len(self))
             node_left, node_right = self._data_store.indexing_info.node_slices[
                 idx
             ].tolist()
@@ -94,10 +91,8 @@ class GraphDataset(AbstractDataset):
         n_samples: int,
         replace: bool = False,
         as_nx: bool = True,
-        seed: int = 42,
     ) -> list[nx.Graph]:
-        rng = np.random.RandomState(seed)
-        idx_to_sample = rng.choice(len(self), n_samples, replace=replace)
+        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
         data_list = self[idx_to_sample]
         if as_nx:
             to_nx = partial(
