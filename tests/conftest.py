@@ -178,22 +178,22 @@ def runtime_stats(request):
     # Get capsys through the config
     capsys = request.node.config.pluginmanager.get_plugin("capturemanager")
     with capsys.global_and_fixture_disabled():
-        logger.info("\n" + "=" * 50)
-        logger.info("Runtime Comparisons")
-        logger.info("=" * 50)
+        print("\n" + "=" * 50)
+        print("Runtime Comparisons")
+        print("=" * 50)
         for test_name, times in stats.items():
             our_avg = np.mean(times["ours"])
             baseline_parallel_avg = np.mean(times["baseline_parallel"])
             baseline_avg = np.mean(times["baseline"])
             speedup_parallel = baseline_parallel_avg / our_avg
             speedup_sequential = baseline_avg / our_avg
-            logger.info(f"\n{test_name}:")
-            logger.info(f"  Our implementation: {our_avg:.4f}s (avg)")
-            logger.info(f"  Baseline (parallel): {baseline_parallel_avg:.4f}s (avg)")
-            logger.info(f"  Baseline (sequential): {baseline_avg:.4f}s (avg)")
-            logger.info(f"  Speedup (parallel): {speedup_parallel:.2f}x")
-            logger.info(f"  Speedup (sequential): {speedup_sequential:.2f}x")
-        logger.info("\n" + "=" * 50)
+            print(f"\n{test_name}:")
+            print(f"  Our implementation: {our_avg:.4f}s (avg)")
+            print(f"  Baseline (parallel): {baseline_parallel_avg:.4f}s (avg)")
+            print(f"  Baseline (sequential): {baseline_avg:.4f}s (avg)")
+            print(f"  Speedup (parallel): {speedup_parallel:.2f}x")
+            print(f"  Speedup (sequential): {speedup_sequential:.2f}x")
+        print("\n" + "=" * 50)
 
 
 @pytest.fixture(scope="session")
