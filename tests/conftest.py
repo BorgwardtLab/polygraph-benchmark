@@ -11,6 +11,7 @@ import subprocess
 import urllib.request
 from collections import defaultdict
 
+import networkx as nx
 import numpy as np
 import pytest
 from loguru import logger
@@ -31,50 +32,12 @@ from graph_gen_gym.utils.kernels import (
     LinearKernel,
     RBFKernel,
 )
+from graph_gen_gym.datasets.molecules import QM9
 
 NO_SKIP_OPTION = "--no-skip"
 SAMPLE_SIZE_OPTION = "--sample-size"
 LOG_LEVEL_OPTION = "--test-log-level"
 SKIP_SLOW_OPTION = "--skip-slow"
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        NO_SKIP_OPTION,
-        action="store_true",
-        default=False,
-        help="also run skipped tests",
-    )
-    parser.addoption(
-        SAMPLE_SIZE_OPTION,
-        action="store",
-        default=5,
-        type=int,
-        help="number of samples to use in tests",
-    )
-    parser.addoption(
-        LOG_LEVEL_OPTION,
-        action="store",
-        default="WARNING",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="set the logging level",
-    )
-    parser.addoption(
-        SKIP_SLOW_OPTION,
-        action="store_true",
-        default=False,
-        help="skip slow tests",
-    )
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption(NO_SKIP_OPTION):
-        for test in items:
-            test.own_markers = [
-                marker
-                for marker in test.own_markers
-                if marker.name not in ("skip", "skipif")
-            ]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -163,6 +126,50 @@ def clustering_laplace_kernel():
     return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
 
 
+@pytest.fixture(scope="session", autouse=True)
+def seed_session():
+    np.random.seed(42)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        NO_SKIP_OPTION,
+        action="store_true",
+        default=False,
+        help="also run skipped tests",
+    )
+    parser.addoption(
+        SAMPLE_SIZE_OPTION,
+        action="store",
+        default=5,
+        type=int,
+        help="number of samples to use in tests",
+    )
+    parser.addoption(
+        LOG_LEVEL_OPTION,
+        action="store",
+        default="WARNING",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="set the logging level",
+    )
+    parser.addoption(
+        SKIP_SLOW_OPTION,
+        action="store_true",
+        default=False,
+        help="skip slow tests",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption(NO_SKIP_OPTION):
+        for test in items:
+            test.own_markers = [
+                marker
+                for marker in test.own_markers
+                if marker.name not in ("skip", "skipif")
+            ]
+
+
 @pytest.fixture(scope="session")
 def runtime_stats(request):
     stats = defaultdict(lambda: {"ours": [], "baseline_parallel": [], "baseline": []})
@@ -190,5 +197,22 @@ def runtime_stats(request):
 
 
 @pytest.fixture(scope="session")
-def skip_slow(request):
-    return request.config.getoption(SKIP_SLOW_OPTION)
+def sample_graphs():
+    g1 = nx.erdos_renyi_graph(10, 0.3, seed=42)
+    g2 = nx.erdos_renyi_graph(15, 0.2, seed=43)
+    g3 = nx.erdos_renyi_graph(12, 0.25, seed=44)
+    g4 = nx.erdos_renyi_graph(10, 0.3, seed=45)
+    return [g1, g2, g3, g4]
+
+
+@pytest.fixture(scope="session")
+def sample_features():
+    ref = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    gen = np.array([[0.5, 1.5], [2.5, 3.5], [4.5, 5.5], [6.5, 7.5]])
+    return ref, gen
+
+
+@pytest.fixture(scope="session")
+def sample_molecules():
+    molecules = QM9("test").sample(5, as_nx=True)
+    return molecules

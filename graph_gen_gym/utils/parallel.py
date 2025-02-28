@@ -23,7 +23,7 @@ def flatten_lists(lists: List[List[Any]]) -> List[Any]:
     return flattened
 
 
-def make_chunks(lst: List[Any], n: int) -> List[List[Any]]:
+def make_batches(lst: List[Any], n: int) -> List[List[Any]]:
     chunks = [lst[i : i + n] for i in range(0, len(lst), n)]
     return chunks
 
@@ -60,6 +60,7 @@ def distribute_function(
     description: str = "",
     total: int = 1,
     use_enumerate: bool = False,
+    show_progress: bool = True,
     **kwargs,
 ) -> Any:
     if total == 1:
@@ -71,17 +72,21 @@ def distribute_function(
         else:
             return [func(x, **kwargs) for x in X]
 
-    with Progress() as progress:
-        task_id = progress.add_task(description, total=total)
-        with rich_joblib(progress, task_id):
-            if use_enumerate:
-                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
-                    delayed(func)(idx, x, **kwargs) for idx, x in enumerate(X)
-                )
-            else:
-                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
-                    delayed(func)(x, **kwargs) for x in X
-                )
+    if use_enumerate:
+        parallel_execution = (
+            delayed(func)(idx, x, **kwargs) for idx, x in enumerate(X)
+        )
+    else:
+        parallel_execution = (delayed(func)(x, **kwargs) for x in X)
+
+    if show_progress:
+        with Progress() as progress:
+            task_id = progress.add_task(description, total=total)
+            with rich_joblib(progress, task_id):
+                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
+    else:
+        Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
+
     return Xt
 
 
@@ -110,3 +115,32 @@ def retry(max_retries: int = 3, delay: float = 1.0):
         return wrapper
 
     return decorator
+
+
+def batched_distribute_function(
+    func: Callable,
+    X: Iterable,
+    n_jobs: int,
+    description: str = "",
+    total: int = 1,
+    use_enumerate: bool = False,
+    show_progress: bool = True,
+    batch_size: int = 100,
+    **kwargs,
+) -> Any:
+    """
+    Note: func must be able to iterate over the batches.
+    """
+    batches = make_batches(X, batch_size)
+    return flatten_lists(
+        distribute_function(
+            func,
+            batches,
+            n_jobs,
+            description,
+            total,
+            use_enumerate,
+            show_progress,
+            **kwargs,
+        )
+    )

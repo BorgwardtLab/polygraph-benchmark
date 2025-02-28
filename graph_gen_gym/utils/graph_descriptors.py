@@ -1,6 +1,7 @@
-from typing import Callable, Iterable, Optional, List
 import copy
 import warnings
+from collections import Counter
+from typing import Callable, Iterable, List, Optional
 
 import networkx as nx
 import numpy as np
@@ -12,6 +13,7 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
 from graph_gen_gym.utils.gin import GIN
+from graph_gen_gym.utils.parallel import batched_distribute_function, flatten_lists
 
 
 class DegreeHistogram:
@@ -67,7 +69,9 @@ class OrbitCounts:
         # Check if any graph has a self-loop
         self_loops = [list(nx.selfloop_edges(g)) for g in graphs]
         if any(len(loops) > 0 for loops in self_loops):
-            warnings.warn("Graph with self-loop passed to orbit descriptor, deleting self-loops")
+            warnings.warn(
+                "Graph with self-loop passed to orbit descriptor, deleting self-loops"
+            )
             graphs = [copy.deepcopy(g) for g in graphs]
             for g, loops in zip(graphs, self_loops):
                 g.remove_edges_from(loops)
@@ -157,22 +161,12 @@ class RandomGIN:
                 .to(self._device)
             )
         else:
-            feats = torch.cat(
-                [
-                    g.x
-                    for g in pyg_graphs
-                ]
-            ).to(self._device)
+            feats = torch.cat([g.x for g in pyg_graphs]).to(self._device)
 
         if self.edge_feat_loc is None:
             edge_attr = None
         else:
-            edge_attr = torch.cat(
-                [
-                    g.edge_attr
-                    for g in pyg_graphs
-                ]
-            ).to(self._device)
+            edge_attr = torch.cat([g.edge_attr for g in pyg_graphs]).to(self._device)
 
         batch = Batch.from_data_list(pyg_graphs).to(self._device)
 
@@ -195,3 +189,109 @@ class NormalizedDescriptor:
     def __call__(self, graphs: Iterable[nx.Graph]):
         result = self._descriptor_fn(graphs)
         return self._scaler.transform(result)
+
+
+class WeisfeilerLehmanDescriptor:
+    """This is meant to be used together with the LinearKernel."""
+
+    DEFAULT_MAX_HASH_VALUE = 2**19 - 1
+
+    def __init__(
+        self,
+        iterations: int = 3,
+        use_node_labels: bool = False,
+        node_label_key: Optional[str] = None,
+        max_hash_idx_value: int = DEFAULT_MAX_HASH_VALUE,
+        n_jobs: int = 1,
+        n_graphs_per_job: int = 100,
+        show_progress: bool = False,
+    ):
+        self._iterations = iterations
+        self._use_node_labels = use_node_labels
+
+        if use_node_labels and node_label_key is None:
+            raise ValueError(
+                "node_label_key must be provided if use_node_labels is True"
+            )
+
+        self._node_label_key = node_label_key if use_node_labels else "degree"
+        self._max_hash_idx_value = max_hash_idx_value
+        self._n_jobs = n_jobs
+        self._n_graphs_per_job = n_graphs_per_job
+        self._show_progress = show_progress
+
+    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
+        graph_list = list(graphs)
+        n_graphs = len(graph_list)
+
+        if not self._use_node_labels:
+            self._assign_node_degree_labels(graph_list)
+
+        features = []
+        if self._n_jobs == 1:
+            for graph in graph_list:
+                features.append(self._compute_wl_features(graph))
+        else:
+            features = batched_distribute_function(
+                self._compute_wl_features_worker,
+                graph_list,
+                n_jobs=self._n_jobs,
+                show_progress=self._show_progress,
+                batch_size=self._n_graphs_per_job,
+            )
+
+        sparse_array = self._create_sparse_matrix(features, n_graphs)
+        return sparse_array
+
+    def _assign_node_degree_labels(self, graphs: List[nx.Graph]) -> None:
+        for graph in graphs:
+            for node in graph.nodes():
+                graph.nodes[node][self._node_label_key] = graph.degree(node)
+
+    def _compute_wl_features_worker(self, graphs: List[nx.Graph]) -> List[dict]:
+        return [self._compute_wl_features(graph) for graph in graphs]
+
+    def _compute_wl_features(self, graph: nx.Graph) -> dict:
+        hash_iter_0 = dict(
+            Counter(list(dict(graph.nodes(self._node_label_key)).values()))
+        )
+        hashes = dict(
+            Counter(
+                flatten_lists(
+                    list(
+                        nx.weisfeiler_lehman_subgraph_hashes(
+                            graph,
+                            node_attr=self._node_label_key,
+                            iterations=self._iterations,
+                        ).values()
+                    )
+                )
+            )
+        )
+        all_hashes = hashes | hash_iter_0
+
+        int_hashes = {}
+        for hash_key, count in all_hashes.items():
+            int_key = hash(str(hash_key)) % self._max_hash_idx_value
+            int_hashes[int_key] = count
+
+        assert len(int_hashes) == len(
+            all_hashes
+        ), "Hash collision arising from int mapping"
+
+        return int_hashes
+
+    def _create_sparse_matrix(self, all_features: list, n_graphs: int) -> csr_array:
+        data = []
+        indices = []
+        indptr = [0]
+
+        for features in all_features:
+            for feature_idx, count in features.items():
+                indices.append(feature_idx)
+                data.append(count)
+            indptr.append(len(indices))
+
+        return csr_array(
+            (data, indices, indptr), shape=(n_graphs, self._max_hash_idx_value)
+        )
