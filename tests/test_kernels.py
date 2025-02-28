@@ -205,9 +205,8 @@ def test_kernel_call_method(mock_descriptor_fn, sample_features):
 
 
 @pytest.mark.parametrize("iterations", [1, 2, 3])
-@pytest.mark.parametrize("sparse", [True, False])
-def test_weisfeiler_lehman(sample_graphs, iterations, sparse):
-    wl_descriptor = WeisfeilerLehmanDescriptor(iterations=iterations, sparse=sparse)
+def test_weisfeiler_lehman(sample_graphs, iterations):
+    wl_descriptor = WeisfeilerLehmanDescriptor(iterations=iterations)
     kernel = LinearKernel(wl_descriptor)
 
     ref_graphs = sample_graphs[:2]
@@ -235,20 +234,18 @@ def test_weisfeiler_lehman(sample_graphs, iterations, sparse):
 
 
 @pytest.mark.parametrize("iterations", [1, 2, 3])
-@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("use_node_labels", [False, True])
 @pytest.mark.parametrize("n_jobs", [1, 2])
 def test_weisfeiler_lehman_with_molecules(
-    sample_molecules, iterations, sparse, use_node_labels, n_jobs
+    sample_molecules, iterations, use_node_labels, n_jobs
 ):
     """Test the Weisfeiler-Lehman kernel with QM9 molecules."""
     # Use the WeisfeilerLehmanDescriptor with QM9 molecules
     # QM9 molecules have atom types as node attributes
     wl_descriptor = WeisfeilerLehmanDescriptor(
         iterations=iterations,
-        sparse=sparse,
         use_node_labels=use_node_labels,
-        node_label_key="element" if use_node_labels else None,
+        node_label_key="atom_labels" if use_node_labels else None,
         n_jobs=n_jobs,
     )
     kernel = LinearKernel(wl_descriptor)
@@ -271,7 +268,80 @@ def test_weisfeiler_lehman_with_molecules(
 
     expected_ref_gen = ref_features @ gen_features.T
 
-    if isinstance(expected_ref_gen, np.ndarray):
-        assert np.allclose(blocks.ref_vs_gen, expected_ref_gen)
-    else:
-        assert np.allclose(blocks.ref_vs_gen, expected_ref_gen.toarray())
+    assert np.allclose(blocks.ref_vs_gen, expected_ref_gen.toarray())
+
+
+@pytest.mark.parametrize("iterations", [2, 3])
+def test_weisfeiler_lehman_vs_grakel_er_graphs(sample_graphs, iterations):
+    """Test our WL kernel implementation against grakel's implementation."""
+    import grakel
+
+    wl_descriptor = WeisfeilerLehmanDescriptor(
+        iterations=iterations, use_node_labels=False, n_jobs=1
+    )
+    our_kernel = LinearKernel(wl_descriptor)
+
+    grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
+
+    # Convert sample graphs to grakel format
+    node_label_graphs = []
+    for graph in sample_graphs:
+        # Add node degree as an attribute to each node
+        nx_graph_with_degree = graph.copy()
+        for node in nx_graph_with_degree.nodes():
+            nx_graph_with_degree.nodes[node]["degree"] = nx_graph_with_degree.degree(
+                node
+            )
+        node_label_graphs.append(nx_graph_with_degree)
+
+    node_label_graphs_ref = node_label_graphs[:2]
+    node_label_graphs_gen = node_label_graphs[2:]
+
+    ref_graphs = sample_graphs[:2]
+    gen_graphs = sample_graphs[2:]
+    grakel_ref = grakel.graph_from_networkx(
+        node_label_graphs_ref, node_labels_tag="degree"
+    )
+    grakel_gen = grakel.graph_from_networkx(
+        node_label_graphs_gen, node_labels_tag="degree"
+    )
+
+    ref_features = our_kernel.featurize(ref_graphs)
+    gen_features = our_kernel.featurize(gen_graphs)
+    our_blocks = our_kernel(ref_features, gen_features)
+
+    grakel_kernel.fit(grakel_ref)
+    grakel_blocks = grakel_kernel.transform(grakel_gen)
+    assert np.allclose(our_blocks.ref_vs_gen, grakel_blocks.T)
+
+
+@pytest.mark.parametrize("iterations", [2, 3])
+def test_weisfeiler_lehman_vs_grakel_molecules(sample_molecules, iterations):
+    import grakel
+
+    wl_descriptor_mol = WeisfeilerLehmanDescriptor(
+        iterations=iterations,
+        use_node_labels=True,
+        node_label_key="atom_labels",
+        n_jobs=1,
+    )
+    our_kernel_mol = LinearKernel(wl_descriptor_mol)
+
+    grakel_kernel_mol = grakel.WeisfeilerLehman(n_iter=iterations)
+
+    ref_molecules = sample_molecules[:2]
+    gen_molecules = sample_molecules[2:]
+    grakel_ref_mol = grakel.graph_from_networkx(
+        sample_molecules[:2], node_labels_tag="atom_labels"
+    )
+    grakel_gen_mol = grakel.graph_from_networkx(
+        sample_molecules[2:], node_labels_tag="atom_labels"
+    )
+
+    ref_features_mol = our_kernel_mol.featurize(ref_molecules)
+    gen_features_mol = our_kernel_mol.featurize(gen_molecules)
+    our_blocks_mol = our_kernel_mol(ref_features_mol, gen_features_mol)
+
+    grakel_kernel_mol.fit(grakel_ref_mol)
+    grakel_matrix_mol = grakel_kernel_mol.transform(grakel_gen_mol)
+    assert np.allclose(our_blocks_mol.ref_vs_gen, grakel_matrix_mol.T)
