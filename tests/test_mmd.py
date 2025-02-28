@@ -99,6 +99,15 @@ def test_warn_orbit_self_loops():
         mmd = GRANOrbitMMD2([g])
         mmd.compute([g])
 
+
+def test_rbf_divide_by_zero():
+    g = nx.Graph()
+    g.add_node(0)
+
+    mmd = RBFClusteringMMD2([g])
+    assert np.isclose(mmd.compute([g]), 0.0)
+
+
 @pytest.mark.parametrize(
     "kernel,subsample_size,variant",
     [("degree_linear_kernel", 32, "biased"), ("degree_linear_kernel", 40, "umve")],
