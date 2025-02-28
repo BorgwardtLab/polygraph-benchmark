@@ -121,63 +121,41 @@ def test_normalized_descriptor(sample_graphs):
 
 
 @pytest.mark.parametrize("iterations", [1, 2, 3])
-@pytest.mark.parametrize("sparse", [True, False])
-def test_weisfeiler_lehman_descriptor(sample_graphs, iterations, sparse):
-    descriptor = WeisfeilerLehmanDescriptor(iterations=iterations, sparse=sparse)
+def test_weisfeiler_lehman_descriptor(sample_graphs, iterations):
+    descriptor = WeisfeilerLehmanDescriptor(iterations=iterations)
 
     features = descriptor(sample_graphs)
 
-    if sparse:
-        assert isinstance(features, csr_array)
-    else:
-        assert isinstance(features, np.ndarray)
+    assert isinstance(features, csr_array)
 
     assert features.shape[0] == len(sample_graphs)
 
-    if sparse:
-        for i in range(len(sample_graphs)):
-            row_slice = features[i : i + 1]
-            assert row_slice.nnz > 0
-    else:
-        for i in range(len(sample_graphs)):
-            assert len([v for v in features[i] if v > 0]) > 0
+    for i in range(len(sample_graphs)):
+        row_slice = features[i : i + 1]
+        assert row_slice.nnz > 0
+        assert len([v for v in row_slice.data if v > 0]) > 0
 
 
 @pytest.mark.parametrize("iterations", [1, 3])
-@pytest.mark.parametrize("sparse", [True, False])
 @pytest.mark.parametrize("use_node_labels", [True, False])
-def test_weisfeiler_lehman_descriptor_qm9(
-    sample_molecules, iterations, sparse, use_node_labels
+def test_weisfeiler_lehman_descriptor_molecules(
+    sample_molecules, iterations, use_node_labels
 ):
     descriptor = WeisfeilerLehmanDescriptor(
         iterations=iterations,
-        sparse=sparse,
         use_node_labels=use_node_labels,
-        node_label_key="element" if use_node_labels else None,
+        node_label_key="atom_labels" if use_node_labels else None,
     )
 
     features = descriptor(sample_molecules)
 
-    if sparse:
-        assert isinstance(features, csr_array)
-    else:
-        assert isinstance(features, np.ndarray)
+    assert isinstance(features, csr_array)
 
     assert features.shape[0] == len(sample_molecules)
-
-    if sparse:
-        feature_sets = []
-        for i in range(len(sample_molecules)):
-            row = features[i : i + 1]
-            indices = row.indices
-            counts = row.data
-            feature_dict = {idx: count for idx, count in zip(indices, counts)}
-            feature_sets.append(feature_dict)
-
-        assert feature_sets[0] != feature_sets[1]
-        assert feature_sets[0] != feature_sets[2]
-        assert feature_sets[1] != feature_sets[2]
-    else:
-        assert not np.array_equal(features[0], features[1])
-        assert not np.array_equal(features[0], features[2])
-        assert not np.array_equal(features[1], features[2])
+    for i in range(len(sample_molecules)):
+        for j in range(i + 1, len(sample_molecules)):
+            row_i = features[i : i + 1].toarray()
+            row_j = features[j : j + 1].toarray()
+            assert not np.array_equal(
+                row_i, row_j
+            ), f"Features for molecules {i} and {j} are identical"
