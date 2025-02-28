@@ -173,33 +173,41 @@ def runtime_stats(request):
     # Get capsys through the config
     capsys = request.node.config.pluginmanager.get_plugin("capturemanager")
     with capsys.global_and_fixture_disabled():
-        print("\n" + "=" * 50)
-        print("Runtime Comparisons")
-        print("=" * 50)
+        logger.info("\n" + "=" * 50)
+        logger.info("Runtime Comparisons")
+        logger.info("=" * 50)
         for test_name, times in stats.items():
             our_avg = np.mean(times["ours"])
             baseline_parallel_avg = np.mean(times["baseline_parallel"])
             baseline_avg = np.mean(times["baseline"])
             speedup_parallel = baseline_parallel_avg / our_avg
             speedup_sequential = baseline_avg / our_avg
-            print(f"\n{test_name}:")
-            print(f"  Our implementation: {our_avg:.4f}s (avg)")
-            print(f"  Baseline (parallel): {baseline_parallel_avg:.4f}s (avg)")
-            print(f"  Baseline (sequential): {baseline_avg:.4f}s (avg)")
-            print(f"  Speedup (parallel): {speedup_parallel:.2f}x")
-            print(f"  Speedup (sequential): {speedup_sequential:.2f}x")
-        print("\n" + "=" * 50)
+            logger.info(f"\n{test_name}:")
+            logger.info(f"  Our implementation: {our_avg:.4f}s (avg)")
+            logger.info(f"  Baseline (parallel): {baseline_parallel_avg:.4f}s (avg)")
+            logger.info(f"  Baseline (sequential): {baseline_avg:.4f}s (avg)")
+            logger.info(f"  Speedup (parallel): {speedup_parallel:.2f}x")
+            logger.info(f"  Speedup (sequential): {speedup_sequential:.2f}x")
+        logger.info("\n" + "=" * 50)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_graphs():
     g1 = nx.erdos_renyi_graph(10, 0.3, seed=42)
     g2 = nx.erdos_renyi_graph(15, 0.2, seed=43)
     g3 = nx.erdos_renyi_graph(12, 0.25, seed=44)
-    return [g1, g2, g3]
+    g4 = nx.erdos_renyi_graph(10, 0.3, seed=45)
+    return [g1, g2, g3, g4]
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
+def sample_features():
+    ref = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    gen = np.array([[0.5, 1.5], [2.5, 3.5], [4.5, 5.5], [6.5, 7.5]])
+    return ref, gen
+
+
+@pytest.fixture(scope="session")
 def sample_molecules():
     molecules = QM9("test").sample(5, as_nx=True)
     return molecules
