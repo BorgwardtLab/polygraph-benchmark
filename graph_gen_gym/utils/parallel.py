@@ -115,3 +115,32 @@ def retry(max_retries: int = 3, delay: float = 1.0):
         return wrapper
 
     return decorator
+
+
+def batched_distribute_function(
+    func: Callable,
+    X: Iterable,
+    n_jobs: int,
+    description: str = "",
+    total: int = 1,
+    use_enumerate: bool = False,
+    show_progress: bool = True,
+    batch_size: int = 100,
+    **kwargs,
+) -> Any:
+    """
+    Note: func must be able to iterate over the batches.
+    """
+    batches = make_batches(X, batch_size)
+    return flatten_lists(
+        distribute_function(
+            func,
+            batches,
+            n_jobs,
+            description,
+            total,
+            use_enumerate,
+            show_progress,
+            **kwargs,
+        )
+    )
