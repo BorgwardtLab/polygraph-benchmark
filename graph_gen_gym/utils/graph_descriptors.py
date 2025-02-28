@@ -1,6 +1,6 @@
-from typing import Callable, Iterable, Optional, List
 import copy
 import warnings
+from typing import Callable, Iterable, List, Optional
 
 import networkx as nx
 import numpy as np
@@ -68,7 +68,9 @@ class OrbitCounts:
         # Check if any graph has a self-loop
         self_loops = [list(nx.selfloop_edges(g)) for g in graphs]
         if any(len(loops) > 0 for loops in self_loops):
-            warnings.warn("Graph with self-loop passed to orbit descriptor, deleting self-loops")
+            warnings.warn(
+                "Graph with self-loop passed to orbit descriptor, deleting self-loops"
+            )
             graphs = [copy.deepcopy(g) for g in graphs]
             for g, loops in zip(graphs, self_loops):
                 g.remove_edges_from(loops)
@@ -294,4 +296,6 @@ class WeisfeilerLehmanDescriptor:
                 data.append(count)
             indptr.append(len(indices))
 
-        return csr_array((data, indices, indptr), shape=(n_graphs, 10000000))
+        return csr_array(
+            (data, indices, indptr), shape=(n_graphs, self._offset * self._iterations)
+        )
