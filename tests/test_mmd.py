@@ -8,6 +8,7 @@ from gran_mmd_implementation.stats import (
     orbit_stats_all,
     spectral_stats,
 )
+import networkx as nx
 
 from graph_gen_gym.datasets import ProceduralPlanarGraphDataset
 from graph_gen_gym.metrics.base import (
@@ -89,6 +90,14 @@ def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
     our_eval = mmd_cls(planar)
     assert np.isclose(our_eval.compute(sbm), list(baseline_results.values())[0])
 
+
+def test_warn_orbit_self_loops():
+    g = nx.Graph()
+    g.add_node(0)
+    g.add_edge(0, 0)
+    with pytest.warns(UserWarning):
+        mmd = GRANOrbitMMD2([g])
+        mmd.compute([g])
 
 @pytest.mark.parametrize(
     "kernel,subsample_size,variant",

@@ -1,4 +1,6 @@
 from typing import Callable, Iterable, Optional, List
+import copy
+import warnings
 
 import networkx as nx
 import numpy as np
@@ -62,6 +64,14 @@ class ClusteringHistogram:
 
 class OrbitCounts:
     def __call__(self, graphs: Iterable[nx.Graph]):
+        # Check if any graph has a self-loop
+        self_loops = [list(nx.selfloop_edges(g)) for g in graphs]
+        if any(len(loops) > 0 for loops in self_loops):
+            warnings.warn("Graph with self-loop passed to orbit descriptor, deleting self-loops")
+            graphs = [copy.deepcopy(g) for g in graphs]
+            for g, loops in zip(graphs, self_loops):
+                g.remove_edges_from(loops)
+
         counts = orbit_count.batched_node_orbit_counts(graphs, graphlet_size=4)
         counts = [count.mean(axis=0) for count in counts]
         return np.stack(counts, axis=0)
