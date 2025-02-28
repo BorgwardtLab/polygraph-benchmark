@@ -23,7 +23,7 @@ from graph_gen_gym.datasets.base.molecules import (
 from graph_gen_gym.utils.parallel import (
     distribute_function,
     flatten_lists,
-    make_chunks,
+    make_batches,
     retry,
 )
 
@@ -100,7 +100,7 @@ def process(split, out_dir, n_jobs, limit, chunk_size):
     if limit is not None:
         smiles_list = smiles_list[:limit]
 
-    chunks = make_chunks(
+    chunks = make_batches(
         [(idx, item) for idx, item in enumerate(smiles_list)], chunk_size
     )
 

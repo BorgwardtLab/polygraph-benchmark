@@ -23,7 +23,7 @@ def flatten_lists(lists: List[List[Any]]) -> List[Any]:
     return flattened
 
 
-def make_chunks(lst: List[Any], n: int) -> List[List[Any]]:
+def make_batches(lst: List[Any], n: int) -> List[List[Any]]:
     chunks = [lst[i : i + n] for i in range(0, len(lst), n)]
     return chunks
 
