@@ -202,9 +202,9 @@ class AdaptiveRBFKernel(DescriptorKernel):
         ref_ref, ref_gen, gen_gen = blocks
 
         if self._variant == "mean":
-            mult = np.sqrt(np.mean(ref_gen)) if ref_gen.mean() > 0 else 1
+            mult = np.sqrt(np.mean(ref_gen)) if np.mean(ref_gen) > 0 else 1
         elif self._variant == "median":
-            mult = np.sqrt(np.median(ref_gen)) if ref_gen.median() > 0 else 1
+            mult = np.sqrt(np.median(ref_gen)) if np.median(ref_gen) > 0 else 1
         else:
             raise NotImplementedError
 
