@@ -3,10 +3,10 @@
 Implementation of datasets.
 """
 
+import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Union, Optional
-import warnings
+from typing import List, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -14,10 +14,10 @@ from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
 from graph_gen_gym.datasets.base.caching import (
+    CacheLock,
     download_to_cache,
     load_from_cache,
     write_to_cache,
-    CacheLock,
 )
 from graph_gen_gym.datasets.base.graph import Graph
 
@@ -75,19 +75,29 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
-    def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
+    def sample_graph_size(
+        self, n_samples: Optional[int] = None, seed: int = 42
+    ) -> List[int]:
         samples = []
+        rng = np.random.RandomState(seed)
         for _ in range(n_samples if n_samples is not None else 1):
-            idx = np.random.randint(len(self))
-            node_left, node_right = self._data_store.indexing_info.node_slices[idx].tolist()
+            idx = rng.randint(len(self))
+            node_left, node_right = self._data_store.indexing_info.node_slices[
+                idx
+            ].tolist()
             samples.append(node_right - node_left)
 
         return samples if n_samples is not None else samples[0]
 
     def sample(
-        self, n_samples: int, replace: bool = False, as_nx: bool = True
+        self,
+        n_samples: int,
+        replace: bool = False,
+        as_nx: bool = True,
+        seed: int = 42,
     ) -> list[nx.Graph]:
-        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
+        rng = np.random.RandomState(seed)
+        idx_to_sample = rng.choice(len(self), n_samples, replace=replace)
         data_list = self[idx_to_sample]
         if as_nx:
             to_nx = partial(
@@ -111,10 +121,20 @@ class OnlineGraphDataset(GraphDataset):
     ):
         with CacheLock(self.identifier):
             try:
-                data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
+                data_store = load_from_cache(
+                    self.identifier,
+                    split,
+                    mmap=memmap,
+                    data_hash=self.hash_for_split(split),
+                )
             except FileNotFoundError:
                 download_to_cache(self.url_for_split(split), self.identifier, split)
-                data_store = load_from_cache(self.identifier, split, mmap=memmap, data_hash=self.hash_for_split(split))
+                data_store = load_from_cache(
+                    self.identifier,
+                    split,
+                    mmap=memmap,
+                    data_hash=self.hash_for_split(split),
+                )
         self._split = split
         super().__init__(data_store)
 

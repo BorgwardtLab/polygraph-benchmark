@@ -157,22 +157,12 @@ class RandomGIN:
                 .to(self._device)
             )
         else:
-            feats = torch.cat(
-                [
-                    g.x
-                    for g in pyg_graphs
-                ]
-            ).to(self._device)
+            feats = torch.cat([g.x for g in pyg_graphs]).to(self._device)
 
         if self.edge_feat_loc is None:
             edge_attr = None
         else:
-            edge_attr = torch.cat(
-                [
-                    g.edge_attr
-                    for g in pyg_graphs
-                ]
-            ).to(self._device)
+            edge_attr = torch.cat([g.edge_attr for g in pyg_graphs]).to(self._device)
 
         batch = Batch.from_data_list(pyg_graphs).to(self._device)
 
