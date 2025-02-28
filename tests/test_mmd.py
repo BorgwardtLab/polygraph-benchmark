@@ -36,6 +36,16 @@ from graph_gen_gym.metrics.gran import (
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
 )
+from graph_gen_gym.metrics.gran.linear_mmd import (
+    LinearOrbitMMD2,
+    LinearClusteringMMD2,
+    LinearDegreeMMD2,
+    LinearSpectralMMD2,
+    LinearOrbitMMD2Interval,
+    LinearClusteringMMD2Interval,
+    LinearDegreeMMD2Interval,
+    LinearSpectralMMD2Interval,
+)
 
 
 @pytest.mark.parametrize(
@@ -89,6 +99,16 @@ def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
     assert len(baseline_results) == 1
     our_eval = mmd_cls(planar)
     assert np.isclose(our_eval.compute(sbm), list(baseline_results.values())[0])
+
+
+@pytest.mark.parametrize("mmd_cls", [LinearOrbitMMD2, LinearClusteringMMD2, LinearDegreeMMD2, LinearSpectralMMD2])
+def test_linear_gran_mmd_smoke(datasets, mmd_cls):
+    planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
+    mmd = mmd_cls(planar)
+    result = mmd.compute(sbm)
+    assert isinstance(result, float)
 
 
 def test_warn_orbit_self_loops():
@@ -145,6 +165,10 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
         (RBFDegreeMMD2, RBFDegreeMMD2Interval),
         (RBFOrbitMMD2, RBFOrbitMMD2Interval),
         (RBFSpectralMMD2, RBFSpectralMMD2Interval),
+        (LinearOrbitMMD2, LinearOrbitMMD2Interval),
+        (LinearClusteringMMD2, LinearClusteringMMD2Interval),
+        (LinearDegreeMMD2, LinearDegreeMMD2Interval),
+        (LinearSpectralMMD2, LinearSpectralMMD2Interval),
     ],
 )
 def test_concrete_uncertainty(datasets, subsample_size, single_cls, interval_cls):
