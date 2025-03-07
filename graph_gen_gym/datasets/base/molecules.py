@@ -1,6 +1,7 @@
 import torch
 from rdkit import Chem
 from torch_geometric.data import Data
+from typing import Optional
 
 BOND_TYPES = [
     Chem.rdchem.BondType.UNSPECIFIED,
@@ -103,9 +104,9 @@ def graph2molecule(
     node_labels: torch.Tensor,
     edge_index: torch.Tensor,
     bond_types: torch.Tensor,
-    charges: torch.Tensor | None = None,
-    num_radical_electrons: torch.Tensor | None = None,
-    pos: torch.Tensor | None = None,
+    charges: Optional[torch.Tensor] = None,
+    num_radical_electrons: Optional[torch.Tensor] = None,
+    pos: Optional[torch.Tensor] = None,
 ) -> Chem.RWMol:
     assert edge_index.shape[1] == len(bond_types)
     node_idx_to_atom_idx = {}

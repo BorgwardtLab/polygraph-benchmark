@@ -12,6 +12,7 @@ authors = [
     { name = "Dexiong Chen", email = "dchen@biochem.mpg.de" },
     { name = "Karsten Borgwardt", email = "borgwardt@biochem.mpg.de" },
 ]
+requires-python = ">=3.7"
 dependencies = [
     "numpy",
     "torch",
@@ -61,7 +62,7 @@ python_files = ["test_*.py"]
 
 [tool.lint.ruff]
 line-length = 80
-target-version = "py312"
+target-version = "py37"
 select = ["D"]
 ignore = ["E731"]
 exclude = ["tests/ggm_implementation", "tests/gran_mmd_implementation"]
