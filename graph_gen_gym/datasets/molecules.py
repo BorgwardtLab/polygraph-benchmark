@@ -10,9 +10,6 @@ import networkx as nx
 from torch_geometric.utils import from_networkx
 
 from graph_gen_gym.datasets.base.dataset import OnlineGraphDataset
-from graph_gen_gym.datasets.base.molecules import (
-    graph2molecule,
-)
 
 
 class MoleculeDataset(OnlineGraphDataset):
@@ -35,6 +32,8 @@ class MoleculeDataset(OnlineGraphDataset):
     @staticmethod
     def is_valid(data: nx.Graph) -> bool:
         """Convert PyG graph back to RDKit molecule and validate it."""
+        from graph_gen_gym.datasets.base.molecules import graph2molecule
+
         graph = from_networkx(data)
         # Convert nx Graph to PyG Batch
         mol = graph2molecule(
