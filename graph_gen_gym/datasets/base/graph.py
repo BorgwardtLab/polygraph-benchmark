@@ -10,7 +10,31 @@ from typing import Any, Dict, List, Optional, Union
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 from torch_geometric.data import Batch, Data
-from torch_geometric.utils import cumsum
+
+
+def _cumsum(x: torch.Tensor, dim: int = 0) -> torch.Tensor:
+    r"""Returns the cumulative sum of elements of :obj:`x`.
+    In contrast to :meth:`torch.cumsum`, prepends the output with zero.
+    Taken from https://github.com/pyg-team/pytorch_geometric/blob/08697a7197504158e0b68a8e191e95233e5f8a32/torch_geometric/utils/functions.py#L5.
+
+    Args:
+        x (torch.Tensor): The input tensor.
+        dim (int, optional): The dimension to do the operation over.
+            (default: :obj:`0`)
+
+    Example:
+        >>> x = torch.tensor([2, 4, 1])
+        >>> cumsum(x)
+        tensor([0, 2, 6, 7])
+
+    """
+    size = x.size()[:dim] + (x.size(dim) + 1, ) + x.size()[dim + 1:]
+    out = x.new_empty(size)
+
+    out.narrow(dim, 0, 1).zero_()
+    torch.cumsum(x, dim=dim, out=out.narrow(dim, 1, x.size(dim)))
+
+    return out
 
 
 class IndexingInfo(BaseModel):
@@ -91,7 +115,7 @@ class Graph(BaseModel):
                 f"The value of InMemoryBatch.num_graphs ({self.num_graphs}) does not match the number of graphs indicated by InMemoryBatch.batch ({len(num_nodes_per_graph)})"
             )
 
-        inc = cumsum(num_nodes_per_graph)
+        inc = _cumsum(num_nodes_per_graph)
         node_slices = torch.stack([inc[:-1], inc[1:]], axis=1)
         assert len(node_slices) == self.num_graphs
 
@@ -110,7 +134,7 @@ class Graph(BaseModel):
 
         num_edges_per_graph = torch.bincount(edge_to_graph)
         assert len(num_edges_per_graph) == self.num_graphs
-        edge_inc = cumsum(num_edges_per_graph)
+        edge_inc = _cumsum(num_edges_per_graph)
         edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], axis=1)
         assert len(edge_slices) == self.num_graphs
         self.indexing_info = IndexingInfo(
@@ -148,7 +172,7 @@ class ShardedGraph(BaseModel):
     num_graphs: Optional[int] = None
 
     def model_post_init(self, __context: Any) -> None:
-        self.agg_graph_count = cumsum(
+        self.agg_graph_count = _cumsum(
             torch.Tensor([storage.num_graphs for storage in self.storages]).to(
                 torch.int64
             )
