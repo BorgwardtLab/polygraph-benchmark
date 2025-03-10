@@ -154,8 +154,5 @@ def test_weisfeiler_lehman_descriptor_molecules(
     assert features.shape[0] == len(sample_molecules)
     for i in range(len(sample_molecules)):
         for j in range(i + 1, len(sample_molecules)):
-            row_i = features[i : i + 1].toarray()
-            row_j = features[j : j + 1].toarray()
-            assert not np.array_equal(
-                row_i, row_j
-            ), f"Features for molecules {i} and {j} are identical"
+            difference = features[i : i + 1] - features[j : j + 1]
+            assert difference.max() > 0 or difference.min() < 0, f"Features for molecules {i} and {j} are identical"
