@@ -28,6 +28,7 @@ dependencies = [
     "rdkit",
     "pandas",
     "orbit-count",
+    "numba",
 ]
 
 [project.optional-dependencies]

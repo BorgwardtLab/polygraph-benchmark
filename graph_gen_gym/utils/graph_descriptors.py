@@ -194,7 +194,7 @@ class NormalizedDescriptor:
 class WeisfeilerLehmanDescriptor:
     """This is meant to be used together with the LinearKernel."""
 
-    DEFAULT_MAX_HASH_VALUE = 2**19 - 1
+    DEFAULT_MAX_HASH_VALUE = 2**31 - 1
 
     def __init__(
         self,
@@ -220,9 +220,8 @@ class WeisfeilerLehmanDescriptor:
         self._n_graphs_per_job = n_graphs_per_job
         self._show_progress = show_progress
 
-    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
+    def __call__(self, graphs: Iterable[nx.Graph]) -> csr_array:
         graph_list = list(graphs)
-        n_graphs = len(graph_list)
 
         if not self._use_node_labels:
             self._assign_node_degree_labels(graph_list)
@@ -240,7 +239,7 @@ class WeisfeilerLehmanDescriptor:
                 batch_size=self._n_graphs_per_job,
             )
 
-        sparse_array = self._create_sparse_matrix(features, n_graphs)
+        sparse_array = self._create_sparse_matrix(features)
         return sparse_array
 
     def _assign_node_degree_labels(self, graphs: List[nx.Graph]) -> None:
@@ -281,17 +280,20 @@ class WeisfeilerLehmanDescriptor:
 
         return int_hashes
 
-    def _create_sparse_matrix(self, all_features: list, n_graphs: int) -> csr_array:
+    def _create_sparse_matrix(self, all_features: list) -> csr_array:
+        n_graphs = len(all_features)
         data = []
         indices = []
         indptr = [0]
 
         for features in all_features:
-            for feature_idx, count in features.items():
+            sorted_features = sorted(features.items(), key=lambda x: x[0])
+            for feature_idx, count in sorted_features:
                 indices.append(feature_idx)
                 data.append(count)
             indptr.append(len(indices))
 
         return csr_array(
-            (data, indices, indptr), shape=(n_graphs, self._max_hash_idx_value)
+            (np.array(data, dtype=np.int32), np.array(indices, dtype=np.int32), np.array(indptr, dtype=np.int32)),
+            shape=(n_graphs, self._max_hash_idx_value)
         )

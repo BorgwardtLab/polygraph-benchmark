@@ -46,6 +46,32 @@ from graph_gen_gym.metrics.gran.linear_mmd import (
     LinearDegreeMMD2Interval,
     LinearSpectralMMD2Interval,
 )
+from graph_gen_gym.utils.kernels import LinearKernel
+from graph_gen_gym.utils.graph_descriptors import WeisfeilerLehmanDescriptor
+from graph_gen_gym.utils.mmd_utils import mmd_from_gram
+import grakel
+
+
+class WeisfeilerLehmanMMD2(DescriptorMMD2):
+    def __init__(self, reference_graphs, iterations=3):
+        super().__init__(reference_graphs, LinearKernel(WeisfeilerLehmanDescriptor(iterations=iterations, use_node_labels=False)), variant="biased")
+
+
+def grakel_wl_mmd(reference_graphs, test_graphs, is_parallel=False, iterations=3):
+    grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
+    all_graphs = reference_graphs + test_graphs
+    for g in all_graphs:
+        for node in g.nodes():
+            g.nodes[node]["degree"] = g.degree(node)
+
+    all_graphs = grakel.graph_from_networkx(
+        all_graphs, node_labels_tag="degree"
+    )
+    gram_matrix = grakel_kernel.fit_transform(all_graphs)
+    ref_vs_ref = gram_matrix[:len(reference_graphs), :len(reference_graphs)]
+    ref_vs_gen = gram_matrix[:len(reference_graphs), len(reference_graphs):]
+    gen_vs_gen = gram_matrix[len(reference_graphs):, len(reference_graphs):]
+    return mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="biased")
 
 
 @pytest.mark.parametrize(
@@ -236,14 +262,15 @@ def test_max_mmd(request, datasets, kernel, variant):
         (GRANOrbitMMD2, orbit_stats_all),
         (GRANClusteringMMD2, clustering_stats),
         (GRANDegreeMMD2, degree_stats),
+        (WeisfeilerLehmanMMD2, grakel_wl_mmd),
     ],
 )
 @pytest.mark.parametrize("parallel_baseline", [True, False])
 def test_measure_runtime(
     mmd_cls, baseline_method, orca_executable, runtime_stats, parallel_baseline
 ):
-    if parallel_baseline and mmd_cls is GRANOrbitMMD2:
-        pytest.skip("GRAN doesn't implement parallel orbit stats")
+    if parallel_baseline and (mmd_cls is GRANOrbitMMD2 or mmd_cls is WeisfeilerLehmanMMD2):
+        pytest.skip("Orbit and WL don't have parallel baselines")
 
     ds1 = ProceduralPlanarGraphDataset("ds1", 1024, seed=42)
     ds2 = ProceduralPlanarGraphDataset("ds2", 1024, seed=42)
@@ -257,6 +284,12 @@ def test_measure_runtime(
         patched_baseline_method = lambda x, y: baseline_method(  # noqa: E731
             x, y, is_parallel=parallel_baseline
         )  # noqa
+
+    # Get JIT compilation out of the way
+    mmd = mmd_cls([ds1[0]])
+    mmd.compute([ds2[0]])
+    del mmd
+
 
     for _ in range(1):
         t0 = time.time()

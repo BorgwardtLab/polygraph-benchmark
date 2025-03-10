@@ -312,7 +312,7 @@ def test_weisfeiler_lehman_vs_grakel_er_graphs(sample_graphs, iterations):
 
     grakel_kernel.fit(grakel_ref)
     grakel_blocks = grakel_kernel.transform(grakel_gen)
-    assert np.allclose(our_blocks.ref_vs_gen, grakel_blocks.T)
+    assert np.allclose(our_blocks.ref_vs_gen, grakel_blocks.T), (ref_features, gen_features)
 
 
 @pytest.mark.parametrize("iterations", [2, 3])

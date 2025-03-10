@@ -6,6 +6,7 @@ import networkx as nx
 import numpy as np
 from scipy.sparse import csr_array
 from sklearn.metrics import pairwise_distances
+from graph_gen_gym.utils.sparse_dist import sparse_dot_product, sparse_euclidean, sparse_manhattan
 
 GraphDescriptorFn = Callable[[Iterable[nx.Graph]], np.ndarray]
 MatrixLike: TypeAlias = Union[np.ndarray, csr_array]
@@ -76,7 +77,10 @@ class LaplaceKernel(DescriptorKernel):
     def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
 
-        comparison = pairwise_distances(x, y, metric="l1")
+        if isinstance(x, csr_array) and isinstance(y, csr_array):
+            comparison = sparse_manhattan(x, y)
+        else:
+            comparison = pairwise_distances(x, y, metric="l1")
 
         if isinstance(self.lbd, np.ndarray):
             if self.lbd.ndim != 1:
@@ -113,7 +117,10 @@ class GaussianTV(DescriptorKernel):
     def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
 
-        comparison = pairwise_distances(x, y, metric="l1")
+        if isinstance(x, csr_array) and isinstance(y, csr_array):
+            comparison = sparse_manhattan(x, y)
+        else:
+            comparison = pairwise_distances(x, y, metric="l1")
 
         if isinstance(self.bw, np.ndarray):
             if self.bw.ndim != 1:
@@ -153,7 +160,10 @@ class RBFKernel(DescriptorKernel):
     def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
 
-        comparison = pairwise_distances(x, y, metric="l2") ** 2
+        if isinstance(x, csr_array) and isinstance(y, csr_array):
+            comparison = sparse_euclidean(x, y) ** 2
+        else:
+            comparison = pairwise_distances(x, y, metric="l2") ** 2
 
         if isinstance(self.bw, np.ndarray):
             if self.bw.ndim != 1:
@@ -196,7 +206,11 @@ class AdaptiveRBFKernel(DescriptorKernel):
         return 1
 
     def pre_gram_block(self, x: Any, y: Any) -> np.ndarray:
-        return pairwise_distances(x, y, metric="l2") ** 2
+        if isinstance(x, csr_array) and isinstance(y, csr_array):
+            comparison = sparse_euclidean(x, y) ** 2
+        else:
+            comparison = pairwise_distances(x, y, metric="l2") ** 2
+        return comparison
 
     def adapt(self, blocks: GramBlocks) -> GramBlocks:
         ref_ref, ref_gen, gen_gen = blocks
@@ -240,7 +254,12 @@ class LinearKernel(DescriptorKernel):
 
     def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2
-        result = x @ y.transpose()
+
+        if isinstance(x, csr_array) and isinstance(y, csr_array):
+            result = sparse_dot_product(x, y)
+        else:
+            result = x @ y.transpose()
+
         if isinstance(result, np.ndarray):
             return result
         return result.toarray()
