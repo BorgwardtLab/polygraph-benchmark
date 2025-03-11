@@ -11,6 +11,7 @@ from scipy.sparse import csr_array
 from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
+from hashlib import blake2b
 
 from graph_gen_gym.utils.gin import GIN
 from graph_gen_gym.utils.parallel import batched_distribute_function, flatten_lists
@@ -194,28 +195,28 @@ class NormalizedDescriptor:
 class WeisfeilerLehmanDescriptor:
     """This is meant to be used together with the LinearKernel."""
 
-    DEFAULT_MAX_HASH_VALUE = 2**31 - 1
-
     def __init__(
         self,
         iterations: int = 3,
         use_node_labels: bool = False,
         node_label_key: Optional[str] = None,
-        max_hash_idx_value: int = DEFAULT_MAX_HASH_VALUE,
+        digest_size: int = 4,
         n_jobs: int = 1,
         n_graphs_per_job: int = 100,
         show_progress: bool = False,
     ):
-        self._iterations = iterations
-        self._use_node_labels = use_node_labels
-
         if use_node_labels and node_label_key is None:
             raise ValueError(
                 "node_label_key must be provided if use_node_labels is True"
             )
 
+        if digest_size > 4:
+            raise ValueError("Digest size must be at most 4 bytes")
+
+        self._iterations = iterations
+        self._use_node_labels = use_node_labels
         self._node_label_key = node_label_key if use_node_labels else "degree"
-        self._max_hash_idx_value = max_hash_idx_value
+        self._digest_size = digest_size   # Number of bytes in the hash
         self._n_jobs = n_jobs
         self._n_graphs_per_job = n_graphs_per_job
         self._show_progress = show_progress
@@ -262,6 +263,7 @@ class WeisfeilerLehmanDescriptor:
                             graph,
                             node_attr=self._node_label_key,
                             iterations=self._iterations,
+                            digest_size=self._digest_size,
                         ).values()
                     )
                 )
@@ -271,13 +273,18 @@ class WeisfeilerLehmanDescriptor:
 
         int_hashes = {}
         for hash_key, count in all_hashes.items():
-            int_key = hash(str(hash_key)) % self._max_hash_idx_value
+            if not isinstance(hash_key, str):
+                # This case catches hash_iter_0
+                hash_key = blake2b(str(hash_key).encode(), digest_size=self._digest_size).hexdigest()
+
+            assert isinstance(hash_key, str) and len(hash_key) == 2 * self._digest_size, "Hash key is not a hex string or has incorrect length"
+            int_key = int(hash_key, 16)
+            int_key = int_key & 0x7FFFFFFF
             int_hashes[int_key] = count
+            assert 0 <= int_key <= (2**31 - 1), f"Unexpected hash key {int_key} out of bounds"
 
-        assert len(int_hashes) == len(
-            all_hashes
-        ), "Hash collision arising from int mapping"
-
+        if len(int_hashes) != len(all_hashes):
+            warnings.warn("Hash collision detected in Weisfeiler-Lehman descriptor")
         return int_hashes
 
     def _create_sparse_matrix(self, all_features: list) -> csr_array:
@@ -295,5 +302,5 @@ class WeisfeilerLehmanDescriptor:
 
         return csr_array(
             (np.array(data, dtype=np.int32), np.array(indices, dtype=np.int32), np.array(indptr, dtype=np.int32)),
-            shape=(n_graphs, self._max_hash_idx_value)
+            shape=(n_graphs, 2 ** 31)
         )

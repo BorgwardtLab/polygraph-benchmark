@@ -247,7 +247,7 @@ def test_weisfeiler_lehman_with_molecules(
         use_node_labels=use_node_labels,
         node_label_key="atom_labels" if use_node_labels else None,
         n_jobs=n_jobs,
-        max_hash_idx_value=2 ** 19 - 1
+        digest_size=2
     )
     kernel = LinearKernel(wl_descriptor)
 
