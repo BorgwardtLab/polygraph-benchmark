@@ -1,6 +1,7 @@
 import copy
 import warnings
 from collections import Counter
+from hashlib import blake2b
 from typing import Callable, Iterable, List, Optional
 
 import networkx as nx
@@ -11,7 +12,6 @@ from scipy.sparse import csr_array
 from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
-from hashlib import blake2b
 
 from graph_gen_gym.utils.gin import GIN
 from graph_gen_gym.utils.parallel import batched_distribute_function, flatten_lists
@@ -216,7 +216,7 @@ class WeisfeilerLehmanDescriptor:
         self._iterations = iterations
         self._use_node_labels = use_node_labels
         self._node_label_key = node_label_key if use_node_labels else "degree"
-        self._digest_size = digest_size   # Number of bytes in the hash
+        self._digest_size = digest_size  # Number of bytes in the hash
         self._n_jobs = n_jobs
         self._n_graphs_per_job = n_graphs_per_job
         self._show_progress = show_progress
@@ -275,15 +275,23 @@ class WeisfeilerLehmanDescriptor:
         for hash_key, count in all_hashes.items():
             if not isinstance(hash_key, str):
                 # This case catches hash_iter_0
-                hash_key = blake2b(str(hash_key).encode(), digest_size=self._digest_size).hexdigest()
+                hash_key = blake2b(
+                    str(hash_key).encode(), digest_size=self._digest_size
+                ).hexdigest()
 
-            assert isinstance(hash_key, str) and len(hash_key) == 2 * self._digest_size, "Hash key is not a hex string or has incorrect length"
+            assert (
+                isinstance(hash_key, str) and len(hash_key) == 2 * self._digest_size
+            ), "Hash key is not a hex string or has incorrect length"
             int_key = int(hash_key, 16)
             int_key = int_key & 0x7FFFFFFF
             int_hashes[int_key] = count
-            assert 0 <= int_key <= (2**31 - 1), f"Unexpected hash key {int_key} out of bounds"
+            assert (
+                0 <= int_key <= (2**31 - 1)
+            ), f"Unexpected hash key {int_key} out of bounds"
 
         if len(int_hashes) != len(all_hashes):
+            # This might artificially inflate the resulting kernel value but not
+            # by much in our experiments.
             warnings.warn("Hash collision detected in Weisfeiler-Lehman descriptor")
         return int_hashes
 
@@ -301,6 +309,10 @@ class WeisfeilerLehmanDescriptor:
             indptr.append(len(indices))
 
         return csr_array(
-            (np.array(data, dtype=np.int32), np.array(indices, dtype=np.int32), np.array(indptr, dtype=np.int32)),
-            shape=(n_graphs, 2 ** 31)
+            (
+                np.array(data, dtype=np.int32),
+                np.array(indices, dtype=np.int32),
+                np.array(indptr, dtype=np.int32),
+            ),
+            shape=(n_graphs, 2**31),
         )
