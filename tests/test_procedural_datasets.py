@@ -2,9 +2,9 @@ import os
 import pytest
 import networkx as nx
 
-from graph_gen_gym.metrics.base import VUN
-from graph_gen_gym.datasets import ProceduralLobsterGraphDataset, ProceduralPlanarGraphDataset, ProceduralSBMGraphDataset
-from graph_gen_gym.datasets.base.caching import clear_cache, identifier_to_path
+from polygrapher.metrics.base import VUN
+from polygrapher.datasets import ProceduralLobsterGraphDataset, ProceduralPlanarGraphDataset, ProceduralSBMGraphDataset
+from polygrapher.datasets.base.caching import clear_cache, identifier_to_path
 
 ALL_PROCEDURAL_DATASETS = [ProceduralLobsterGraphDataset, ProceduralPlanarGraphDataset, ProceduralSBMGraphDataset]
 

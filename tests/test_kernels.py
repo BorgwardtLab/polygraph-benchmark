@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_array
 
-from graph_gen_gym.utils.graph_descriptors import WeisfeilerLehmanDescriptor
-from graph_gen_gym.utils.kernels import (
+from polygrapher.utils.graph_descriptors import WeisfeilerLehmanDescriptor
+from polygrapher.utils.kernels import (
     AdaptiveRBFKernel,
     DescriptorKernel,
     GaussianTV,

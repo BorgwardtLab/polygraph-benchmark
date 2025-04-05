@@ -7,7 +7,7 @@ import torch
 import torch_geometric
 from torch_geometric.data import Batch, Data
 
-from graph_gen_gym.datasets.base import Graph
+from polygrapher.datasets.base import Graph
 
 
 def _spectre_link_to_storage(url):

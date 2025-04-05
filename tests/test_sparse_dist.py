@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.sparse import csr_array
 import pytest
-from graph_gen_gym.utils.sparse_dist import sparse_dot_product, sparse_euclidean, sparse_manhattan
+from polygrapher.utils.sparse_dist import sparse_dot_product, sparse_euclidean, sparse_manhattan
 
 def test_small_arrays():
     # Create small dense arrays

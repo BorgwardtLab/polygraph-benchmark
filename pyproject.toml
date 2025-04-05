@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "graph_gen_gym"
+name = "polygrapher"
 version = "0.1"
 description = "Graph Generation Gym"
 authors = [
@@ -44,6 +44,11 @@ dev = [
     "ipykernel",
     "grakel",
     "pytest-profiling",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocs-material",
+    "mkdocstrings-python",
+    "mkdocs-terminal",
 ]
 gpu = [
     "dgl @ https://data.dgl.ai/wheels/torch-2.4/cu124/dgl-2.4.0%2Bcu124-cp310-cp310-manylinux1_x86_64.whl",
@@ -54,7 +59,7 @@ gpu = [
 
 [tool.setuptools.packages.find]
 where = ["."]  # look for packages in the current directory
-include = ["graph_gen_gym*"]  # include all packages starting with graph_gen_gym
+include = ["polygrapher*"]  # include all packages starting with polygrapher
 exclude = ["conversion"]  # keep your existing exclude
 
 [tool.pytest.ini_options]

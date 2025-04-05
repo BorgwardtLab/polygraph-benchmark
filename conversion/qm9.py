@@ -15,8 +15,8 @@ from rdkit import Chem, RDLogger
 from torch_geometric.data import Batch, download_url, extract_zip
 from tqdm.rich import tqdm
 
-from graph_gen_gym.datasets.base.graph import Graph
-from graph_gen_gym.datasets.base.molecules import (
+from polygrapher.datasets.base.graph import Graph
+from polygrapher.datasets.base.molecules import (
     EDGE_ATTRS,
     NODE_ATTRS,
     add_hydrogens_and_stereochemistry,

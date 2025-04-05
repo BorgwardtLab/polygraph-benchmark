@@ -1,10 +1,10 @@
-# Graph Generative Benchmark
+# Polygraph
 # Installation
 For now, you can install the package in editable mode
 ```bash
-mamba create -n graph_gen_gym python=3.12
+mamba create -n polygrapher python=3.12
 pip install -e ".[dev]"
-mamba activate graph_gen_gym
+mamba activate polygrapher
 ```
 
 This will also install orca and (unpinned) dependencies.
@@ -12,7 +12,7 @@ This will also install orca and (unpinned) dependencies.
 # Loading Datasets
 Currently, we can load planar and SBM graphs. Data is stored in your `.cache` folder.
 ```python
-from graph_gen_gym.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
+from polygrapher.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
 
 
 ds_planar = PlanarGraphDataset("train")        # Indexable and iterable, gives PyG graphs
@@ -25,7 +25,7 @@ nx_view = ds.to_nx()                    # Indexable and iterable, gives networkx
 The standard MMDs can be computed like this:
 
 ```python
-from graph_gen_gym.metrics.mmd.mmd import OrbitMM2
+from polygrapher.metrics.mmd.mmd import OrbitMM2
 
 mmd = OrbitMM2(ds_planar)
 print(mmd.compute(ds_sbm.to_nx()))
@@ -36,9 +36,9 @@ Note that we provide the reference graphs (`ds_planar`) as a dataset while we pr
 We can compute arbitrary MMDs on graph descriptors via the `DescriptorMMD2` class:
 
 ```python
-from graph_gen_gym.metrics.mmd.mmd import DescriptorMMD2
-from graph_gen_gym.metrics.graph_descriptors import orbit_descriptor
-from graph_gen_gym.metrics.mmd.kernels import LaplaceKernel
+from polygrapher.metrics.mmd.mmd import DescriptorMMD2
+from polygrapher.metrics.graph_descriptors import orbit_descriptor
+from polygrapher.metrics.mmd.kernels import LaplaceKernel
 
 mmd = DescriptorMMD2(ds_planar, descriptor_fn=orbit_descriptor, kernel=LaplaceKernel(lbd=0.2), variant="umve")
 print(mmd.compute(ds_sbm.to_nx()))
@@ -56,8 +56,8 @@ print(mmd.compute(ds_sbm.to_nx()))     # Gives a numpy array
 ## Computing p-Values
 
 ```python
-from graph_gen_gym.metrics.mmd.tests import OptimizedPValue
-from graph_gen_gym.metrics.graph_descriptors import clustering_descriptor
+from polygrapher.metrics.mmd.tests import OptimizedPValue
+from polygrapher.metrics.graph_descriptors import clustering_descriptor
 from functools import partial
 
 planar_val = PlanarGraphDataset("val")

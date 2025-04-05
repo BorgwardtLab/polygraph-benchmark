@@ -8,7 +8,7 @@ import torch
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
-from graph_gen_gym.datasets.base import Graph
+from polygrapher.datasets.base import Graph
 
 
 def _nx_graphs_to_storage(nx_graphs):

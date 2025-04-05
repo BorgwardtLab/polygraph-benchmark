@@ -10,15 +10,15 @@ from gran_mmd_implementation.stats import (
 )
 import networkx as nx
 
-from graph_gen_gym.datasets import ProceduralPlanarGraphDataset
-from graph_gen_gym.metrics.base import (
+from polygrapher.datasets import ProceduralPlanarGraphDataset
+from polygrapher.metrics.base import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
     MaxDescriptorMMD2,
     MaxDescriptorMMD2Interval,
     MMDInterval,
 )
-from graph_gen_gym.metrics.gran import (
+from polygrapher.metrics.gran import (
     GRANClusteringMMD2,
     GRANClusteringMMD2Interval,
     GRANDegreeMMD2,
@@ -36,7 +36,7 @@ from graph_gen_gym.metrics.gran import (
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
 )
-from graph_gen_gym.metrics.gran.linear_mmd import (
+from polygrapher.metrics.gran.linear_mmd import (
     LinearOrbitMMD2,
     LinearClusteringMMD2,
     LinearDegreeMMD2,
@@ -46,9 +46,9 @@ from graph_gen_gym.metrics.gran.linear_mmd import (
     LinearDegreeMMD2Interval,
     LinearSpectralMMD2Interval,
 )
-from graph_gen_gym.utils.kernels import LinearKernel
-from graph_gen_gym.utils.graph_descriptors import WeisfeilerLehmanDescriptor
-from graph_gen_gym.utils.mmd_utils import mmd_from_gram
+from polygrapher.utils.kernels import LinearKernel
+from polygrapher.utils.graph_descriptors import WeisfeilerLehmanDescriptor
+from polygrapher.utils.mmd_utils import mmd_from_gram
 import grakel
 
 

@@ -1,0 +1,9 @@
+site_name: Polygraph
+theme:
+  name: terminal  # Optional, but makes docs look better
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      paths: [polygrapher]
