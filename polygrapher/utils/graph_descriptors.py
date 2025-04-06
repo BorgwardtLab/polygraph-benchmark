@@ -1,3 +1,20 @@
+"""Graph descriptor functions for converting graphs into feature vectors.
+
+This module provides various functions that convert networkx graphs into numerical 
+representations suitable for kernel methods. Each descriptor is callable with an iterable of graphs and returns either a dense 
+`numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
+
+Available descriptors:
+    - [`SparseDegreeHistogram`][polygrapher.utils.graph_descriptors.SparseDegreeHistogram]: Sparse degree distribution
+    - [`DegreeHistogram`][polygrapher.utils.graph_descriptors.DegreeHistogram]: Dense degree distribution
+    - [`ClusteringHistogram`][polygrapher.utils.graph_descriptors.ClusteringHistogram]: Distribution of clustering coefficients
+    - [`OrbitCounts`][polygrapher.utils.graph_descriptors.OrbitCounts]: Graph orbit statistics
+    - [`EigenvalueHistogram`][polygrapher.utils.graph_descriptors.EigenvalueHistogram]: Eigenvalue histogram of normalized Laplacian
+    - [`RandomGIN`][polygrapher.utils.graph_descriptors.RandomGIN]: Embeddings of random Graph Isomorphism Network
+    - [`WeisfeilerLehmanDescriptor`][polygrapher.utils.graph_descriptors.WeisfeilerLehmanDescriptor]: Weisfeiler-Lehman subtree features
+    - [`NormalizedDescriptor`][polygrapher.utils.graph_descriptors.NormalizedDescriptor]: Standardized descriptor wrapper
+"""
+
 import copy
 import warnings
 from collections import Counter
@@ -18,6 +35,15 @@ from polygrapher.utils.parallel import batched_distribute_function, flatten_list
 
 
 class DegreeHistogram:
+    """Computes normalized degree distributions of graphs.
+    
+    For each graph, computes a histogram of node degrees and normalizes it to sum to 1.
+    Pads all histograms to a fixed maximum degree.
+    
+    Args:
+        max_degree: Maximum degree to consider. Larger degrees are ignored
+    """
+
     def __init__(self, max_degree: int):
         self._max_degree = max_degree
 
@@ -32,6 +58,12 @@ class DegreeHistogram:
 
 
 class SparseDegreeHistogram:
+    """Memory-efficient version of degree distribution computation.
+    
+    Similar to DegreeHistogram but returns a sparse matrix, making it suitable for
+    graphs with high maximum degree where most degree bins are empty.
+    """
+
     def __call__(self, graphs: Iterable[nx.Graph]) -> csr_array:
         hists = [
             np.array(nx.degree_histogram(graph)) / graph.number_of_nodes()
@@ -48,6 +80,16 @@ class SparseDegreeHistogram:
 
 
 class ClusteringHistogram:
+    """Computes histograms of local clustering coefficients.
+    
+    For each graph, computes the distribution of local clustering coefficients
+    across nodes. The clustering coefficient measures the fraction of possible
+    triangles through each node that exist.
+    
+    Args:
+        bins: Number of histogram bins covering [0,1]
+    """
+
     def __init__(self, bins: int):
         self._num_bins = bins
 
@@ -66,6 +108,12 @@ class ClusteringHistogram:
 
 
 class OrbitCounts:
+    """Computes graph orbit statistics .
+    
+    Warning:
+        Self-loops are automatically removed from input graphs.
+    """
+
     def __call__(self, graphs: Iterable[nx.Graph]):
         # Check if any graph has a self-loop
         self_loops = [list(nx.selfloop_edges(g)) for g in graphs]
@@ -83,6 +131,12 @@ class OrbitCounts:
 
 
 class EigenvalueHistogram:
+    """Computes eigenvalue histogram of normalized Laplacian.
+    
+    For each graph, computes the eigenvalue spectrum of its normalized Laplacian
+    matrix and returns a histogram of the eigenvalues. 
+    """
+
     def __call__(self, graphs: Iterable[nx.Graph]):
         histograms = []
         for g in graphs:
@@ -96,6 +150,28 @@ class EigenvalueHistogram:
 
 
 class RandomGIN:
+    """Random Graph Isomorphism Network for graph embeddings.
+    
+    Initializes a randomly weighted Graph Isomorphism Network (GIN) and uses it
+    to compute graph embeddings. The network parameters are fixed after random
+    initialization. Node features default to node degrees if not specified.
+    
+    Args:
+        num_layers: Number of GIN layers
+        hidden_dim: Hidden dimension in each layer
+        neighbor_pooling_type: How to aggregate neighbor features ('sum', 'mean', or 'max')
+        graph_pooling_type: How to aggregate node features into graph features ('sum', 'mean', or 'max')
+        input_dim: Dimension of input node features
+        edge_feat_dim: Dimension of edge features (0 for no edge features)
+        dont_concat: If True, only use final layer features instead of concatenating all layers
+        num_mlp_layers: Number of MLP layers in each GIN layer
+        output_dim: Dimension of final graph embedding
+        device: Device to run the model on (e.g., 'cpu' or 'cuda')
+        node_feat_loc: List of node attributes to use as features. If None, use degree as features.
+        edge_feat_loc: List of edge attributes to use as features. If None, no edge features are used.
+        seed: Random seed for weight initialization
+    """
+
     def __init__(
         self,
         num_layers: int = 3,
@@ -107,7 +183,6 @@ class RandomGIN:
         dont_concat: bool = False,
         num_mlp_layers: int = 2,
         output_dim: int = 1,
-        init: str = "orthogonal",
         device: str = "cpu",
         node_feat_loc: Optional[List[str]] = None,
         edge_feat_loc: Optional[List[str]] = None,
@@ -122,7 +197,7 @@ class RandomGIN:
             edge_feat_dim=edge_feat_dim,
             num_mlp_layers=num_mlp_layers,
             output_dim=output_dim,
-            init=init,
+            init="orthogonal",
             seed=seed,
         )
         self._device = device
@@ -178,6 +253,19 @@ class RandomGIN:
 
 
 class NormalizedDescriptor:
+    """Standardizes graph descriptors using reference graph statistics.
+    
+    Wraps a graph descriptor to standardize its output features (zero mean, unit variance)
+    based on statistics computed from a set of reference graphs. This is useful when
+    different features have very different scales.
+    
+    The wrapped graph descriptor must return a dense numpy array.
+
+    Args:
+        descriptor_fn: Base descriptor function to normalize
+        ref_graphs: Reference graphs used to compute normalization statistics
+    """
+
     def __init__(
         self,
         descriptor_fn: Callable[[Iterable[nx.Graph]], np.ndarray],
@@ -193,7 +281,24 @@ class NormalizedDescriptor:
 
 
 class WeisfeilerLehmanDescriptor:
-    """This is meant to be used together with the LinearKernel."""
+    """Weisfeiler-Lehman subtree features for graphs.
+    
+    Computes graph features by iteratively hashing node neighborhoods using the
+    WL algorithm. Returns sparse feature vectors where each dimension corresponds
+    to a subtree pattern.
+
+    Warning:
+        Hash collisions may occur, as at most $2^{31}$ unique hashes are used.
+    
+    Args:
+        iterations: Number of WL iterations
+        use_node_labels: Whether to use existing node labels instead of degrees
+        node_label_key: Node attribute key for labels if use_node_labels is True
+        digest_size: Number of bytes for hashing in intermediate WL iterations (1-4)
+        n_jobs: Number of workers for parallel computation
+        n_graphs_per_job: Number of graphs per worker
+        show_progress: Whether to show a progress bar
+    """
 
     def __init__(
         self,

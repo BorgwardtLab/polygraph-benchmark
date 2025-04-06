@@ -1,6 +1,53 @@
+"""Kernel functions for comparing graphs via descriptor functions.
+
+This module implements various kernel functions that measure similarities between graphs. 
+Each kernel is initialized with a descriptor function that converts graphs into vector 
+representations. The kernel then computes similarities between these feature vectors.
+
+Descriptor functions accept iterables of networkx graphs and return descriptions as dense or sparse arrays.
+Specifically, they should either return a dense `numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
+
+Available kernels:
+    - [`RBFKernel`][polygrapher.utils.kernels.RBFKernel]: Standard Gaussian/RBF kernel using $\\ell^2$ distance
+    - [`LaplaceKernel`][polygrapher.utils.kernels.LaplaceKernel]: Exponential kernel using $\\ell^1$ distance
+    - [`GaussianTV`][polygrapher.utils.kernels.GaussianTV]: Non-positive definite Gaussian kernel using $\\ell^1$ distance
+    - [`AdaptiveRBFKernel`][polygrapher.utils.kernels.AdaptiveRBFKernel]: RBF kernel with data-dependent bandwidth adaptation
+    - [`LinearKernel`][polygrapher.utils.kernels.LinearKernel]: Simple dot product kernel
+
+Example:
+    ```python
+    import numpy as np
+    from polygrapher.utils.kernels import RBFKernel
+    import networkx as nx
+    from typing import Iterable
+    
+    def my_descriptor(graphs: Iterable[nx.Graph]) -> np.ndarray:
+        hists = [nx.degree_histogram(graph) for graph in graphs]
+        hists = [
+            np.concatenate([hist, np.zeros(128 - len(hist))], axis=0)
+            for hist in hists
+        ]
+        hists = np.stack(hists, axis=0)
+        return hists / hists.sum(axis=1, keepdims=True) # shape: (n_graphs, n_features)
+
+    
+    ref_graphs = [nx.erdos_renyi_graph(10, 0.3) for _ in range(100)]
+    gen_graphs = [nx.erdos_renyi_graph(10, 0.3) for _ in range(100)]
+    
+    # Create kernel with multiple bandwidths
+    kernel = RBFKernel(my_descriptor, bw=np.array([0.1, 1.0, 10.0]))
+    
+    ref_desc = kernel.featurize(ref_graphs) # shape: (n_ref_graphs, n_features)
+    gen_desc = kernel.featurize(gen_graphs) # shape: (n_gen_graphs, n_features)
+    
+    # Compare reference and generated graph descriptors
+    ref_vs_ref, ref_vs_gen, gen_vs_gen = kernel(ref_desc, gen_desc)
+    ```
+"""
+
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Any, Callable, Iterable, Union
+from typing import Any, Callable, Iterable, Union, Literal
 from typing_extensions import TypeAlias
 
 import networkx as nx
@@ -16,6 +63,16 @@ GramBlocks = namedtuple("GramBlocks", ["ref_vs_ref", "ref_vs_gen", "gen_vs_gen"]
 
 
 class DescriptorKernel(ABC):
+    """Abstract base class for kernel functions that operate on graph descriptors.
+    
+    This class defines the interface for kernels that compute similarity between graphs
+    based on their descriptors. It handles both the featurization of graphs and the
+    computation of kernel matrices.
+
+    Args:
+        descriptor_fn: Function that transforms graphs into descriptor vectors/matrices
+    """
+
     def __init__(self, descriptor_fn: GraphDescriptorFn):
         self._descriptor_fn = descriptor_fn
 
@@ -34,9 +91,26 @@ class DescriptorKernel(ABC):
     def num_kernels(self) -> int: ...
 
     def featurize(self, graphs: Iterable[nx.Graph]) -> Any:
+        """Converts graphs into descriptor representations.
+        
+        Args:
+            graphs: Collection of networkx graphs to featurize
+            
+        Returns:
+            Descriptor representation of the graphs
+        """
         return self._descriptor_fn(graphs)
 
     def pre_gram(self, ref: Any, gen: Any) -> GramBlocks:
+        """Computes all kernel matrices between reference and generated samples.
+        
+        Args:
+            ref: Descriptors of reference graphs
+            gen: Descriptors of generated graphs
+            
+        Returns:
+            Named tuple containing kernel matrices for ref-ref, ref-gen, and gen-gen comparisons
+        """
         ref_vs_ref, ref_vs_gen, gen_vs_gen = (
             self.pre_gram_block(ref, ref),
             self.pre_gram_block(ref, gen),
@@ -49,13 +123,48 @@ class DescriptorKernel(ABC):
         return GramBlocks(ref_vs_ref, ref_vs_gen, gen_vs_gen)
 
     def adapt(self, blocks: GramBlocks) -> GramBlocks:
+        """May adapt kernel parameters based on the computed kernel matrices.
+        
+        This method may, e.g., scale the bandwidth of a Gaussian kernel based on the 
+        typical distance between reference and generated graphs.
+
+        Args:
+            blocks: Pre-computed kernel matrices
+            
+        Returns:
+            Adapted kernel matrices
+        """
         return blocks
 
     def __call__(self, ref: Any, gen: Any) -> GramBlocks:
+        """Computes the full kernel comparison between reference and generated graphs.
+        
+        Args:
+            ref: Descriptors of reference graphs
+            gen: Descriptors of generated graphs
+            
+        Returns:
+            Named tuple containing all kernel matrices after adaptation
+        """
         return self.adapt(self.pre_gram(ref, gen))
 
 
 class LaplaceKernel(DescriptorKernel):
+    """Laplace kernel using L1 (Manhattan) distance.
+    
+    Computes similarity using the formula:
+    
+    $$
+        k(x,y) = \\exp\\left(-\\lambda\\|x-y\\|_1\\right)
+    $$
+    
+    where $\\lambda$ is the scale parameter.
+    
+    Args:
+        descriptor_fn: Function that computes descriptors from graphs
+        lbd: Scale parameter(s). Can be a single float or 1-dimensional numpy array of floats for multiple kernels
+    """
+
     def __init__(self, descriptor_fn: GraphDescriptorFn, lbd: Union[float, np.ndarray]):
         super().__init__(descriptor_fn)
         self.lbd = lbd
@@ -96,6 +205,24 @@ class LaplaceKernel(DescriptorKernel):
 
 
 class GaussianTV(DescriptorKernel):
+    """Gaussian kernel using L1 distance.
+    
+    Computes similarity using the formula:
+    
+    $$
+        k(x,y) = \\exp\\left(-\\frac{(\\|x-y\\|_1/2)^2}{2\\sigma^2}\\right)
+    $$
+    
+    where $\\sigma$ is the bandwidth parameter. 
+    
+    Warning: 
+        This kernel is not positive definite.
+
+    Args:
+        descriptor_fn: Function that computes descriptors from graphs
+        bw: Bandwidth parameter(s). Can be a single float or 1-dimensional numpy array of floats for multiple kernels
+    """
+
     def __init__(self, descriptor_fn: GraphDescriptorFn, bw: Union[float, np.ndarray]):
         super().__init__(descriptor_fn)
         self.bw = bw
@@ -136,6 +263,21 @@ class GaussianTV(DescriptorKernel):
 
 
 class RBFKernel(DescriptorKernel):
+    """Radial Basis Function (RBF) kernel, also known as Gaussian kernel.
+    
+    Computes similarity using the formula:
+    
+    $$
+        k(x,y) = \\exp\\left(-\\frac{\\|x-y\\|^2}{2\\sigma^2}\\right)
+    $$
+    
+    where $\\sigma$ is the bandwidth parameter.
+    
+    Args:
+        descriptor_fn: Function that computes descriptors from graphs
+        bw: Bandwidth parameter(s). Can be a single float or 1-dimensional numpy array of floats for multiple kernels
+    """
+
     def __init__(
         self, descriptor_fn: GraphDescriptorFn, bw: Union[float, np.ndarray]
     ) -> None:
@@ -179,11 +321,29 @@ class RBFKernel(DescriptorKernel):
 
 
 class AdaptiveRBFKernel(DescriptorKernel):
+    """Adaptive RBF kernel with data-dependent bandwidth.
+    
+    Similar to the standard RBF kernel but adapts its bandwidth based on the data:
+    
+    $$
+        k(x,y) = \\exp\\left(-\\frac{\\|x-y\\|^2}{2(c\\sigma)^2}\\right)
+    $$
+    
+    where $\\sigma$ is the base bandwidth and $c$ is a scaling factor computed
+    from the typical distance between reference and generated graphs. 
+    Specifically, $c$ is the square root of the mean or median of the squared $\\ell^2$ distance between reference and generated graphs.
+    
+    Args:
+        descriptor_fn: Function that computes descriptors from graphs
+        bw: Base bandwidth parameter(s). Can be a single float or 1-dimensional numpy array of floats for multiple kernels
+        variant: Method for computing adaptive scaling. Either 'mean' or 'median' of the reference-generated distance.
+    """
+
     def __init__(
         self,
         descriptor_fn: GraphDescriptorFn,
         bw: Union[float, np.ndarray],
-        variant="mean",
+        variant: Literal["mean", "median"] = "mean",
     ) -> None:
         super().__init__(descriptor_fn)
         self.bw = bw
@@ -241,6 +401,18 @@ class AdaptiveRBFKernel(DescriptorKernel):
 
 
 class LinearKernel(DescriptorKernel):
+    """Simple linear kernel using dot product.
+    
+    Computes similarity using the formula:
+    
+    $$
+        k(x,y) = x^\\top y
+    $$
+    
+    Args:
+        descriptor_fn: Function that computes descriptors from graphs
+    """
+
     @property
     def num_kernels(self) -> int:
         return 1

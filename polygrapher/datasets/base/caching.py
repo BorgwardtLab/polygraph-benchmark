@@ -20,7 +20,7 @@ def file_hash(path: str) -> str:
     return data_hash.hexdigest()
 
 def identifier_to_path(identifier: str):
-    cache_dir = os.environ.get("polygrapher_CACHE_DIR")
+    cache_dir = os.environ.get("POLYGRAPHER_CACHE_DIR")
     if cache_dir is None:
         cache_dir = user_cache_dir(f"polygrapher-{__version__}", "MPIB-MLSB")
     else:

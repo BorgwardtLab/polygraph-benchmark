@@ -1,3 +1,3 @@
 # Polygrapher
 
-::: polygrapher.utils.kernels
+Polygrapher is a Python library for comparing and evaluating graph generation models.

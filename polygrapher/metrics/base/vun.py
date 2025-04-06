@@ -1,3 +1,14 @@
+"""Metrics for measuring graph uniqueness and novelty.
+
+This module provides classes for computing the Valid-Unique-Novel (VUN) metrics, which
+measure what fraction of generated graphs are:
+- Valid: Satisfy domain-specific constraints
+- Unique: Not isomorphic to other generated graphs
+- Novel: Not isomorphic to training graphs
+
+The metrics also compute confidence intervals for the proportions using binomial tests.
+"""
+
 from collections import defaultdict, namedtuple
 from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Optional
 
@@ -10,6 +21,17 @@ BinomConfidenceInterval = namedtuple("ConfidenceInterval", ["mle", "low", "high"
 
 
 class _GraphSet:
+    """Internal class for efficiently checking graph isomorphism.
+    
+    Uses Weisfeiler-Lehman hashing as a fast pre-filter before running exact
+    isomorphism checks. Supports checking isomorphism with node and edge attributes.
+    
+    Args:
+        nx_graphs: Initial collection of graphs
+        node_attrs: Node attributes to consider for isomorphism
+        edge_attrs: Edge attributes to consider for isomorphism
+    """
+
     def __init__(
         self,
         nx_graphs: Optional[Iterable[nx.Graph]] = None,
@@ -22,14 +44,17 @@ class _GraphSet:
         self._hash_set = self._compute_hash_set(self.nx_graphs)
 
     def add_from(self, graph_iter: Iterable[nx.Graph]) -> None:
+        """Adds multiple graphs to the set."""
         for g in graph_iter:
             self.add(g)
 
     def add(self, g: nx.Graph) -> None:
+        """Adds a single graph to the set."""
         self.nx_graphs.append(g)
         self._hash_set[self._graph_fingerprint(g)].append(len(self.nx_graphs) - 1)
 
     def __contains__(self, g: nx.Graph) -> bool:
+        """Checks if a graph is isomorphic to any graph in the set."""
         fingerprint = self._graph_fingerprint(g)
         if fingerprint not in self._hash_set:
             return False
@@ -72,6 +97,17 @@ class _GraphSet:
 
 
 class VUN:
+    """Computes Valid-Unique-Novel metrics for generated graphs.
+    
+    Measures what fraction of generated graphs are valid (optional), unique 
+    (not isomorphic to other generated graphs), and novel (not isomorphic to 
+    training graphs). Also computes confidence intervals for these proportions.
+    
+    Args:
+        train_graphs: Collection of training graphs to check novelty against
+        validity_fn: Optional function that takes a graph and returns True if valid
+    """
+
     def __init__(
         self, train_graphs: Iterable[nx.Graph], validity_fn: Optional[Callable] = None
     ):
@@ -82,6 +118,18 @@ class VUN:
     def compute(
         self, generated_samples: Iterable[nx.Graph], confidence_level: float = 0.95
     ) -> Dict[str, BinomConfidenceInterval]:
+        """Computes VUN metrics for a collection of generated graphs.
+        
+        Args:
+            generated_samples: Collection of graphs to evaluate
+            confidence_level: Confidence level for binomial proportion intervals
+            
+        Returns:
+            Dictionary mapping metric names to (estimate, lower bound, upper bound) tuples.
+                
+        Raises:
+            ValueError: If generated_samples is empty
+        """
         n_graphs = len(generated_samples)
 
         if n_graphs == 0:

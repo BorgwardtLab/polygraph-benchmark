@@ -1,9 +1,36 @@
-site_name: Polygraph
+site_name: Polygrapher
 theme:
-  name: terminal  # Optional, but makes docs look better
+  name: readthedocs  # Optional, but makes docs look better
+  features:
+    - navigation.expand  # Expands all sections by default
+    - navigation.side.indexes
+
+nav:
+  - Home: index.md
+  - API Reference:
+    - metrics:
+      - Base MMD Classes: api_reference/metrics/base_mmd.md
+      - Other Base Metrics: api_reference/metrics/other_base.md
+      - GRAN Metrics: api_reference/metrics/gran.md
+      - GIN Metrics: api_reference/metrics/gin.md
+    - datasets: 
+      - Dataset Base Classes: api_reference/datasets/base.md
+    - utils: 
+      - Graph Descriptors: api_reference/utils/graph_descriptors.md
+      - Graph Kernels: api_reference/utils/graph_kernels.md
+      - MMD Utilities: api_reference/utils/mmd_utils.md
 
 plugins:
   - search
   - mkdocstrings:
       default_handler: python
       paths: [polygrapher]
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

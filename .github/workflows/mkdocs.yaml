@@ -62,9 +62,33 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const previewUrl = '${{ steps.deploy.outputs.preview_url }}';
-            github.rest.issues.createComment({
+            
+            // Get existing comments
+            const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `📚 MkDocs preview for this PR is available at: ${previewUrl}`
+              repo: context.repo.repo
             });
+            
+            // Check if we already posted a preview comment
+            const previewComment = comments.data.find(comment => 
+              comment.body.includes('📚 MkDocs preview')
+            );
+            
+            if (previewComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: previewComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `📚 MkDocs preview for this PR is available at: ${previewUrl}`
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `📚 MkDocs preview for this PR is available at: ${previewUrl}`
+              });
+            }
