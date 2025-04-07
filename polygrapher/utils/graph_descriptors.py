@@ -19,7 +19,7 @@ import copy
 import warnings
 from collections import Counter
 from hashlib import blake2b
-from typing import Callable, Iterable, List, Optional
+from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -34,6 +34,29 @@ from polygrapher.utils.gin import GIN
 from polygrapher.utils.parallel import batched_distribute_function, flatten_lists
 
 
+def sparse_histogram(values: np.ndarray, bins: np.ndarray, density: bool = False):
+    """Sparse version of np.histogram.
+    
+    Same as np.histogram but returns a tuple (index, counts) where index is a numpy
+    containing the non-empty bins and counts is a numpy array counting the number of
+    values in each non-emptybin. Uses right-open bins [a, b).
+    """
+    indices = np.minimum(np.digitize(values, bins, right=False) - 1, len(bins) - 2)
+    unique_indices, counts = np.unique(indices, return_counts=True)
+    sorting_perm = np.argsort(unique_indices)
+    unique_indices = unique_indices[sorting_perm]
+    counts = counts[sorting_perm]
+    if density:
+        counts = counts / np.sum(counts)
+    return unique_indices, counts
+
+def sparse_histograms_to_array(sparse_histograms: List[Tuple[np.ndarray, np.ndarray, np.ndarray]], num_bins: int):
+    index = np.concatenate([sparse_histogram[0] for sparse_histogram in sparse_histograms])
+    data = np.concatenate([sparse_histogram[1] for sparse_histogram in sparse_histograms])
+    ptr = np.zeros(len(sparse_histograms) + 1, dtype=np.int32)
+    ptr[1:] = np.cumsum([len(sparse_histogram[0]) for sparse_histogram in sparse_histograms]).astype(np.int32)
+    return csr_array((data, index, ptr), (len(sparse_histograms), num_bins))
+
 class DegreeHistogram:
     """Computes normalized degree distributions of graphs.
     
@@ -47,7 +70,7 @@ class DegreeHistogram:
     def __init__(self, max_degree: int):
         self._max_degree = max_degree
 
-    def __call__(self, graphs: Iterable[nx.Graph]):
+    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         hists = [nx.degree_histogram(graph) for graph in graphs]
         hists = [
             np.concatenate([hist, np.zeros(self._max_degree - len(hist))], axis=0)
@@ -88,23 +111,33 @@ class ClusteringHistogram:
     
     Args:
         bins: Number of histogram bins covering [0,1]
+        sparse: Whether to return a dense np.ndarray or a sparse csr_array. Sparse version may be faster when comparing many graphs.
     """
 
-    def __init__(self, bins: int):
+    def __init__(self, bins: int, sparse: bool = False):
         self._num_bins = bins
+        self._sparse = sparse
+        if sparse:
+            self._bins = np.linspace(0.0, 1.0, bins + 1)
+        else:
+            self._bins = None
 
-    def __call__(self, graphs: Iterable[nx.Graph]):
+    def __call__(self, graphs: Iterable[nx.Graph]) -> Union[np.ndarray, csr_array]:
         all_clustering_coeffs = [
             list(nx.clustering(graph).values()) for graph in graphs
         ]
-        hists = [
-            np.histogram(
-                clustering_coeffs, bins=self._num_bins, range=(0.0, 1.0), density=False
-            )[0]
-            for clustering_coeffs in all_clustering_coeffs
-        ]
-        hists = np.stack(hists, axis=0)
-        return hists / hists.sum(axis=1, keepdims=True)
+        if self._sparse:
+            sparse_histograms = [sparse_histogram(np.array(clustering_coeffs), self._bins, density=True) for clustering_coeffs in all_clustering_coeffs]
+            return sparse_histograms_to_array(sparse_histograms, self._num_bins)
+        else:
+            hists = [
+                np.histogram(
+                    clustering_coeffs, bins=self._num_bins, range=(0.0, 1.0), density=False
+                )[0]
+                for clustering_coeffs in all_clustering_coeffs
+            ]
+            hists = np.stack(hists, axis=0)
+            return hists / hists.sum(axis=1, keepdims=True)
 
 
 class OrbitCounts:
@@ -135,18 +168,37 @@ class EigenvalueHistogram:
     
     For each graph, computes the eigenvalue spectrum of its normalized Laplacian
     matrix and returns a histogram of the eigenvalues. 
-    """
 
-    def __call__(self, graphs: Iterable[nx.Graph]):
-        histograms = []
+    Args:
+        n_bins: Number of histogram bins
+        sparse: Whether to return a dense np.ndarray or a sparse csr_array. Sparse version may be faster when comparing many graphs.
+    """
+    def __init__(self, n_bins: int = 200, sparse: bool = False):
+        self._sparse = sparse
+        self._n_bins = n_bins
+        if sparse:
+            self._bins = np.linspace(-1e-5, 2, n_bins + 1)
+        else:
+            self._bins = None
+
+    def __call__(self, graphs: Iterable[nx.Graph]) -> Union[np.ndarray, csr_array]:
+        all_eigs = []
         for g in graphs:
             eigs = np.linalg.eigvalsh(nx.normalized_laplacian_matrix(g).todense())
-            spectral_pmf, _ = np.histogram(
-                eigs, bins=200, range=(-1e-5, 2), density=False
-            )
-            spectral_pmf = spectral_pmf / spectral_pmf.sum()
-            histograms.append(spectral_pmf)
-        return np.stack(histograms, axis=0)
+            all_eigs.append(eigs)
+        
+        if self._sparse:
+            sparse_histograms = [sparse_histogram(np.array(eigs), self._bins, density=True) for eigs in all_eigs]
+            return sparse_histograms_to_array(sparse_histograms, self._n_bins)
+        else:
+            histograms = []
+            for eigs in all_eigs:
+                spectral_pmf, _ = np.histogram(
+                    eigs, bins=self._n_bins, range=(-1e-5, 2), density=False
+                )
+                spectral_pmf = spectral_pmf / spectral_pmf.sum()
+                histograms.append(spectral_pmf)
+            return np.stack(histograms, axis=0)
 
 
 class RandomGIN:

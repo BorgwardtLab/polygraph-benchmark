@@ -12,7 +12,7 @@ from polygrapher.utils.graph_descriptors import (
     SparseDegreeHistogram,
     WeisfeilerLehmanDescriptor,
 )
-
+from polygrapher.datasets import PlanarGraphDataset
 
 @pytest.fixture
 def sample_molecular_graphs():
@@ -33,6 +33,25 @@ def sample_molecular_graphs():
     )
 
     return [g1, g2]
+
+
+@pytest.mark.parametrize("num_bins", [10, 100, 200])
+def test_sparse_equivalence(num_bins):
+    ds = list(PlanarGraphDataset("train").to_nx())
+    clustering_sparse = ClusteringHistogram(num_bins, sparse=True)
+    clustering_dense = ClusteringHistogram(num_bins, sparse=False)
+    eigenvalue_sparse = EigenvalueHistogram(num_bins, sparse=True)
+    eigenvalue_dense = EigenvalueHistogram(num_bins, sparse=False)
+
+    sparse_clustering_features = clustering_sparse(ds)
+    dense_clustering_features = clustering_dense(ds)
+
+    assert np.allclose(sparse_clustering_features.toarray(), dense_clustering_features)
+
+    sparse_eigenvalue_features = eigenvalue_sparse(ds)
+    dense_eigenvalue_features = eigenvalue_dense(ds)
+
+    assert np.allclose(sparse_eigenvalue_features.toarray(), dense_eigenvalue_features)
 
 
 def test_degree_histogram(sample_graphs):
