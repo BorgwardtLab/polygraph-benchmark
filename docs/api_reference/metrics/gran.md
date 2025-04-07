@@ -1,5 +1,14 @@
 # GRAN MMD Metrics
 
+::: polygrapher.metrics.gran
+    options:
+        show_root_heading: false
+        show_full_path: false
+        show_root_toc_entry: false
+        show_source: false
+        heading_level: 2
+        members: []
+
 ## Orbit Counts
 
 Metrics based on counting graph orbits (small subgraph patterns).
