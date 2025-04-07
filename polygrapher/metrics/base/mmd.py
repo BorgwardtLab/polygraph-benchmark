@@ -279,8 +279,7 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
             coverage: Confidence level (e.g., 0.95 for 95% intervals)
             
         Returns:
-            Named tuple with mean, standard deviation, and confidence interval bounds
-            for the maximum MMD² across kernel parameters
+            Named tuple with mean, standard deviation, and confidence interval bounds for the maximum MMD² across kernel parameters
         """
         mmd_samples = self._generate_mmd_samples(
             generated_graphs=generated_graphs,

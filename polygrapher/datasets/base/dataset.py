@@ -180,7 +180,7 @@ class OnlineGraphDataset(GraphDataset):
     
     Args:
         split: Dataset split to load (e.g. 'train', 'test')
-        memmap: Whether to memory-map the cached data
+        memmap: Whether to memory-map the cached data. Useful for large datasets that do not fit into memory.
     """
 
     def __init__(

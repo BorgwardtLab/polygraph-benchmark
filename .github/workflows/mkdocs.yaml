@@ -3,9 +3,13 @@ name: MkDocs PR Preview
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
 
 jobs:
   deploy-preview:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -92,3 +96,49 @@ jobs:
                 body: `📚 MkDocs preview for this PR is available at: ${previewUrl}`
               });
             }
+
+  deploy-main:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python mkdocs-terminal
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+      
+      - name: Build and deploy main documentation
+        run: |
+          # Build MkDocs
+          mkdocs build -d site
+          
+          # Switch to gh-pages branch or create it if it doesn't exist
+          git fetch origin gh-pages || git checkout -b gh-pages
+          git checkout gh-pages || git checkout -b gh-pages
+          
+          # Remove all files except the preview directory
+          find . -maxdepth 1 -not -path "./preview" -not -path "./.git" -not -path "." -exec rm -rf {} \;
+          
+          # Copy the built site to the root of gh-pages
+          cp -r site/* .
+          rm -rf site
+          
+          # Commit and push changes (only if there are changes)
+          if git status --porcelain | grep .; then
+            git add .
+            git commit -m "Deploy main documentation"
+            git push -f origin gh-pages
+          fi

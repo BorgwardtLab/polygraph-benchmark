@@ -8,8 +8,8 @@ Available Metrics:
     - [`LinearGraphNeuralNetworkMMD2`][polygrapher.metrics.gin.LinearGraphNeuralNetworkMMD2]: MMD using a linear kernel
     - [`GraphNeuralNetworkFrechetDistance`][polygrapher.metrics.gin.GraphNeuralNetworkFrechetDistance]: Fréchet Distance in GIN embedding space
 
-
-[1] Thompson, R., Knyazev, B., Ghalebi, E., Kim, J., & Taylor, G. W. (2022). [On Evaluation Metrics for Graph Generative Models](https://arxiv.org/abs/2201.09871). In International Conference on Learning Representations (ICLR).
+References:
+    [1] Thompson, R., Knyazev, B., Ghalebi, E., Kim, J., & Taylor, G. W. (2022). [On Evaluation Metrics for Graph Generative Models](https://arxiv.org/abs/2201.09871). In International Conference on Learning Representations (ICLR).
 """
 
 from polygrapher.metrics.gin.frechet_distance import *  # noqa
