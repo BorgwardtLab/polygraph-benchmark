@@ -19,7 +19,7 @@ nav:
       - GRAN Metrics: api_reference/metrics/gran.md
       - GIN Metrics: api_reference/metrics/gin.md
     - polygrapher.datasets:
-      - Dataset Base Classes: api_reference/datasets/base.md
+      - Dataset Abstractions: api_reference/datasets/base.md
       - Small Synthetic Datasets: api_reference/datasets/small_synthetic.md
       - Procedural Datasets: api_reference/datasets/procedural.md
       - Real-World Datasets: api_reference/datasets/real_world_topologies.md

@@ -112,7 +112,7 @@ class FittedFrechetDistance:
         self._descriptor_fn = descriptor_fn
         self._dim = None
 
-    def compute(self, generated_graphs: Collection[nx.Graph]):
+    def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
         """Computes Frechet distance between reference and generated graphs.
         
         Args:
@@ -155,13 +155,13 @@ class FrechetDistance:
             descriptor_fn=descriptor_fn,
         )
 
-    def compute(self, generated_graphs: Collection[nx.Graph]):
+    def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
         """Computes Frechet distance between reference and generated graphs.
         
         Args:
             generated_graphs: Collection of graphs to evaluate
             
         Returns:
-            float: Frechet distance between reference and generated graphs
+            Frechet distance between reference and generated graphs
         """
         return self._fd.compute(generated_graphs)

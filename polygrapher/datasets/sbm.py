@@ -6,7 +6,7 @@ from typing import Literal, Tuple
 import joblib
 
 from polygrapher.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
-from polygrapher.datasets.base.graph import Graph
+from polygrapher.datasets.base.graph_storage import GraphStorage
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
@@ -191,9 +191,9 @@ class ProceduralSBMGraphDataset(ProceduralGraphDataset):
         self._n_nodes_per_community = n_nodes_per_community
         super().__init__(split, config_hash, memmap)
 
-    def generate_data(self) -> Graph:
+    def generate_data(self) -> GraphStorage:
         graphs = [from_networkx(self._random_sbm()) for _ in range(self._num_graphs)]
-        return Graph.from_pyg_batch(Batch.from_data_list(graphs))
+        return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 
     def is_valid(self, graph: nx.Graph) -> bool:
         """Check if a graph is a valid SBM graph."""

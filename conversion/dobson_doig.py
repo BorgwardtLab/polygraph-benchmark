@@ -8,7 +8,7 @@ import torch
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
-from polygrapher.datasets.base import Graph
+from polygrapher.datasets.base import GraphStorage
 
 
 def _nx_graphs_to_storage(nx_graphs):
@@ -18,7 +18,7 @@ def _nx_graphs_to_storage(nx_graphs):
     batch.is_enzyme = torch.Tensor([g.graph["graph_label"] for g in nx_graphs]).to(
         torch.int
     )
-    return Graph.from_pyg_batch(
+    return GraphStorage.from_pyg_batch(
         batch,
         node_attrs=["residues"],
         graph_attrs=["is_enzyme"],

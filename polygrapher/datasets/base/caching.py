@@ -7,7 +7,7 @@ from appdirs import user_cache_dir
 from loguru import logger
 
 from polygrapher import __version__
-from polygrapher.datasets.base.graph import Graph
+from polygrapher.datasets.base.graph_storage import GraphStorage
 import shutil
 import hashlib
 import filelock
@@ -60,14 +60,14 @@ def download_to_cache(url: str, identifier: str, split: str = "data"):
     urllib.request.urlretrieve(url, path)
 
 
-def write_to_cache(identifier: str, split: str, data: Graph):
+def write_to_cache(identifier: str, split: str, data: GraphStorage):
     path = identifier_to_path(identifier)
     os.makedirs(path, exist_ok=True)
     path = os.path.join(path, f"{split}.pt")
     logger.debug(f"Writing data to {path}")
     torch.save(data.model_dump(), path)
 
-def load_from_cache(identifier: str, split: str = "data", mmap: bool = False, data_hash: Optional[str] = None) -> Graph:
+def load_from_cache(identifier: str, split: str = "data", mmap: bool = False, data_hash: Optional[str] = None) -> GraphStorage:
     path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
     if not os.path.exists(path):
         raise FileNotFoundError
@@ -76,7 +76,7 @@ def load_from_cache(identifier: str, split: str = "data", mmap: bool = False, da
 
     logger.debug(f"Loading data from {path}")
     data = torch.load(path, weights_only=True, mmap=mmap)
-    return Graph(**data)
+    return GraphStorage(**data)
 
 
 def to_list(value: Any) -> Sequence:

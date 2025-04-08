@@ -12,7 +12,7 @@ from loguru import logger
 from rdkit import Chem, RDLogger
 from torch_geometric.data import Batch, download_url
 
-from polygrapher.datasets.base.graph import Graph
+from polygrapher.datasets.base.graph_storage import GraphStorage
 from polygrapher.datasets.base.molecules import (
     EDGE_ATTRS,
     NODE_ATTRS,
@@ -117,7 +117,7 @@ def process(split, out_dir, n_jobs, limit, chunk_size):
     data_list = data_list[0]
     pyg_batch = Batch.from_data_list(data_list)
     logger.info(f"Created PyG batch with {pyg_batch.num_graphs} graphs")
-    graph_storage = Graph.from_pyg_batch(
+    graph_storage = GraphStorage.from_pyg_batch(
         pyg_batch,
         node_attrs=NODE_ATTRS,
         edge_attrs=EDGE_ATTRS,

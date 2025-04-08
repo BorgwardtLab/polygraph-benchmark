@@ -1,14 +1,19 @@
-# -*- coding: utf-8 -*-
-"""Dataset classes for handling graph data.
+"""
+We implement various base classes for working with graph datasets. 
+These provide abstractions for loading, caching and accessing collections of graphs.
 
-This module implements base classes for working with graph datasets. It provides abstractions
-for loading, caching and accessing collections of graphs in various formats.
+Available classes:
+    - [`AbstractDataset`][polygrapher.datasets.base.dataset.AbstractDataset]: Abstract base class defining the dataset interface.
+    - [`GraphDataset`][polygrapher.datasets.base.dataset.GraphDataset]: A dataset that is initialized with a [`GraphStorage`][polygrapher.datasets.base.graph_storage.GraphStorage] holding graphs.
+    - [`OnlineGraphDataset`][polygrapher.datasets.base.dataset.OnlineGraphDataset]: Abstract base class for downloading a [`GraphStorage`][polygrapher.datasets.base.graph_storage.GraphStorage] from a URL and caching it on disk.
+    - [`ProceduralGraphDataset`][polygrapher.datasets.base.dataset.ProceduralGraphDataset]: Abstract base class for generating a [`GraphStorage`][polygrapher.datasets.base.graph_storage.GraphStorage] procedurally.
 """
 
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import List, Optional, Union
+import hashlib
 
 import networkx as nx
 import numpy as np
@@ -21,7 +26,7 @@ from polygrapher.datasets.base.caching import (
     load_from_cache,
     write_to_cache,
 )
-from polygrapher.datasets.base.graph import Graph
+from polygrapher.datasets.base.graph_storage import GraphStorage
 
 
 class AbstractDataset(ABC):
@@ -30,17 +35,6 @@ class AbstractDataset(ABC):
     This class defines the core functionality that all graph datasets must implement.
     It provides methods for accessing graphs and converting between formats.
     """
-
-    @property
-    def identifier(self) -> str:
-        """Returns a unique identifier for dataset classes inheriting from this class.
-
-        This identifier is used for caching purposes.
-        
-        Returns:
-            String identifier combining the module path and class name
-        """
-        return f"{self.__module__}.{self.__class__.__qualname__}"
 
     def to_nx(self) -> "NetworkXView":
         """Creates a [`NetworkXView`][polygrapher.datasets.base.dataset.NetworkXView] view of this dataset that returns NetworkX graphs.
@@ -115,23 +109,23 @@ class NetworkXView:
 
 
 class GraphDataset(AbstractDataset):
-    """Basic dataset using a graph store.
+    """Basic dataset using a [`GraphStorage`][polygrapher.datasets.base.graph_storage.GraphStorage] object for holding graphs.
     
     This class provides functionality for accessing and sampling from a collection
-    of graphs stored in memory or on disk via a [`Graph`][polygrapher.datasets.base.graph.Graph] object.
+    of graphs stored in memory or on disk via a [`GraphStorage`][polygrapher.datasets.base.graph_storage.GraphStorage] object.
     
     Args:
-        data_store: Graph object containing the dataset
+        data_store: GraphStorage object containing the dataset
     """
 
     def __init__(
         self,
-        data_store: Graph,
+        data_store: GraphStorage,
     ):
         super().__init__()
         self._data_store = data_store
 
-    def __getitem__(self, idx: Union[int, List[int]]) -> Union[Graph, List[Graph]]:
+    def __getitem__(self, idx: Union[int, List[int]]) -> Union[Data, List[Data]]:
         if isinstance(idx, int):
             return self._data_store.get_example(idx)
         return [self._data_store.get_example(i) for i in idx]
@@ -140,6 +134,16 @@ class GraphDataset(AbstractDataset):
         return len(self._data_store)
 
     def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
+        """From the empirical distribution of this dataset, draw a random sample of graph sizes.
+
+        This is useful for generative models that are conditioned on graph size, e.g. DiGress.
+
+        Args:
+            n_samples: Number of samples to draw.
+
+        Returns:
+            List of graph sizes, drawn from the empirical distribution with replacement.
+        """
         samples = []
         for _ in range(n_samples if n_samples is not None else 1):
             idx = np.random.randint(len(self))
@@ -173,7 +177,7 @@ class GraphDataset(AbstractDataset):
 
 
 class OnlineGraphDataset(GraphDataset):
-    """Dataset that downloads and caches graph data.
+    """Abstract base class for downloading and caching graph data.
     
     This class handles downloading graph data from a URL and caching it locally.
     Subclasses must implement methods to specify the data source.
@@ -188,6 +192,7 @@ class OnlineGraphDataset(GraphDataset):
         split: str,
         memmap: bool = False,
     ):
+        self._split = split
         with CacheLock(self.identifier):
             try:
                 data_store = load_from_cache(
@@ -204,13 +209,19 @@ class OnlineGraphDataset(GraphDataset):
                     mmap=memmap,
                     data_hash=self.hash_for_split(split),
                 )
-        self._split = split
         super().__init__(data_store)
 
     def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
         if self._split != "train":
             warnings.warn(f"Sampling from {self._split} set, not training set.")
         return super().sample_graph_size(n_samples)
+    
+    @property
+    def identifier(self) -> str:
+        """Identifier that incorporates the split."""
+        url = self.url_for_split(self._split)
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        return f"{self.__module__}.{self.__class__.__qualname__}.{self._split}.{url_hash}"
 
     @abstractmethod
     def url_for_split(self, split: str) -> str:
@@ -266,7 +277,7 @@ class ProceduralGraphDataset(GraphDataset):
         return f"{self.__module__}.{self.__class__.__qualname__}.{self._identifier}"
 
     @abstractmethod
-    def generate_data(self) -> Graph:
+    def generate_data(self) -> GraphStorage:
         """Generates the graph data for this dataset.
         
         Returns:

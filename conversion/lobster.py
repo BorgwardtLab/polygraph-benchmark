@@ -5,7 +5,7 @@ import torch
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
-from polygrapher.datasets.base import Graph
+from polygrapher.datasets.base import GraphStorage
 
 
 def generate_lobster_graphs(num_graphs=100, seed=1234):
@@ -46,9 +46,9 @@ def _generate_gran_splits(graphs):
     graphs_dev = Batch.from_data_list([from_networkx(g) for g in graphs[:num_dev]])
     graphs_test = Batch.from_data_list([from_networkx(g) for g in graphs[num_train:]])
     return (
-        Graph.from_pyg_batch(graphs_train),
-        Graph.from_pyg_batch(graphs_dev),
-        Graph.from_pyg_batch(graphs_test),
+        GraphStorage.from_pyg_batch(graphs_train),
+        GraphStorage.from_pyg_batch(graphs_dev),
+        GraphStorage.from_pyg_batch(graphs_test),
     )
 
 

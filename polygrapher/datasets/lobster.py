@@ -7,7 +7,7 @@ from typing import Optional, Literal
 from torch_geometric.data import Batch
 
 from polygrapher.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
-from polygrapher.datasets.base.graph import Graph
+from polygrapher.datasets.base.graph_storage import GraphStorage
 from torch_geometric.utils import from_networkx
 
 
@@ -59,9 +59,9 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         self._max_number_of_nodes = max_number_of_nodes
         super().__init__(split, config_hash, memmap)
 
-    def generate_data(self) -> Graph:
+    def generate_data(self) -> GraphStorage:
         graphs = [from_networkx(self._random_lobster()) for _ in range(self._num_graphs)]
-        return Graph.from_pyg_batch(Batch.from_data_list(graphs))
+        return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 
     @staticmethod
     def is_valid(graph: nx.Graph) -> bool:

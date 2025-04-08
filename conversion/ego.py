@@ -11,7 +11,7 @@ import torch
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
-from polygrapher.datasets.base import Graph
+from polygrapher.datasets.base import GraphStorage
 
 
 def parse_index_file(filename):
@@ -119,9 +119,9 @@ def _get_ego_splits(small=False):
     graphs_validate = Batch.from_data_list([from_networkx(g) for g in egos[0:val_len]])
 
     return (
-        Graph.from_pyg_batch(graphs_train),
-        Graph.from_pyg_batch(graphs_validate),
-        Graph.from_pyg_batch(graphs_test),
+        GraphStorage.from_pyg_batch(graphs_train),
+        GraphStorage.from_pyg_batch(graphs_validate),
+        GraphStorage.from_pyg_batch(graphs_test),
     )
 
 
