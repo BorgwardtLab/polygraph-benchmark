@@ -91,6 +91,7 @@ class LobsterGraphDataset(OnlineGraphDataset):
     
     Warning:
         In the original dataset [1], the validation set was a subset of the training set. Here, we use disjoint splits.
+    
     References:
         [1] Liao, R., Li, Y., Song, Y., Wang, S., Hamilton, W., Duvenaud, D., Urtasun, R., & Zemel, R. (2019). [Efficient Graph Generation with Graph Recurrent Attention Networks](https://arxiv.org/abs/1910.00760). In Advances in Neural Information Processing Systems (NeurIPS).
     """
