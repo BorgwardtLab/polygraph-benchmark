@@ -98,7 +98,8 @@ jobs:
             }
 
   deploy-main:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: false  # This will prevent the job from running
+    # Original condition: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
