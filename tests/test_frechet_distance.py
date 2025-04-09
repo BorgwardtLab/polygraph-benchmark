@@ -1,9 +1,9 @@
 import networkx as nx
 import numpy as np
 
-from polygrapher.datasets import PlanarGraphDataset
-from polygrapher.metrics.base import FrechetDistance
-from polygrapher.utils.graph_descriptors import OrbitCounts
+from polygraph.datasets import PlanarGraphDataset
+from polygraph.metrics.base import FrechetDistance
+from polygraph.utils.graph_descriptors import OrbitCounts
 
 
 def test_frechet_distance() -> None:

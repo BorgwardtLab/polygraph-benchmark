@@ -1,6 +1,6 @@
 # GRAN MMD Metrics
 
-::: polygrapher.metrics.gran
+::: polygraph.metrics.gran
     options:
         show_root_heading: false
         show_full_path: false
@@ -13,42 +13,42 @@
 
 Metrics based on counting graph orbits (small subgraph patterns).
 
-::: polygrapher.metrics.gran.GRANOrbitMMD2
+::: polygraph.metrics.gran.GRANOrbitMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.GRANOrbitMMD2Interval
+::: polygraph.metrics.gran.GRANOrbitMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearOrbitMMD2
+::: polygraph.metrics.gran.LinearOrbitMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearOrbitMMD2Interval
+::: polygraph.metrics.gran.LinearOrbitMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFOrbitMMD2
+::: polygraph.metrics.gran.RBFOrbitMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFOrbitMMD2Interval
+::: polygraph.metrics.gran.RBFOrbitMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
@@ -59,42 +59,42 @@ Metrics based on counting graph orbits (small subgraph patterns).
 
 Metrics based on the distribution of node degrees in the graph.
 
-::: polygrapher.metrics.gran.GRANDegreeMMD2
+::: polygraph.metrics.gran.GRANDegreeMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.GRANDegreeMMD2Interval
+::: polygraph.metrics.gran.GRANDegreeMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearDegreeMMD2
+::: polygraph.metrics.gran.LinearDegreeMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearDegreeMMD2Interval
+::: polygraph.metrics.gran.LinearDegreeMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFDegreeMMD2
+::: polygraph.metrics.gran.RBFDegreeMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFDegreeMMD2Interval
+::: polygraph.metrics.gran.RBFDegreeMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
@@ -105,42 +105,42 @@ Metrics based on the distribution of node degrees in the graph.
 
 Metrics based on local clustering patterns in the graph.
 
-::: polygrapher.metrics.gran.GRANClusteringMMD2
+::: polygraph.metrics.gran.GRANClusteringMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.GRANClusteringMMD2Interval
+::: polygraph.metrics.gran.GRANClusteringMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearClusteringMMD2
+::: polygraph.metrics.gran.LinearClusteringMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearClusteringMMD2Interval
+::: polygraph.metrics.gran.LinearClusteringMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFClusteringMMD2
+::: polygraph.metrics.gran.RBFClusteringMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFClusteringMMD2Interval
+::: polygraph.metrics.gran.RBFClusteringMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
@@ -151,42 +151,42 @@ Metrics based on local clustering patterns in the graph.
 
 Metrics based on the eigenvalue spectrum of the graph.
 
-::: polygrapher.metrics.gran.GRANSpectralMMD2
+::: polygraph.metrics.gran.GRANSpectralMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.GRANSpectralMMD2Interval
+::: polygraph.metrics.gran.GRANSpectralMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearSpectralMMD2
+::: polygraph.metrics.gran.LinearSpectralMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.LinearSpectralMMD2Interval
+::: polygraph.metrics.gran.LinearSpectralMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFSpectralMMD2
+::: polygraph.metrics.gran.RBFSpectralMMD2
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygrapher.metrics.gran.RBFSpectralMMD2Interval
+::: polygraph.metrics.gran.RBFSpectralMMD2Interval
     options:
         show_root_heading: true
         show_full_path: true

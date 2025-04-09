@@ -1,7 +1,7 @@
 import numpy as np
 
-from polygrapher.metrics.gin.frechet_distance import GraphNeuralNetworkFrechetDistance
-from polygrapher.metrics.gin.mmd import RBFGraphNeuralNetworkMMD2, LinearGraphNeuralNetworkMMD2
+from polygraph.metrics.gin.frechet_distance import GraphNeuralNetworkFrechetDistance
+from polygraph.metrics.gin.mmd import RBFGraphNeuralNetworkMMD2, LinearGraphNeuralNetworkMMD2
 import networkx as nx
 import pytest
 from typing import List

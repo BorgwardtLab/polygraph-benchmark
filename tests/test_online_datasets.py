@@ -8,7 +8,7 @@ import torch
 from torch_geometric.data import Data
 from tqdm.rich import tqdm
 
-from polygrapher.datasets import (
+from polygraph.datasets import (
     MOSES,
     QM9,
     DobsonDoigGraphDataset,
@@ -19,9 +19,9 @@ from polygrapher.datasets import (
     SBMGraphDataset,
     SmallEgoGraphDataset,
 )
-from polygrapher.datasets.base import AbstractDataset
-from polygrapher.datasets.base.caching import clear_cache, identifier_to_path
-from polygrapher.metrics.base import VUN
+from polygraph.datasets.base import AbstractDataset
+from polygraph.datasets.base.caching import clear_cache, identifier_to_path
+from polygraph.metrics.base import VUN
 
 ALL_DATASETS = [
     QM9,

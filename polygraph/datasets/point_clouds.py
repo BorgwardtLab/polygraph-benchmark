@@ -1,0 +1,43 @@
+import networkx as nx
+
+from polygraph.datasets.base import OnlineGraphDataset
+
+
+class PointCloudGraphDataset(OnlineGraphDataset):
+    """Dataset of KNN-graphs of point clouds, proposed by Neumann et al. [1].
+    
+    Available splits:
+        - `train`: 26 graphs
+        - `val`: 7 graphs
+        - `test`: 8 graphs
+    
+    Graph attributes:
+        - `coords`: node-level feature describing the 3D coordinates of the point cloud.
+        - `object_class`: graph-level attribute describing the object represented by the point cloud.
+
+    References:
+        [1] Neumann, M., Moreno, P., Antanas, L., Garnett, R., & Kersting, K. (2013).
+            [Graph kernels for object category prediction in task-dependent robot grasping](http://snap.stanford.edu/mlg2013/submissions/mlg2013_submission_11.pdf).
+            In International Workshop on Mining and Learning with Graphs at KDD.
+    """
+    _URL_FOR_SPLIT = {
+        "train": "https://datashare.biochem.mpg.de/s/ccnBfchstXblFCl/download",
+        "val": "https://datashare.biochem.mpg.de/s/qYpuHH3HhhYAimi/download",
+        "test": "https://datashare.biochem.mpg.de/s/w1CKclswdcxLbpK/download",
+    }
+
+    _HASH_FOR_SPLIT = {
+        "train": None,
+        "val": None,
+        "test": None,
+    }
+
+    def url_for_split(self, split: str):
+        return self._URL_FOR_SPLIT[split]
+
+    @staticmethod
+    def is_valid(graph: nx.Graph):
+        return graph.number_of_nodes() > 0 and graph.number_of_edges() > 0
+
+    def hash_for_split(self, split: str) -> str:
+        return self._HASH_FOR_SPLIT[split]

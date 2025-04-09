@@ -1,6 +1,6 @@
 # Graph Kernels
 
-::: polygrapher.utils.kernels
+::: polygraph.utils.kernels
     options:
         show_root_heading: false
         show_root_toc_entry: false
@@ -9,37 +9,37 @@
         heading_level: 2
         members: []
 
-::: polygrapher.utils.kernels.DescriptorKernel
+::: polygraph.utils.kernels.DescriptorKernel
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.utils.kernels.RBFKernel
+::: polygraph.utils.kernels.RBFKernel
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.utils.kernels.LaplaceKernel
+::: polygraph.utils.kernels.LaplaceKernel
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.utils.kernels.GaussianTV
+::: polygraph.utils.kernels.GaussianTV
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.utils.kernels.AdaptiveRBFKernel
+::: polygraph.utils.kernels.AdaptiveRBFKernel
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.utils.kernels.LinearKernel
+::: polygraph.utils.kernels.LinearKernel
     options:
         show_root_heading: true
         show_source: false

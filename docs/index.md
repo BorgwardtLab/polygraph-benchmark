@@ -1,3 +1,3 @@
-# Polygrapher Documentation
+# polygraph Documentation
 
-Polygrapher is a Python library for comparing and evaluating graph generation models.
+polygraph is a Python library for comparing and evaluating graph generation models.

@@ -1,20 +1,20 @@
 # Small Synthetic Datasets
 
-::: polygrapher.datasets.PlanarGraphDataset
+::: polygraph.datasets.PlanarGraphDataset
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.datasets.SBMGraphDataset
+::: polygraph.datasets.SBMGraphDataset
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 2
 
-::: polygrapher.datasets.LobsterGraphDataset
+::: polygraph.datasets.LobsterGraphDataset
     options:
         show_root_heading: true
         show_full_path: true

@@ -1,4 +1,4 @@
-site_name: Polygrapher
+site_name: polygraph
 theme:
   name: readthedocs  # Optional, but makes docs look better
   features:
@@ -13,18 +13,18 @@ nav:
     - Evaluating Models: tutorials/evaluating_models.md
     - Defining Custom Metrics: tutorials/custom_metrics.md
   - API Reference:
-    - polygrapher.metrics:
+    - polygraph.metrics:
       - Base MMD Classes: api_reference/metrics/base_mmd.md
       - Other Base Metrics: api_reference/metrics/other_base.md
       - GRAN Metrics: api_reference/metrics/gran.md
       - GIN Metrics: api_reference/metrics/gin.md
-    - polygrapher.datasets:
+    - polygraph.datasets:
       - Dataset Abstractions: api_reference/datasets/base.md
       - Small Synthetic Datasets: api_reference/datasets/small_synthetic.md
       - Procedural Datasets: api_reference/datasets/procedural.md
       - Real-World Datasets: api_reference/datasets/real_world_topologies.md
       - Molecule Datasets: api_reference/datasets/molecules.md
-    - polygrapher.utils:
+    - polygraph.utils:
       - Graph Descriptors: api_reference/utils/graph_descriptors.md
       - Graph Kernels: api_reference/utils/graph_kernels.md
       - MMD Utilities: api_reference/utils/mmd_utils.md
@@ -33,7 +33,7 @@ plugins:
   - search
   - mkdocstrings:
       default_handler: python
-      paths: [polygrapher]
+      paths: [polygraph]
 
 markdown_extensions:
   - pymdownx.arithmatex:

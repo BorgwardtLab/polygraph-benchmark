@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "polygrapher"
+name = "polygraph"
 version = "0.1"
 description = "Graph Generation Gym"
 authors = [
@@ -59,7 +59,7 @@ gpu = [
 
 [tool.setuptools.packages.find]
 where = ["."]  # look for packages in the current directory
-include = ["polygrapher*"]  # include all packages starting with polygrapher
+include = ["polygraph*"]  # include all packages starting with polygraph
 exclude = ["conversion"]  # keep your existing exclude
 
 [tool.pytest.ini_options]

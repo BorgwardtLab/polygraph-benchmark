@@ -3,8 +3,8 @@ from typing import List
 import networkx as nx
 import pytest
 
-from polygrapher.datasets import PlanarGraphDataset
-from polygrapher.metrics.base import VUN
+from polygraph.datasets import PlanarGraphDataset
+from polygraph.metrics.base import VUN
 
 
 def create_test_graphs() -> List[nx.Graph]:

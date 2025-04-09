@@ -5,7 +5,7 @@ import torch
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 
-from polygrapher.datasets.base import GraphStorage
+from polygraph.datasets.base import GraphStorage
 
 
 def generate_lobster_graphs(num_graphs=100, seed=1234):

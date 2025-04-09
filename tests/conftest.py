@@ -17,22 +17,22 @@ import pytest
 from loguru import logger
 import sys
 
-from polygrapher.datasets import (
+from polygraph.datasets import (
     PlanarGraphDataset,
     SBMGraphDataset,
 )
-from polygrapher.utils.graph_descriptors import (
+from polygraph.utils.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     OrbitCounts,
 )
-from polygrapher.utils.kernels import (
+from polygraph.utils.kernels import (
     AdaptiveRBFKernel,
     LaplaceKernel,
     LinearKernel,
     RBFKernel,
 )
-from polygrapher.datasets.molecules import QM9
+from polygraph.datasets.molecules import QM9
 
 NO_SKIP_OPTION = "--no-skip"
 SAMPLE_SIZE_OPTION = "--sample-size"

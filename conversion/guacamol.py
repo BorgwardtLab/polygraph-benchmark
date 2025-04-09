@@ -10,8 +10,8 @@ from rdkit import Chem, RDLogger
 from torch_geometric.data import Batch, download_url
 from tqdm.rich import tqdm
 
-from polygrapher.datasets.base.graph_storage import GraphStorage
-from polygrapher.datasets.base.molecules import (
+from polygraph.datasets.base.graph_storage import GraphStorage
+from polygraph.datasets.base.molecules import (
     EDGE_ATTRS,
     NODE_ATTRS,
     add_hydrogens_and_stereochemistry,
@@ -19,7 +19,7 @@ from polygrapher.datasets.base.molecules import (
     molecule2graph,
     smiles_with_explicit_hydrogens,
 )
-from polygrapher.utils.parallel import (
+from polygraph.utils.parallel import (
     distribute_function,
     flatten_lists,
     make_batches,

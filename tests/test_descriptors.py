@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_array
 
-from polygrapher.utils.graph_descriptors import (
+from polygraph.utils.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     EigenvalueHistogram,
@@ -12,7 +12,7 @@ from polygrapher.utils.graph_descriptors import (
     SparseDegreeHistogram,
     WeisfeilerLehmanDescriptor,
 )
-from polygrapher.datasets import PlanarGraphDataset
+from polygraph.datasets import PlanarGraphDataset
 
 @pytest.fixture
 def sample_molecular_graphs():

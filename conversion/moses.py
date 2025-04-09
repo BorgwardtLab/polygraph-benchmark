@@ -12,15 +12,15 @@ from loguru import logger
 from rdkit import Chem, RDLogger
 from torch_geometric.data import Batch, download_url
 
-from polygrapher.datasets.base.graph_storage import GraphStorage
-from polygrapher.datasets.base.molecules import (
+from polygraph.datasets.base.graph_storage import GraphStorage
+from polygraph.datasets.base.molecules import (
     EDGE_ATTRS,
     NODE_ATTRS,
     add_hydrogens_and_stereochemistry,
     graph2molecule,
     molecule2graph,
 )
-from polygrapher.utils.parallel import (
+from polygraph.utils.parallel import (
     distribute_function,
     flatten_lists,
     make_batches,

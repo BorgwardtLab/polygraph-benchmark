@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.stats import kstest
 
-from polygrapher.two_sample_tests import (
+from polygraph.two_sample_tests import (
     BootStrapMaxMMDTest,
     BootStrapMMDTest,
 )
