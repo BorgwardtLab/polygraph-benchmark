@@ -52,9 +52,6 @@ dev = [
 ]
 gpu = [
     "dgl @ https://data.dgl.ai/wheels/torch-2.4/cu124/dgl-2.4.0%2Bcu124-cp310-cp310-manylinux1_x86_64.whl",
-    "nvidia-cuda-runtime-cu12==12.4",
-    "nvidia-cuda-nvrtc-cu12==12.4",
-    "nvidia-cuda-cupti-cu12==12.4",
 ]
 
 [tool.setuptools.packages.find]
