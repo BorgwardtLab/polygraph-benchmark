@@ -247,7 +247,7 @@ def test_weisfeiler_lehman_with_molecules(
         use_node_labels=use_node_labels,
         node_label_key="atom_labels" if use_node_labels else None,
         n_jobs=n_jobs,
-        digest_size=2
+        digest_size=2,
     )
     kernel = LinearKernel(wl_descriptor)
 
@@ -290,8 +290,8 @@ def test_weisfeiler_lehman_vs_grakel_er_graphs(sample_graphs, iterations):
         # Add node degree as an attribute to each node
         nx_graph_with_degree = graph.copy()
         for node in nx_graph_with_degree.nodes():
-            nx_graph_with_degree.nodes[node]["degree"] = nx_graph_with_degree.degree(
-                node
+            nx_graph_with_degree.nodes[node]["degree"] = (
+                nx_graph_with_degree.degree(node)
             )
         node_label_graphs.append(nx_graph_with_degree)
 
@@ -313,7 +313,10 @@ def test_weisfeiler_lehman_vs_grakel_er_graphs(sample_graphs, iterations):
 
     grakel_kernel.fit(grakel_ref)
     grakel_blocks = grakel_kernel.transform(grakel_gen)
-    assert np.allclose(our_blocks.ref_vs_gen, grakel_blocks.T), (ref_features, gen_features)
+    assert np.allclose(our_blocks.ref_vs_gen, grakel_blocks.T), (
+        ref_features,
+        gen_features,
+    )
 
 
 @pytest.mark.parametrize("iterations", [2, 3])

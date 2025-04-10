@@ -25,7 +25,9 @@ def is_lobster_graph(graph: nx.Graph) -> bool:
         num_degree_one = [d for n, d in graph.degree() if d == 1]
         num_degree_two = [d for n, d in graph.degree() if d == 2]
 
-        if sum(num_degree_one) == 2 and sum(num_degree_two) == 2 * (num_nodes - 2):
+        if sum(num_degree_one) == 2 and sum(num_degree_two) == 2 * (
+            num_nodes - 2
+        ):
             return True
         elif sum(num_degree_one) == 0 and sum(num_degree_two) == 0:
             return True
@@ -36,7 +38,7 @@ def is_lobster_graph(graph: nx.Graph) -> bool:
 
 class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
     """Procedural version of [`LobsterGraphDataset`][polygraph.datasets.LobsterGraphDataset].
-    
+
     Args:
         split: Split to load.
         num_graphs: Number of graphs to generate for this split.
@@ -48,9 +50,35 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         seed: Seed for the random number generator.
         memmap: Whether to use memory mapping for the dataset.
     """
-    def __init__(self, split: Literal["train", "val", "test"], num_graphs: int, expected_num_nodes: int = 80, p1: float = 0.7, p2: float = 0.7, min_number_of_nodes: Optional[int] = 10, max_number_of_nodes: Optional[int] = 100, seed: int = 42, memmap: bool = False):
-        config_hash = joblib.hash((num_graphs, expected_num_nodes, p1, p2, min_number_of_nodes, max_number_of_nodes, seed, split), hash_name='md5')
-        self._rng = np.random.default_rng(int.from_bytes(config_hash.encode(), 'big'))
+
+    def __init__(
+        self,
+        split: Literal["train", "val", "test"],
+        num_graphs: int,
+        expected_num_nodes: int = 80,
+        p1: float = 0.7,
+        p2: float = 0.7,
+        min_number_of_nodes: Optional[int] = 10,
+        max_number_of_nodes: Optional[int] = 100,
+        seed: int = 42,
+        memmap: bool = False,
+    ):
+        config_hash = joblib.hash(
+            (
+                num_graphs,
+                expected_num_nodes,
+                p1,
+                p2,
+                min_number_of_nodes,
+                max_number_of_nodes,
+                seed,
+                split,
+            ),
+            hash_name="md5",
+        )
+        self._rng = np.random.default_rng(
+            int.from_bytes(config_hash.encode(), "big")
+        )
         self._num_graphs = num_graphs
         self._expected_num_nodes = expected_num_nodes
         self._p1 = p1
@@ -60,7 +88,10 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         super().__init__(split, config_hash, memmap)
 
     def generate_data(self) -> GraphStorage:
-        graphs = [from_networkx(self._random_lobster()) for _ in range(self._num_graphs)]
+        graphs = [
+            from_networkx(self._random_lobster())
+            for _ in range(self._num_graphs)
+        ]
         return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 
     @staticmethod
@@ -70,11 +101,18 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
 
     def _random_lobster(self):
         while True:
-            g = nx.random_lobster(self._expected_num_nodes, self._p1, self._p2, seed=int(self._rng.integers(1e9)))
+            g = nx.random_lobster(
+                self._expected_num_nodes,
+                self._p1,
+                self._p2,
+                seed=int(self._rng.integers(1e9)),
+            )
             if (
-                self._max_number_of_nodes is None or g.number_of_nodes() <= self._max_number_of_nodes
+                self._max_number_of_nodes is None
+                or g.number_of_nodes() <= self._max_number_of_nodes
             ) and (
-                self._min_number_of_nodes is None or g.number_of_nodes() >= self._min_number_of_nodes
+                self._min_number_of_nodes is None
+                or g.number_of_nodes() >= self._min_number_of_nodes
             ):
                 return g
 
@@ -88,13 +126,14 @@ class LobsterGraphDataset(OnlineGraphDataset):
         - `train`: 60 graphs
         - `val`: 20 graphs
         - `test`: 20 graphs
-    
+
     Warning:
         In the original dataset [1], the validation set was a subset of the training set. Here, we use disjoint splits.
-    
+
     References:
         [1] Liao, R., Li, Y., Song, Y., Wang, S., Hamilton, W., Duvenaud, D., Urtasun, R., & Zemel, R. (2019). [Efficient Graph Generation with Graph Recurrent Attention Networks](https://arxiv.org/abs/1910.00760). In Advances in Neural Information Processing Systems (NeurIPS).
     """
+
     _URL_FOR_SPLIT = {
         "train": "https://datashare.biochem.mpg.de/s/mU8mA2GqfssxUFt/download",
         "val": "https://datashare.biochem.mpg.de/s/KTicVKdP6LgTKeV/download",

@@ -27,12 +27,16 @@ def create_test_graphs() -> List[nx.Graph]:
 
 def test_vun_scores() -> None:
     ref_graphs = create_test_graphs()[:2]  # Triangle and Square
-    gen_graphs = create_test_graphs()  # Triangle, Square, and duplicate Triangle
+    gen_graphs = (
+        create_test_graphs()
+    )  # Triangle, Square, and duplicate Triangle
 
     vun = VUN(ref_graphs)
     vun_scores = vun.compute(gen_graphs)
 
-    assert vun_scores["unique"].mle == 2 / 3, "Should have 2 unique graphs out of 3"
+    assert vun_scores["unique"].mle == 2 / 3, (
+        "Should have 2 unique graphs out of 3"
+    )
     assert vun_scores["novel"].mle == 0.0, "No novel graphs expected"
 
 
@@ -64,6 +68,8 @@ def test_vun_with_real_dataset() -> None:
     assert vun_scores["valid"].mle == 1, "All graphs should be valid"
 
     vun_scores = vun.compute([gen_graphs[0] for _ in range(10)])
-    assert vun_scores["unique"].mle == 0.1, "Only one of 10 graphs should be unique"
+    assert vun_scores["unique"].mle == 0.1, (
+        "Only one of 10 graphs should be unique"
+    )
     assert vun_scores["novel"].mle == 1.0, "All graphs should be novel"
     assert vun_scores["valid"].mle == 1, "All graphs should be valid"

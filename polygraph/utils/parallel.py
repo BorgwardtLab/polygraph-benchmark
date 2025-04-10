@@ -29,7 +29,9 @@ def make_batches(lst: List[Any], n: int) -> List[List[Any]]:
 
 
 @contextlib.contextmanager
-def rich_joblib(progress: Progress, task_id: TaskID) -> Generator[None, None, None]:
+def rich_joblib(
+    progress: Progress, task_id: TaskID
+) -> Generator[None, None, None]:
     """Context manager to patch joblib to report into Rich progress bar."""
 
     class RichBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
@@ -83,7 +85,9 @@ def distribute_function(
         with Progress() as progress:
             task_id = progress.add_task(description, total=total)
             with rich_joblib(progress, task_id):
-                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
+                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
+                    parallel_execution
+                )
     else:
         Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
 

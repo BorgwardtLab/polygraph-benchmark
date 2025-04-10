@@ -1,16 +1,18 @@
 import numpy as np
-from scipy.sparse import csr_array
 import pytest
-from polygraph.utils.sparse_dist import sparse_dot_product, sparse_euclidean, sparse_manhattan
+from scipy.sparse import csr_array
+
+from polygraph.utils.sparse_dist import (
+    sparse_dot_product,
+    sparse_euclidean,
+    sparse_manhattan,
+)
+
 
 def test_small_arrays():
     # Create small dense arrays
-    X_dense = np.array([[1, 0, 2, 0],
-                        [0, 3, 0, 0],
-                        [4, 0, 5, 0]])
-    Y_dense = np.array([[1, 0, 1, 0],
-                        [0, 2, 0, 0],
-                        [3, 0, 2, 1]])
+    X_dense = np.array([[1, 0, 2, 0], [0, 3, 0, 0], [4, 0, 5, 0]])
+    Y_dense = np.array([[1, 0, 1, 0], [0, 2, 0, 0], [3, 0, 2, 1]])
 
     # Convert to sparse
     X_sparse = csr_array(X_dense)
@@ -33,6 +35,7 @@ def test_small_arrays():
     dense_man = np.sum(np.abs(X_exp - Y_exp), axis=2)
     np.testing.assert_allclose(sparse_man, dense_man)
 
+
 def test_edge_cases():
     # Test empty matrices
     X = csr_array((1, 10))
@@ -44,8 +47,7 @@ def test_edge_cases():
         np.testing.assert_allclose(result, np.zeros((1, 2)))
 
     # Test identical vectors
-    X_dense = np.array([[1, 0, 2, 0],
-                        [0, 3, 0, 0]])
+    X_dense = np.array([[1, 0, 2, 0], [0, 3, 0, 0]])
     X_sparse = csr_array(X_dense)
 
     dot_result = sparse_dot_product(X_sparse, X_sparse)
@@ -63,6 +65,7 @@ def test_edge_cases():
     expected = np.array([[1.0, 2.0], [1.0, 2.0]])
     np.testing.assert_allclose(man_result, expected)
 
+
 def test_dimension_mismatch():
     X = csr_array((2, 10))
     Y = csr_array((2, 11))
@@ -70,6 +73,7 @@ def test_dimension_mismatch():
     for dist_func in [sparse_dot_product, sparse_euclidean, sparse_manhattan]:
         with pytest.raises(ValueError):
             dist_func(X, Y)
+
 
 @pytest.mark.slow
 def test_large_sparse_arrays():
@@ -81,11 +85,22 @@ def test_large_sparse_arrays():
     rng = np.random.RandomState(42)  # For reproducibility
     nnz = int(n_rows * n_cols * density)
 
-    # Generate random sparse matrices more efficiently
     def create_sparse_matrix():
-        data = rng.randn(nnz)
-        indices = rng.randint(0, n_cols, size=nnz)
-        indptr = np.linspace(0, nnz, n_rows + 1, dtype=np.int32)
+        elements_per_row = min(
+            nnz // n_rows, n_cols // 10
+        )  # Ensure we don't exceed columns
+        actual_nnz = elements_per_row * n_rows
+        indptr = np.arange(0, actual_nnz + 1, elements_per_row, dtype=np.int32)
+        data = rng.randn(actual_nnz)
+        indices = np.zeros(actual_nnz, dtype=np.int32)
+
+        for i in range(n_rows):
+            start, end = indptr[i], indptr[i + 1]
+            row_indices = np.sort(
+                rng.choice(n_cols, size=elements_per_row, replace=False)
+            )
+            indices[start:end] = row_indices
+
         return csr_array((data, indices, indptr), shape=(n_rows, n_cols))
 
     X = create_sparse_matrix()
@@ -97,7 +112,10 @@ def test_large_sparse_arrays():
             result = dist_func(X, Y)
             assert result.shape == (n_rows, n_rows)
         except Exception as e:
-            pytest.fail(f"Failed to compute {dist_func.__name__} for large arrays: {str(e)}")
+            pytest.fail(
+                f"Failed to compute {dist_func.__name__} for large arrays: {str(e)}"
+            )
+
 
 def test_direct_csr_construction():
     # Create CSR arrays directly from components

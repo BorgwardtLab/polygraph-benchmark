@@ -42,7 +42,8 @@ BOND_STEREO_TYPES = [
 # Generalized atom vocabulary for all molecules
 N_UNIQUE_ATOMS = 119
 ATOM_TYPES = {
-    i: Chem.GetPeriodicTable().GetElementSymbol(i) for i in range(1, N_UNIQUE_ATOMS)
+    i: Chem.GetPeriodicTable().GetElementSymbol(i)
+    for i in range(1, N_UNIQUE_ATOMS)
 }
 
 # Graph attributes for molecular graphs
@@ -122,7 +123,9 @@ def graph2molecule(
         if charges is not None:
             atom_obj.SetFormalCharge(charges[node_idx].item())
         if num_radical_electrons is not None:
-            atom_obj.SetNumRadicalElectrons(num_radical_electrons[node_idx].item())
+            atom_obj.SetNumRadicalElectrons(
+                num_radical_electrons[node_idx].item()
+            )
         atom_obj.SetNoImplicit(True)
         current_atom_idx += 1
 
@@ -143,7 +146,9 @@ def graph2molecule(
     if pos is not None:
         conf = Chem.Conformer(mol.GetNumAtoms())
         for node_idx, atom_pos in enumerate(pos):
-            conf.SetAtomPosition(node_idx_to_atom_idx[node_idx], atom_pos.tolist())
+            conf.SetAtomPosition(
+                node_idx_to_atom_idx[node_idx], atom_pos.tolist()
+            )
         mol.AddConformer(conf)
         Chem.AssignStereochemistryFrom3D(mol, replaceExistingTags=False)
 
@@ -165,7 +170,9 @@ def molecule2graph(
 
     node_labels = torch.tensor([atom.GetAtomicNum() for atom in mol.GetAtoms()])
 
-    charge_tensor = torch.tensor([atom.GetFormalCharge() for atom in mol.GetAtoms()])
+    charge_tensor = torch.tensor(
+        [atom.GetFormalCharge() for atom in mol.GetAtoms()]
+    )
     radical_tensor = torch.tensor(
         [atom.GetNumRadicalElectrons() for atom in mol.GetAtoms()]
     )

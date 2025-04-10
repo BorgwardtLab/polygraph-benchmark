@@ -14,6 +14,7 @@ from polygraph.utils.graph_descriptors import (
 )
 from polygraph.datasets import PlanarGraphDataset
 
+
 @pytest.fixture
 def sample_molecular_graphs():
     g1 = nx.Graph()
@@ -46,12 +47,16 @@ def test_sparse_equivalence(num_bins):
     sparse_clustering_features = clustering_sparse(ds)
     dense_clustering_features = clustering_dense(ds)
 
-    assert np.allclose(sparse_clustering_features.toarray(), dense_clustering_features)
+    assert np.allclose(
+        sparse_clustering_features.toarray(), dense_clustering_features
+    )
 
     sparse_eigenvalue_features = eigenvalue_sparse(ds)
     dense_eigenvalue_features = eigenvalue_dense(ds)
 
-    assert np.allclose(sparse_eigenvalue_features.toarray(), dense_eigenvalue_features)
+    assert np.allclose(
+        sparse_eigenvalue_features.toarray(), dense_eigenvalue_features
+    )
 
 
 def test_degree_histogram(sample_graphs):
@@ -174,4 +179,6 @@ def test_weisfeiler_lehman_descriptor_molecules(
     for i in range(len(sample_molecules)):
         for j in range(i + 1, len(sample_molecules)):
             difference = features[i : i + 1] - features[j : j + 1]
-            assert difference.max() > 0 or difference.min() < 0, f"Features for molecules {i} and {j} are identical"
+            assert difference.max() > 0 or difference.min() < 0, (
+                f"Features for molecules {i} and {j} are identical"
+            )

@@ -12,12 +12,14 @@ from polygraph.datasets.base import GraphStorage
 
 
 def _nx_graphs_to_storage(nx_graphs):
-    pyg_graphs = [from_networkx(g, group_node_attrs=["node_label"]) for g in nx_graphs]
+    pyg_graphs = [
+        from_networkx(g, group_node_attrs=["node_label"]) for g in nx_graphs
+    ]
     batch = Batch.from_data_list(pyg_graphs)
     batch.residues = batch.x
-    batch.is_enzyme = torch.Tensor([g.graph["graph_label"] for g in nx_graphs]).to(
-        torch.int
-    )
+    batch.is_enzyme = torch.Tensor(
+        [g.graph["graph_label"] for g in nx_graphs]
+    ).to(torch.int)
     return GraphStorage.from_pyg_batch(
         batch,
         node_attrs=["residues"],
@@ -46,9 +48,9 @@ def _get_dobson_doig_storages():
             fpath = os.path.join(tmpdir, fname)
             urllib.request.urlretrieve(f"{url}/{fname}", fpath)
 
-        data_adj = np.loadtxt(os.path.join(tmpdir, "DD_A.txt"), delimiter=",").astype(
-            int
-        )
+        data_adj = np.loadtxt(
+            os.path.join(tmpdir, "DD_A.txt"), delimiter=","
+        ).astype(int)
         data_node_label = np.loadtxt(
             os.path.join(tmpdir, "DD_node_labels.txt"), delimiter=","
         ).astype(int)

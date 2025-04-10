@@ -61,8 +61,12 @@ def setup_logging(request):
     logger.success(
         f"--sample-size set to {request.config.getoption(SAMPLE_SIZE_OPTION)}"
     )
-    logger.success(f"--no-skip set to {request.config.getoption(NO_SKIP_OPTION)}")
-    logger.success(f"--skip-slow set to {request.config.getoption(SKIP_SLOW_OPTION)}")
+    logger.success(
+        f"--no-skip set to {request.config.getoption(NO_SKIP_OPTION)}"
+    )
+    logger.success(
+        f"--skip-slow set to {request.config.getoption(SKIP_SLOW_OPTION)}"
+    )
     return logger
 
 
@@ -110,7 +114,9 @@ def degree_linear_kernel():
 
 @pytest.fixture(scope="session", autouse=True)
 def degree_rbf_kernel():
-    return RBFKernel(DegreeHistogram(max_degree=200), bw=np.linspace(0.01, 20, 10))
+    return RBFKernel(
+        DegreeHistogram(max_degree=200), bw=np.linspace(0.01, 20, 10)
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -123,7 +129,9 @@ def degree_adaptive_rbf_kernel():
 
 @pytest.fixture(scope="session", autouse=True)
 def clustering_laplace_kernel():
-    return LaplaceKernel(ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100))
+    return LaplaceKernel(
+        ClusteringHistogram(bins=100), lbd=np.linspace(0.01, 20, 100)
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -172,7 +180,9 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def runtime_stats(request):
-    stats = defaultdict(lambda: {"ours": [], "baseline_parallel": [], "baseline": []})
+    stats = defaultdict(
+        lambda: {"ours": [], "baseline_parallel": [], "baseline": []}
+    )
     yield stats
 
     # Get capsys through the config

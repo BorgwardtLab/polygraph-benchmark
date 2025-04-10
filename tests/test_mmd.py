@@ -54,10 +54,20 @@ import grakel
 
 class WeisfeilerLehmanMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs, iterations=3):
-        super().__init__(reference_graphs, LinearKernel(WeisfeilerLehmanDescriptor(iterations=iterations, use_node_labels=False)), variant="biased")
+        super().__init__(
+            reference_graphs,
+            LinearKernel(
+                WeisfeilerLehmanDescriptor(
+                    iterations=iterations, use_node_labels=False
+                )
+            ),
+            variant="biased",
+        )
 
 
-def grakel_wl_mmd(reference_graphs, test_graphs, is_parallel=False, iterations=3):
+def grakel_wl_mmd(
+    reference_graphs, test_graphs, is_parallel=False, iterations=3
+):
     grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
     all_graphs = reference_graphs + test_graphs
     for g in all_graphs:
@@ -68,9 +78,9 @@ def grakel_wl_mmd(reference_graphs, test_graphs, is_parallel=False, iterations=3
         all_graphs, node_labels_tag="degree"
     )
     gram_matrix = grakel_kernel.fit_transform(all_graphs)
-    ref_vs_ref = gram_matrix[:len(reference_graphs), :len(reference_graphs)]
-    ref_vs_gen = gram_matrix[:len(reference_graphs), len(reference_graphs):]
-    gen_vs_gen = gram_matrix[len(reference_graphs):, len(reference_graphs):]
+    ref_vs_ref = gram_matrix[: len(reference_graphs), : len(reference_graphs)]
+    ref_vs_gen = gram_matrix[: len(reference_graphs), len(reference_graphs) :]
+    gen_vs_gen = gram_matrix[len(reference_graphs) :, len(reference_graphs) :]
     return mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="biased")
 
 
@@ -89,7 +99,9 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     if baseline_method is orbit_stats_all:
-        baseline_method = lambda ref, pred: orbit_stats_all(ref, pred, orca_executable)  # noqa
+        baseline_method = lambda ref, pred: orbit_stats_all(
+            ref, pred, orca_executable
+        )  # noqa
 
     mmd = mmd_cls(planar)
     assert np.isclose(mmd.compute(sbm), baseline_method(planar, sbm)), mmd_cls
@@ -119,7 +131,10 @@ def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     baseline_eval = MMDEval(
-        statistic=stat, kernel="gaussian_rbf", sigma="range", orca_path=orca_executable
+        statistic=stat,
+        kernel="gaussian_rbf",
+        sigma="range",
+        orca_path=orca_executable,
     )
     baseline_results, _ = baseline_eval.evaluate(planar, sbm)
     assert len(baseline_results) == 1
@@ -127,7 +142,15 @@ def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
     assert np.isclose(our_eval.compute(sbm), list(baseline_results.values())[0])
 
 
-@pytest.mark.parametrize("mmd_cls", [LinearOrbitMMD2, LinearClusteringMMD2, LinearDegreeMMD2, LinearSpectralMMD2])
+@pytest.mark.parametrize(
+    "mmd_cls",
+    [
+        LinearOrbitMMD2,
+        LinearClusteringMMD2,
+        LinearDegreeMMD2,
+        LinearSpectralMMD2,
+    ],
+)
 def test_linear_gran_mmd_smoke(datasets, mmd_cls):
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
@@ -156,7 +179,10 @@ def test_rbf_divide_by_zero():
 
 @pytest.mark.parametrize(
     "kernel,subsample_size,variant",
-    [("degree_linear_kernel", 32, "biased"), ("degree_linear_kernel", 40, "umve")],
+    [
+        ("degree_linear_kernel", 32, "biased"),
+        ("degree_linear_kernel", 40, "umve"),
+    ],
 )
 def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     planar, sbm = datasets
@@ -197,7 +223,9 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
         (LinearSpectralMMD2, LinearSpectralMMD2Interval),
     ],
 )
-def test_concrete_uncertainty(datasets, subsample_size, single_cls, interval_cls):
+def test_concrete_uncertainty(
+    datasets, subsample_size, single_cls, interval_cls
+):
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
@@ -221,7 +249,9 @@ def test_concrete_uncertainty(datasets, subsample_size, single_cls, interval_cls
     num_total = 10
 
     for _ in range(num_total):
-        planar_idxs = rng.choice(len(planar), size=subsample_size, replace=False)
+        planar_idxs = rng.choice(
+            len(planar), size=subsample_size, replace=False
+        )
         sbm_idxs = rng.choice(len(sbm), size=subsample_size, replace=False)
         planar_samples = [planar[int(idx)] for idx in planar_idxs]
         sbm_samples = [sbm[int(idx)] for idx in sbm_idxs]
@@ -269,7 +299,9 @@ def test_max_mmd(request, datasets, kernel, variant):
 def test_measure_runtime(
     mmd_cls, baseline_method, orca_executable, runtime_stats, parallel_baseline
 ):
-    if parallel_baseline and (mmd_cls is GRANOrbitMMD2 or mmd_cls is WeisfeilerLehmanMMD2):
+    if parallel_baseline and (
+        mmd_cls is GRANOrbitMMD2 or mmd_cls is WeisfeilerLehmanMMD2
+    ):
         pytest.skip("Orbit and WL don't have parallel baselines")
 
     ds1 = ProceduralPlanarGraphDataset("ds1", 1024, seed=42)
@@ -289,7 +321,6 @@ def test_measure_runtime(
     mmd = mmd_cls([ds1[0]])
     mmd.compute([ds2[0]])
     del mmd
-
 
     for _ in range(1):
         t0 = time.time()

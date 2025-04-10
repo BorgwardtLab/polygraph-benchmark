@@ -18,7 +18,7 @@ The Gaussian TV kernel, introduced by Liao et al. [2], is most widely used in th
 
 Warning:
     The Gaussian TV kernel is not positive definite, as shown by O'Bray et al. [3]. While it is most widely used in the literature, consider also evaluating the linear and RBF kernels.
-    
+
 
 References:
     [1] You, J., Ying, R., Ren, X., Hamilton, W., & Leskovec, J. (2018). [GraphRNN: Generating Realistic Graphs with Deep Auto-regressive Models](https://arxiv.org/abs/1802.08773). In International Conference on Machine Learning (ICML).

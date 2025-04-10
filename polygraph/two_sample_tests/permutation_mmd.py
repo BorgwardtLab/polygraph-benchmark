@@ -75,7 +75,9 @@ class _BootStrapTestBase:
 
 
 class BootStrapMMDTest(_BootStrapTestBase):
-    def compute(self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000):
+    def compute(
+        self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000
+    ):
         realized_mmd, mmd_samples = self._get_realized_and_samples(
             generated_graphs, num_samples
         )
@@ -83,9 +85,13 @@ class BootStrapMMDTest(_BootStrapTestBase):
 
 
 class BootStrapMaxMMDTest(_BootStrapTestBase):
-    def compute(self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000):
+    def compute(
+        self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000
+    ):
         if self._kernel.num_kernels == 1:
-            raise ValueError(f"{self.__name__} requires kernel with `num_kernels > 1`.")
+            raise ValueError(
+                f"{self.__name__} requires kernel with `num_kernels > 1`."
+            )
 
         realized_mmd, mmd_samples = self._get_realized_and_samples(
             generated_graphs, num_samples

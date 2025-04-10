@@ -43,8 +43,12 @@ def _generate_gran_splits(graphs):
     graphs_train = Batch.from_data_list(
         [from_networkx(g) for g in graphs[num_dev:num_train]]
     )
-    graphs_dev = Batch.from_data_list([from_networkx(g) for g in graphs[:num_dev]])
-    graphs_test = Batch.from_data_list([from_networkx(g) for g in graphs[num_train:]])
+    graphs_dev = Batch.from_data_list(
+        [from_networkx(g) for g in graphs[:num_dev]]
+    )
+    graphs_test = Batch.from_data_list(
+        [from_networkx(g) for g in graphs[num_train:]]
+    )
     return (
         GraphStorage.from_pyg_batch(graphs_train),
         GraphStorage.from_pyg_batch(graphs_dev),

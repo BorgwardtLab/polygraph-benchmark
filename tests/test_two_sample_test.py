@@ -29,7 +29,9 @@ def _ks_test(all_samples, test_function, num_iters=200):
         assert 0 <= pval <= 1
         p_val_samples.append(pval)
 
-    res = kstest(p_val_samples, lambda x: np.clip(x, 0, 1), alternative="greater")
+    res = kstest(
+        p_val_samples, lambda x: np.clip(x, 0, 1), alternative="greater"
+    )
     return res.pvalue
 
 
@@ -53,7 +55,9 @@ def test_bootstrap_test(datasets, degree_linear_kernel):
 
 
 @pytest.mark.skipif("config.getoption('--skip-slow')")
-@pytest.mark.parametrize("kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"])
+@pytest.mark.parametrize(
+    "kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"]
+)
 def test_multi_bootstrap_test(request, datasets, kernel):
     planar, sbm = datasets
     kernel = request.getfixturevalue(kernel)
@@ -73,7 +77,9 @@ def test_multi_bootstrap_test(request, datasets, kernel):
 
 
 @pytest.mark.skipif("config.getoption('--skip-slow')")
-@pytest.mark.parametrize("kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"])
+@pytest.mark.parametrize(
+    "kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"]
+)
 def test_max_bootstrap_test(request, datasets, kernel):
     planar, sbm = datasets
     kernel = request.getfixturevalue(kernel)

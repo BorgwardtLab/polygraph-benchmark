@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
 
+
 @nb.njit
 def _is_sorted(indices, indptr):
     """
@@ -25,9 +26,12 @@ def _is_sorted(indices, indptr):
                 return False
     return True
 
+
 # Numba-optimized core function that works with raw arrays
 @nb.njit(parallel=True)
-def _sparse_dot_product_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n):
+def _sparse_dot_product_core(
+    X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n
+):
     D = np.zeros((m, n), dtype=np.float64)
 
     for px in nb.prange(m):
@@ -53,6 +57,7 @@ def _sparse_dot_product_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_i
             D[px, py] = d
 
     return D
+
 
 # Wrapper function that handles scipy sparse matrices
 def sparse_dot_product(X, Y):
@@ -84,17 +89,24 @@ def sparse_dot_product(X, Y):
     Y_indptr = Y.indptr
 
     # Check if indices are sorted
-    if not _is_sorted(X_indices, X_indptr) or not _is_sorted(Y_indices, Y_indptr):
+    if not _is_sorted(X_indices, X_indptr) or not _is_sorted(
+        Y_indices, Y_indptr
+    ):
         raise ValueError("Matrix indices must be sorted within each row")
 
     m, n = X.shape[0], Y.shape[0]
 
     # Call the numba-optimized core function
-    return _sparse_dot_product_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n)
+    return _sparse_dot_product_core(
+        X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n
+    )
+
 
 # Numba-optimized core function for Euclidean distance
 @nb.njit(parallel=True)
-def _sparse_euclidean_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n):
+def _sparse_euclidean_core(
+    X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n
+):
     D = np.zeros((m, n), dtype=np.float64)
 
     for px in nb.prange(m):
@@ -133,6 +145,7 @@ def _sparse_euclidean_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_ind
 
     return D
 
+
 # Wrapper function for Euclidean distance
 def sparse_euclidean(X, Y):
     """
@@ -163,16 +176,23 @@ def sparse_euclidean(X, Y):
     Y_indptr = Y.indptr
 
     # Check if indices are sorted
-    if not _is_sorted(X_indices, X_indptr) or not _is_sorted(Y_indices, Y_indptr):
+    if not _is_sorted(X_indices, X_indptr) or not _is_sorted(
+        Y_indices, Y_indptr
+    ):
         raise ValueError("Matrix indices must be sorted within each row")
 
     m, n = X.shape[0], Y.shape[0]
 
     # Call the numba-optimized core function
-    return _sparse_euclidean_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n)
+    return _sparse_euclidean_core(
+        X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n
+    )
+
 
 @nb.njit(parallel=True)
-def _sparse_manhattan_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n):
+def _sparse_manhattan_core(
+    X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n
+):
     D = np.zeros((m, n), dtype=np.float64)
 
     for px in nb.prange(m):
@@ -211,6 +231,7 @@ def _sparse_manhattan_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_ind
 
     return D
 
+
 # Wrapper function for Manhattan distance
 def sparse_manhattan(X, Y):
     """
@@ -241,10 +262,14 @@ def sparse_manhattan(X, Y):
     Y_indptr = Y.indptr
 
     # Check if indices are sorted
-    if not _is_sorted(X_indices, X_indptr) or not _is_sorted(Y_indices, Y_indptr):
+    if not _is_sorted(X_indices, X_indptr) or not _is_sorted(
+        Y_indices, Y_indptr
+    ):
         raise ValueError("Matrix indices must be sorted within each row")
 
     m, n = X.shape[0], Y.shape[0]
 
     # Call the numba-optimized core function
-    return _sparse_manhattan_core(X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n)
+    return _sparse_manhattan_core(
+        X_data, X_indices, X_indptr, Y_data, Y_indices, Y_indptr, m, n
+    )

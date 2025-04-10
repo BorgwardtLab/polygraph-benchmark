@@ -17,15 +17,17 @@ from scipy.stats import binomtest
 
 __all__ = ["VUN"]
 
-BinomConfidenceInterval = namedtuple("ConfidenceInterval", ["mle", "low", "high"])
+BinomConfidenceInterval = namedtuple(
+    "ConfidenceInterval", ["mle", "low", "high"]
+)
 
 
 class _GraphSet:
     """Internal class for efficiently checking graph isomorphism.
-    
+
     Uses Weisfeiler-Lehman hashing as a fast pre-filter before running exact
     isomorphism checks. Supports checking isomorphism with node and edge attributes.
-    
+
     Args:
         nx_graphs: Initial collection of graphs
         node_attrs: Node attributes to consider for isomorphism
@@ -51,7 +53,9 @@ class _GraphSet:
     def add(self, g: nx.Graph) -> None:
         """Adds a single graph to the set."""
         self.nx_graphs.append(g)
-        self._hash_set[self._graph_fingerprint(g)].append(len(self.nx_graphs) - 1)
+        self._hash_set[self._graph_fingerprint(g)].append(
+            len(self.nx_graphs) - 1
+        )
 
     def __contains__(self, g: nx.Graph) -> bool:
         """Checks if a graph is isomorphic to any graph in the set."""
@@ -65,8 +69,12 @@ class _GraphSet:
             if nx.is_isomorphic(
                 g,
                 h,
-                node_match=self._node_match if len(self._node_attrs) > 0 else None,
-                edge_match=self._edge_match if len(self._edge_attrs) > 0 else None,
+                node_match=self._node_match
+                if len(self._node_attrs) > 0
+                else None,
+                edge_match=self._edge_match
+                if len(self._edge_attrs) > 0
+                else None,
             ):
                 return True
         return False
@@ -83,8 +91,12 @@ class _GraphSet:
     def _graph_fingerprint(self, g: nx.Graph) -> str:
         return nx.weisfeiler_lehman_graph_hash(
             g,
-            edge_attr=self._edge_attrs[0] if len(self._edge_attrs) > 0 else None,
-            node_attr=self._node_attrs[0] if len(self._node_attrs) > 0 else None,
+            edge_attr=self._edge_attrs[0]
+            if len(self._edge_attrs) > 0
+            else None,
+            node_attr=self._node_attrs[0]
+            if len(self._node_attrs) > 0
+            else None,
         )
 
     def _compute_hash_set(
@@ -98,35 +110,39 @@ class _GraphSet:
 
 class VUN:
     """Computes Valid-Unique-Novel metrics for generated graphs.
-    
-    Measures what fraction of generated graphs are valid (optional), unique 
-    (not isomorphic to other generated graphs), and novel (not isomorphic to 
+
+    Measures what fraction of generated graphs are valid (optional), unique
+    (not isomorphic to other generated graphs), and novel (not isomorphic to
     training graphs). Also computes confidence intervals for these proportions.
-    
+
     Args:
         train_graphs: Collection of training graphs to check novelty against
         validity_fn: Optional function that takes a graph and returns True if valid
     """
 
     def __init__(
-        self, train_graphs: Iterable[nx.Graph], validity_fn: Optional[Callable] = None
+        self,
+        train_graphs: Iterable[nx.Graph],
+        validity_fn: Optional[Callable] = None,
     ):
         self._train_set = _GraphSet()
         self._train_set.add_from(train_graphs)
         self._validity_fn = validity_fn
 
     def compute(
-        self, generated_samples: Iterable[nx.Graph], confidence_level: float = 0.95
+        self,
+        generated_samples: Iterable[nx.Graph],
+        confidence_level: float = 0.95,
     ) -> Dict[str, BinomConfidenceInterval]:
         """Computes VUN metrics for a collection of generated graphs.
-        
+
         Args:
             generated_samples: Collection of graphs to evaluate
             confidence_level: Confidence level for binomial proportion intervals
-            
+
         Returns:
             Dictionary mapping metric names to (estimate, lower bound, upper bound) tuples.
-                
+
         Raises:
             ValueError: If generated_samples is empty
         """
@@ -153,7 +169,9 @@ class VUN:
 
         if self._validity_fn is not None:
             valid = [self._validity_fn(graph) for graph in generated_samples]
-            unique_novel_valid = [un and v for un, v in zip(unique_novel, valid)]
+            unique_novel_valid = [
+                un and v for un, v in zip(unique_novel, valid)
+            ]
             valid_novel = [v and n for v, n in zip(valid, novel)]
             valid_unique = [v and u for v, u in zip(valid, unique)]
             result.update(

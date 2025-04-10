@@ -51,7 +51,9 @@ class GRANClusteringMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
-            kernel=GaussianTV(descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10),
+            kernel=GaussianTV(
+                descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10
+            ),
             variant="biased",
         )
 
@@ -60,7 +62,9 @@ class GRANClusteringMMD2Interval(DescriptorMMD2Interval):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
-            kernel=GaussianTV(descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10),
+            kernel=GaussianTV(
+                descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10
+            ),
             variant="biased",
         )
 

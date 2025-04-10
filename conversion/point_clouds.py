@@ -11,19 +11,21 @@ from torch_geometric.utils import from_networkx
 from polygraph.datasets.base import GraphStorage
 
 
-
 def _nx_graphs_to_storage(nx_graphs):
-    pyg_graphs = [from_networkx(g, group_node_attrs=["coords"]) for g in nx_graphs]
+    pyg_graphs = [
+        from_networkx(g, group_node_attrs=["coords"]) for g in nx_graphs
+    ]
     batch = Batch.from_data_list(pyg_graphs)
     batch.coords = batch.x
-    batch.object_class = torch.Tensor([g.graph["graph_label"] for g in nx_graphs]).to(
-        torch.int
-    )
+    batch.object_class = torch.Tensor(
+        [g.graph["graph_label"] for g in nx_graphs]
+    ).to(torch.int)
     return GraphStorage.from_pyg_batch(
         batch,
         node_attrs=["coords"],
         graph_attrs=["object_class"],
     )
+
 
 def _get_point_clouds_storages():
     url = "https://raw.githubusercontent.com/lrjconan/GRAN/refs/heads/master/data/FIRSTMM_DB"
@@ -41,14 +43,18 @@ def _get_point_clouds_storages():
             fpath = os.path.join(tmpdir, fname)
             urllib.request.urlretrieve(f"{url}/{fname}", fpath)
 
-        data_adj = np.loadtxt(os.path.join(tmpdir, "FIRSTMM_DB_A.txt"), delimiter=",").astype(
-            int
+        data_adj = np.loadtxt(
+            os.path.join(tmpdir, "FIRSTMM_DB_A.txt"), delimiter=","
+        ).astype(int)
+        node_coords = list(
+            np.loadtxt(
+                os.path.join(tmpdir, "FIRSTMM_DB_coordinates.txt"),
+                delimiter=",",
+            )
         )
-        node_coords = list(np.loadtxt(
-            os.path.join(tmpdir, "FIRSTMM_DB_coordinates.txt"), delimiter=","
-        ))
         data_graph_indicator = np.loadtxt(
-            os.path.join(tmpdir, "FIRSTMM_DB_graph_indicator.txt"), delimiter=","
+            os.path.join(tmpdir, "FIRSTMM_DB_graph_indicator.txt"),
+            delimiter=",",
         ).astype(int)
         data_graph_types = np.loadtxt(
             os.path.join(tmpdir, "FIRSTMM_DB_graph_labels.txt"), delimiter=","
@@ -94,6 +100,7 @@ def _get_point_clouds_storages():
         _nx_graphs_to_storage(val),
         _nx_graphs_to_storage(test),
     )
+
 
 if __name__ == "__main__":
     import argparse

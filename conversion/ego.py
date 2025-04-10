@@ -29,7 +29,10 @@ def _graph_load(datadir, dataset):
     objects = []
     for i in range(len(names)):
         load = pkl.load(
-            open(os.path.join(datadir, "ind.{}.{}".format(dataset, names[i])), "rb"),
+            open(
+                os.path.join(datadir, "ind.{}.{}".format(dataset, names[i])),
+                "rb",
+            ),
             encoding="latin1",
         )
         # print('loaded')
@@ -44,7 +47,9 @@ def _graph_load(datadir, dataset):
     if dataset == "citeseer":
         # Fix citeseer dataset (there are some isolated nodes in the graph)
         # Find isolated nodes, add them as zero-vecs into the right position
-        test_idx_range_full = range(min(test_idx_reorder), max(test_idx_reorder) + 1)
+        test_idx_range_full = range(
+            min(test_idx_reorder), max(test_idx_reorder) + 1
+        )
         tx_extended = sp.lil_matrix((len(test_idx_range_full), x.shape[1]))
         tx_extended[test_idx_range - min(test_idx_range), :] = tx
         tx = tx_extended
@@ -69,11 +74,15 @@ def _citeseer_to_egos(citeseer_graph, small=False):
     for i in range(G.number_of_nodes()):
         if small:
             G_ego = nx.ego_graph(G, i, radius=1)
-            if (G_ego.number_of_nodes() >= 4) and (G_ego.number_of_nodes() <= 20):
+            if (G_ego.number_of_nodes() >= 4) and (
+                G_ego.number_of_nodes() <= 20
+            ):
                 graphs.append(G_ego)
         else:
             G_ego = nx.ego_graph(G, i, radius=3)
-            if G_ego.number_of_nodes() >= 50 and (G_ego.number_of_nodes() <= 400):
+            if G_ego.number_of_nodes() >= 50 and (
+                G_ego.number_of_nodes() <= 400
+            ):
                 graphs.append(G_ego)
 
     if small:
@@ -112,11 +121,15 @@ def _get_ego_splits(small=False):
 
     random.seed(123)
     random.shuffle(egos)
-    graphs_test = Batch.from_data_list([from_networkx(g) for g in egos[trainval_len:]])
+    graphs_test = Batch.from_data_list(
+        [from_networkx(g) for g in egos[trainval_len:]]
+    )
     graphs_train = Batch.from_data_list(
         [from_networkx(g) for g in egos[val_len:trainval_len]]
     )
-    graphs_validate = Batch.from_data_list([from_networkx(g) for g in egos[0:val_len]])
+    graphs_validate = Batch.from_data_list(
+        [from_networkx(g) for g in egos[0:val_len]]
+    )
 
     return (
         GraphStorage.from_pyg_batch(graphs_train),

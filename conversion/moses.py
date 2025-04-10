@@ -126,7 +126,9 @@ def process(split, out_dir, n_jobs, limit, chunk_size):
         graph_storage,
         os.path.join(out_dir, f"{split}.pt"),
     )
-    logger.info(f"Saved graph storage to {os.path.join(out_dir, f'{split}.pt')}")
+    logger.info(
+        f"Saved graph storage to {os.path.join(out_dir, f'{split}.pt')}"
+    )
 
 
 if __name__ == "__main__":

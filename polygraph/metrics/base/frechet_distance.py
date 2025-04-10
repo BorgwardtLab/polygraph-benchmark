@@ -11,28 +11,27 @@ __all__ = ["FittedFrechetDistance", "FrechetDistance"]
 GaussianParameters = namedtuple("GaussianParameters", ["mean", "covariance"])
 
 
-
 def compute_wasserstein_distance(
     gaussian_a: GaussianParameters,
     gaussian_b: GaussianParameters,
     eps: float = 1e-6,
 ):
     """Computes 2-Wasserstein distance between two multivariate Gaussians.
-    
+
     Based on the closed-form solution for the 2-Wasserstein distance between
     multivariate normal distributions.
-    
+
     Implementation adapted from:
     https://github.com/bioinf-jku/FCD/blob/375216cfb074b0948b5a649210bd66b839df52b4/fcd/utils.py#L158
-    
+
     Args:
         gaussian_a: First Gaussian distribution parameters
         gaussian_b: Second Gaussian distribution parameters
         eps: Small constant added to covariance matrices for numerical stability
-        
+
     Returns:
         float: 2-Wasserstein distance between the distributions
-        
+
     Raises:
         ValueError: If the matrix square root has a non-negligible imaginary component
     """
@@ -78,11 +77,11 @@ def fit_gaussian(
     descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
 ):
     """Fits a multivariate Gaussian to graph descriptors.
-    
+
     Args:
         graphs: Collection of graphs to fit
         descriptor_fn: Function that computes descriptors for a collection of graphs
-        
+
     Returns:
         GaussianParameters: Fitted mean and covariance
     """
@@ -94,15 +93,16 @@ def fit_gaussian(
 
 class FittedFrechetDistance:
     """Frechet distance using pre-computed Gaussian parameters.
-    
+
     This class accepts pre-computed Gaussian parameters rather than fitting them,
     which can be useful when you want to reuse the same reference distribution
     parameters multiple times.
-    
+
     Args:
         fitted_gaussian: Pre-computed Gaussian parameters for reference distribution
         descriptor_fn: Function that computes descriptors for a collection of graphs
     """
+
     def __init__(
         self,
         fitted_gaussian: GaussianParameters,
@@ -114,10 +114,10 @@ class FittedFrechetDistance:
 
     def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
         """Computes Frechet distance between reference and generated graphs.
-        
+
         Args:
             generated_graphs: Collection of graphs to evaluate
-            
+
         Returns:
             float: Frechet distance between reference and generated graphs
         """
@@ -132,15 +132,16 @@ class FittedFrechetDistance:
 
 class FrechetDistance:
     """Computes Frechet distance between reference and generated graphs.
-    
+
     The Frechet distance is computed by fitting Gaussian distributions to graph
-    descriptors of reference and generated graphs and computing the 2-Wasserstein 
+    descriptors of reference and generated graphs and computing the 2-Wasserstein
     distance between these two distributions.
-    
+
     Args:
         reference_graphs: Collection of graphs to compare against
         descriptor_fn: Function that computes descriptors for a collection of graphs
     """
+
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -157,10 +158,10 @@ class FrechetDistance:
 
     def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
         """Computes Frechet distance between reference and generated graphs.
-        
+
         Args:
             generated_graphs: Collection of graphs to evaluate
-            
+
         Returns:
             Frechet distance between reference and generated graphs
         """

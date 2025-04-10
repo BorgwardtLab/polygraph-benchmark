@@ -3,8 +3,7 @@ We store graphs in [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphS
 and can be indexed efficiently to retrieve PyTorch Geometric `Data` objects.
 """
 
-import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from importlib.metadata import version
 
 import torch
@@ -28,7 +27,7 @@ def _cumsum(x: torch.Tensor, dim: int = 0) -> torch.Tensor:
         tensor([0, 2, 6, 7])
 
     """
-    size = x.size()[:dim] + (x.size(dim) + 1, ) + x.size()[dim + 1:]
+    size = x.size()[:dim] + (x.size(dim) + 1,) + x.size()[dim + 1 :]
     out = x.new_empty(size)
 
     out.narrow(dim, 0, 1).zero_()
@@ -47,7 +46,7 @@ class IndexingInfo(BaseModel):
 
 class GraphStorage(BaseModel):
     """Serializable collection of graphs.
-    
+
     Attributes:
         description: Optional description of the collection of graphs.
         module_version: Version of the `polygraph` package that created the `GraphStorage` object.
@@ -72,10 +71,10 @@ class GraphStorage(BaseModel):
             self._compute_indexing_info()
         if self.module_version is None:
             self.module_version = version("polygraph")
-    
+
     def get_example(self, idx: int) -> Data:
         """Retrieve a single graph from the collection.
-        
+
         Args:
             idx: Index of the graph to retrieve.
 
@@ -87,10 +86,12 @@ class GraphStorage(BaseModel):
         node_offset = self.indexing_info.inc[idx]
         edge_index = self.edge_index[..., edge_left:edge_right] - node_offset
         edge_attrs = {
-            key: val[edge_left:edge_right] for key, val in self.edge_attr.items()
+            key: val[edge_left:edge_right]
+            for key, val in self.edge_attr.items()
         }
         node_attrs = {
-            key: val[node_left:node_right] for key, val in self.node_attr.items()
+            key: val[node_left:node_right]
+            for key, val in self.node_attr.items()
         }
         graph_attrs = {key: val[idx] for key, val in self.graph_attr.items()}
         return Data(
@@ -135,7 +136,7 @@ class GraphStorage(BaseModel):
             else {},
         )
         return result
-    
+
     @staticmethod
     def _contiguously_increasing(tensor: torch.Tensor) -> bool:
         unique_incr = torch.unique(tensor[1:] - tensor[:-1])
@@ -143,7 +144,9 @@ class GraphStorage(BaseModel):
             return False
         if len(unique_incr) == 1 and unique_incr[0] != 0:
             return False
-        if len(unique_incr) == 2 and (unique_incr[0] != 0 or unique_incr[1] != 1):
+        if len(unique_incr) == 2 and (
+            unique_incr[0] != 0 or unique_incr[1] != 1
+        ):
             return False
         return True
 
@@ -153,7 +156,9 @@ class GraphStorage(BaseModel):
 
         # We first need to ensure that self.batch starts with 0 and is contiguously increasing
         if self.batch[0] != 0:
-            raise ValueError("The first entry of InMemoryBatch.batch must be 0.")
+            raise ValueError(
+                "The first entry of InMemoryBatch.batch must be 0."
+            )
 
         if not self._contiguously_increasing(self.batch):
             raise ValueError(
@@ -171,8 +176,12 @@ class GraphStorage(BaseModel):
         assert len(node_slices) == self.num_graphs
 
         # Now compute edge slices
-        edge_to_graph_a = torch.searchsorted(inc, self.edge_index[0], right=True) - 1
-        edge_to_graph_b = torch.searchsorted(inc, self.edge_index[1], right=True) - 1
+        edge_to_graph_a = (
+            torch.searchsorted(inc, self.edge_index[0], right=True) - 1
+        )
+        edge_to_graph_b = (
+            torch.searchsorted(inc, self.edge_index[1], right=True) - 1
+        )
 
         if (edge_to_graph_a != edge_to_graph_b).any():
             raise RuntimeError("Edge to graph mapping is inconsistent")

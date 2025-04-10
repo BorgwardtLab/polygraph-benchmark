@@ -1,7 +1,7 @@
 """Graph descriptor functions for converting graphs into feature vectors.
 
-This module provides various functions that convert networkx graphs into numerical 
-representations suitable for kernel methods. Each descriptor is callable with an iterable of graphs and returns either a dense 
+This module provides various functions that convert networkx graphs into numerical
+representations suitable for kernel methods. Each descriptor is callable with an iterable of graphs and returns either a dense
 `numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
 
 Available descriptors:
@@ -34,14 +34,18 @@ from polygraph.utils.gin import GIN
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
 
 
-def sparse_histogram(values: np.ndarray, bins: np.ndarray, density: bool = False):
+def sparse_histogram(
+    values: np.ndarray, bins: np.ndarray, density: bool = False
+):
     """Sparse version of np.histogram.
-    
+
     Same as np.histogram but returns a tuple (index, counts) where index is a numpy
     containing the non-empty bins and counts is a numpy array counting the number of
     values in each non-emptybin. Uses right-open bins [a, b).
     """
-    indices = np.minimum(np.digitize(values, bins, right=False) - 1, len(bins) - 2)
+    indices = np.minimum(
+        np.digitize(values, bins, right=False) - 1, len(bins) - 2
+    )
     unique_indices, counts = np.unique(indices, return_counts=True)
     sorting_perm = np.argsort(unique_indices)
     unique_indices = unique_indices[sorting_perm]
@@ -50,19 +54,30 @@ def sparse_histogram(values: np.ndarray, bins: np.ndarray, density: bool = False
         counts = counts / np.sum(counts)
     return unique_indices, counts
 
-def sparse_histograms_to_array(sparse_histograms: List[Tuple[np.ndarray, np.ndarray, np.ndarray]], num_bins: int):
-    index = np.concatenate([sparse_histogram[0] for sparse_histogram in sparse_histograms])
-    data = np.concatenate([sparse_histogram[1] for sparse_histogram in sparse_histograms])
+
+def sparse_histograms_to_array(
+    sparse_histograms: List[Tuple[np.ndarray, np.ndarray, np.ndarray]],
+    num_bins: int,
+):
+    index = np.concatenate(
+        [sparse_histogram[0] for sparse_histogram in sparse_histograms]
+    )
+    data = np.concatenate(
+        [sparse_histogram[1] for sparse_histogram in sparse_histograms]
+    )
     ptr = np.zeros(len(sparse_histograms) + 1, dtype=np.int32)
-    ptr[1:] = np.cumsum([len(sparse_histogram[0]) for sparse_histogram in sparse_histograms]).astype(np.int32)
+    ptr[1:] = np.cumsum(
+        [len(sparse_histogram[0]) for sparse_histogram in sparse_histograms]
+    ).astype(np.int32)
     return csr_array((data, index, ptr), (len(sparse_histograms), num_bins))
+
 
 class DegreeHistogram:
     """Computes normalized degree distributions of graphs.
-    
+
     For each graph, computes a histogram of node degrees and normalizes it to sum to 1.
     Pads all histograms to a fixed maximum degree.
-    
+
     Args:
         max_degree: Maximum degree to consider. Larger degrees are ignored
     """
@@ -73,7 +88,9 @@ class DegreeHistogram:
     def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         hists = [nx.degree_histogram(graph) for graph in graphs]
         hists = [
-            np.concatenate([hist, np.zeros(self._max_degree - len(hist))], axis=0)
+            np.concatenate(
+                [hist, np.zeros(self._max_degree - len(hist))], axis=0
+            )
             for hist in hists
         ]
         hists = np.stack(hists, axis=0)
@@ -82,7 +99,7 @@ class DegreeHistogram:
 
 class SparseDegreeHistogram:
     """Memory-efficient version of degree distribution computation.
-    
+
     Similar to DegreeHistogram but returns a sparse matrix, making it suitable for
     graphs with high maximum degree where most degree bins are empty.
     """
@@ -97,18 +114,19 @@ class SparseDegreeHistogram:
         ptr = np.zeros(len(index) + 1, dtype=np.int32)
         ptr[1:] = np.cumsum([len(idx) for idx in index]).astype(np.int32)
         result = csr_array(
-            (np.concatenate(data), np.concatenate(index), ptr), (len(graphs), 100_000)
+            (np.concatenate(data), np.concatenate(index), ptr),
+            (len(graphs), 100_000),
         )
         return result
 
 
 class ClusteringHistogram:
     """Computes histograms of local clustering coefficients.
-    
+
     For each graph, computes the distribution of local clustering coefficients
     across nodes. The clustering coefficient measures the fraction of possible
     triangles through each node that exist.
-    
+
     Args:
         bins: Number of histogram bins covering [0,1]
         sparse: Whether to return a dense np.ndarray or a sparse csr_array. Sparse version may be faster when comparing many graphs.
@@ -122,17 +140,27 @@ class ClusteringHistogram:
         else:
             self._bins = None
 
-    def __call__(self, graphs: Iterable[nx.Graph]) -> Union[np.ndarray, csr_array]:
+    def __call__(
+        self, graphs: Iterable[nx.Graph]
+    ) -> Union[np.ndarray, csr_array]:
         all_clustering_coeffs = [
             list(nx.clustering(graph).values()) for graph in graphs
         ]
         if self._sparse:
-            sparse_histograms = [sparse_histogram(np.array(clustering_coeffs), self._bins, density=True) for clustering_coeffs in all_clustering_coeffs]
+            sparse_histograms = [
+                sparse_histogram(
+                    np.array(clustering_coeffs), self._bins, density=True
+                )
+                for clustering_coeffs in all_clustering_coeffs
+            ]
             return sparse_histograms_to_array(sparse_histograms, self._num_bins)
         else:
             hists = [
                 np.histogram(
-                    clustering_coeffs, bins=self._num_bins, range=(0.0, 1.0), density=False
+                    clustering_coeffs,
+                    bins=self._num_bins,
+                    range=(0.0, 1.0),
+                    density=False,
                 )[0]
                 for clustering_coeffs in all_clustering_coeffs
             ]
@@ -142,7 +170,7 @@ class ClusteringHistogram:
 
 class OrbitCounts:
     """Computes graph orbit statistics .
-    
+
     Warning:
         Self-loops are automatically removed from input graphs.
     """
@@ -165,14 +193,15 @@ class OrbitCounts:
 
 class EigenvalueHistogram:
     """Computes eigenvalue histogram of normalized Laplacian.
-    
+
     For each graph, computes the eigenvalue spectrum of its normalized Laplacian
-    matrix and returns a histogram of the eigenvalues. 
+    matrix and returns a histogram of the eigenvalues.
 
     Args:
         n_bins: Number of histogram bins
         sparse: Whether to return a dense np.ndarray or a sparse csr_array. Sparse version may be faster when comparing many graphs.
     """
+
     def __init__(self, n_bins: int = 200, sparse: bool = False):
         self._sparse = sparse
         self._n_bins = n_bins
@@ -181,14 +210,21 @@ class EigenvalueHistogram:
         else:
             self._bins = None
 
-    def __call__(self, graphs: Iterable[nx.Graph]) -> Union[np.ndarray, csr_array]:
+    def __call__(
+        self, graphs: Iterable[nx.Graph]
+    ) -> Union[np.ndarray, csr_array]:
         all_eigs = []
         for g in graphs:
-            eigs = np.linalg.eigvalsh(nx.normalized_laplacian_matrix(g).todense())
+            eigs = np.linalg.eigvalsh(
+                nx.normalized_laplacian_matrix(g).todense()
+            )
             all_eigs.append(eigs)
-        
+
         if self._sparse:
-            sparse_histograms = [sparse_histogram(np.array(eigs), self._bins, density=True) for eigs in all_eigs]
+            sparse_histograms = [
+                sparse_histogram(np.array(eigs), self._bins, density=True)
+                for eigs in all_eigs
+            ]
             return sparse_histograms_to_array(sparse_histograms, self._n_bins)
         else:
             histograms = []
@@ -203,11 +239,11 @@ class EigenvalueHistogram:
 
 class RandomGIN:
     """Random Graph Isomorphism Network for graph embeddings.
-    
+
     Initializes a randomly weighted Graph Isomorphism Network (GIN) and uses it
     to compute graph embeddings. The network parameters are fixed after random
     initialization. Node features default to node degrees if not specified.
-    
+
     Args:
         num_layers: Number of GIN layers
         hidden_dim: Hidden dimension in each layer
@@ -294,7 +330,9 @@ class RandomGIN:
         if self.edge_feat_loc is None:
             edge_attr = None
         else:
-            edge_attr = torch.cat([g.edge_attr for g in pyg_graphs]).to(self._device)
+            edge_attr = torch.cat([g.edge_attr for g in pyg_graphs]).to(
+                self._device
+            )
 
         batch = Batch.from_data_list(pyg_graphs).to(self._device)
 
@@ -306,11 +344,11 @@ class RandomGIN:
 
 class NormalizedDescriptor:
     """Standardizes graph descriptors using reference graph statistics.
-    
+
     Wraps a graph descriptor to standardize its output features (zero mean, unit variance)
     based on statistics computed from a set of reference graphs. This is useful when
     different features have very different scales.
-    
+
     The wrapped graph descriptor must return a dense numpy array.
 
     Args:
@@ -334,14 +372,14 @@ class NormalizedDescriptor:
 
 class WeisfeilerLehmanDescriptor:
     """Weisfeiler-Lehman subtree features for graphs.
-    
+
     Computes graph features by iteratively hashing node neighborhoods using the
     WL algorithm. Returns sparse feature vectors where each dimension corresponds
     to a subtree pattern.
 
     Warning:
         Hash collisions may occur, as at most $2^{31}$ unique hashes are used.
-    
+
     Args:
         iterations: Number of WL iterations
         use_node_labels: Whether to use existing node labels instead of degrees
@@ -437,19 +475,22 @@ class WeisfeilerLehmanDescriptor:
                 ).hexdigest()
 
             assert (
-                isinstance(hash_key, str) and len(hash_key) == 2 * self._digest_size
+                isinstance(hash_key, str)
+                and len(hash_key) == 2 * self._digest_size
             ), "Hash key is not a hex string or has incorrect length"
             int_key = int(hash_key, 16)
             int_key = int_key & 0x7FFFFFFF
             int_hashes[int_key] = count
-            assert (
-                0 <= int_key <= (2**31 - 1)
-            ), f"Unexpected hash key {int_key} out of bounds"
+            assert 0 <= int_key <= (2**31 - 1), (
+                f"Unexpected hash key {int_key} out of bounds"
+            )
 
         if len(int_hashes) != len(all_hashes):
             # This might artificially inflate the resulting kernel value but not
             # by much in our experiments.
-            warnings.warn("Hash collision detected in Weisfeiler-Lehman descriptor")
+            warnings.warn(
+                "Hash collision detected in Weisfeiler-Lehman descriptor"
+            )
         return int_hashes
 
     def _create_sparse_matrix(self, all_features: list) -> csr_array:

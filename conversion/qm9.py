@@ -100,7 +100,8 @@ UNCLEAR_STEREO_SPECS = [
 ]
 
 raw_url = (
-    "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/" "molnet_publish/qm9.zip"
+    "https://deepchemdata.s3-us-west-1.amazonaws.com/datasets/"
+    "molnet_publish/qm9.zip"
 )
 raw_url2 = "https://ndownloader.figshare.com/files/3195404"
 raw_file_names = ["gdb9.sdf", "gdb9.sdf.csv", "uncharacterized.txt"]
@@ -112,7 +113,9 @@ def download_raw_data(raw_paths, raw_url, raw_url2, raw_dir):
         try:
             extract_zip(file_path, raw_dir)
         except Exception as e:
-            logger.error(f"Error extracting zip file {file_path} because of {e}")
+            logger.error(
+                f"Error extracting zip file {file_path} because of {e}"
+            )
             raise e
 
         # Download and rename second file
@@ -147,7 +150,9 @@ def process_split(raw_paths, raw_dir, split_name):
     # Distinguish between molecules that fail sanitization from input file, sanitization after reconstruction, and assert failure despite passing sanitization.
     RDLogger.DisableLog("rdApp.*")
 
-    target_df = pd.read_csv(os.path.join(raw_dir, f"{split_name}.csv"), index_col=0)
+    target_df = pd.read_csv(
+        os.path.join(raw_dir, f"{split_name}.csv"), index_col=0
+    )
     target_df.drop(columns=["mol_id"], inplace=True)
     with open(raw_paths[1]) as f:
         target = [
@@ -195,7 +200,9 @@ def process_split(raw_paths, raw_dir, split_name):
             assert are_smiles_equivalent(
                 smiles_mol,
                 smiles_graph,
-            ), f"Molecule {i} is not equivalent to its graph representation, mol: {smiles_mol}, from graph: {smiles_graph}"
+            ), (
+                f"Molecule {i} is not equivalent to its graph representation, mol: {smiles_mol}, from graph: {smiles_graph}"
+            )
         except AssertionError as e:
             logger.error(f"Error checking if molecules are equivalent: {e}")
             continue
@@ -222,9 +229,13 @@ def process_split(raw_paths, raw_dir, split_name):
         os.path.join(raw_dir, f"{split_name}.pt"),
     )
 
-    storage = torch.load(os.path.join(raw_dir, f"{split_name}.pt"), weights_only=True)
-    data = Graph(**storage)
-    logger.info(f"Saved Graph storage to {os.path.join(raw_dir, f'{split_name}.pt')}")
+    storage = torch.load(
+        os.path.join(raw_dir, f"{split_name}.pt"), weights_only=True
+    )
+    data = GraphStorage(**storage)
+    logger.info(
+        f"Saved Graph storage to {os.path.join(raw_dir, f'{split_name}.pt')}"
+    )
 
 
 if __name__ == "__main__":

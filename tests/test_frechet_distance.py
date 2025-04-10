@@ -24,9 +24,9 @@ def test_frechet_distance_identical() -> None:
     frechet_distance = FrechetDistance(ref_graphs, descriptor_fn=OrbitCounts())
     gen_distance = frechet_distance.compute(gen_graphs)
 
-    assert np.isclose(
-        gen_distance, 0.0, atol=1e-2
-    ), "Frechet distance between identical distributions should be 0"
+    assert np.isclose(gen_distance, 0.0, atol=1e-2), (
+        "Frechet distance between identical distributions should be 0"
+    )
 
 
 def test_frechet_distance_with_real_data() -> None:

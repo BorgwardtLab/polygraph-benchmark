@@ -8,7 +8,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from loguru import logger
-from torch_geometric.nn import global_add_pool, global_max_pool, global_mean_pool
+from torch_geometric.nn import (
+    global_add_pool,
+    global_max_pool,
+    global_mean_pool,
+)
 from torch_geometric.nn.conv import MessagePassing
 
 
@@ -18,7 +22,9 @@ class GINConv(MessagePassing):
     Closely mirrors the original DGL implementation
     """
 
-    def __init__(self, apply_func, aggregator_type, init_eps=0, learn_eps=False):
+    def __init__(
+        self, apply_func, aggregator_type, init_eps=0, learn_eps=False
+    ):
         # Determine reducer based on aggregator type
         if aggregator_type == "sum":
             self._reducer = "add"
@@ -237,17 +243,25 @@ class GIN(nn.Module):
         for layer in range(self.num_layers - 1):
             if layer == 0:
                 mlp = MLP(
-                    num_mlp_layers, input_dim + edge_feat_dim, hidden_dim, hidden_dim
+                    num_mlp_layers,
+                    input_dim + edge_feat_dim,
+                    hidden_dim,
+                    hidden_dim,
                 )
             else:
                 mlp = MLP(
-                    num_mlp_layers, hidden_dim + edge_feat_dim, hidden_dim, hidden_dim
+                    num_mlp_layers,
+                    hidden_dim + edge_feat_dim,
+                    hidden_dim,
+                    hidden_dim,
                 )
             if kwargs["init"] == "orthogonal":
                 init_weights_orthogonal(mlp)
 
             self.ginlayers.append(
-                GINConv(ApplyNodeFunc(mlp), neighbor_pooling_type, 0, self.learn_eps)
+                GINConv(
+                    ApplyNodeFunc(mlp), neighbor_pooling_type, 0, self.learn_eps
+                )
             )
             self.batch_norms.append(nn.BatchNorm1d(hidden_dim))
 
@@ -259,7 +273,9 @@ class GIN(nn.Module):
             if layer == 0:
                 self.linears_prediction.append(nn.Linear(input_dim, output_dim))
             else:
-                self.linears_prediction.append(nn.Linear(hidden_dim, output_dim))
+                self.linears_prediction.append(
+                    nn.Linear(hidden_dim, output_dim)
+                )
 
         if kwargs["init"] == "orthogonal":
             logger.debug("Initializing GIN linear layers orthogonally")

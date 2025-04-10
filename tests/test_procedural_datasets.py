@@ -3,10 +3,19 @@ import pytest
 import networkx as nx
 
 from polygraph.metrics.base import VUN
-from polygraph.datasets import ProceduralLobsterGraphDataset, ProceduralPlanarGraphDataset, ProceduralSBMGraphDataset
+from polygraph.datasets import (
+    ProceduralLobsterGraphDataset,
+    ProceduralPlanarGraphDataset,
+    ProceduralSBMGraphDataset,
+)
 from polygraph.datasets.base.caching import clear_cache, identifier_to_path
 
-ALL_PROCEDURAL_DATASETS = [ProceduralLobsterGraphDataset, ProceduralPlanarGraphDataset, ProceduralSBMGraphDataset]
+ALL_PROCEDURAL_DATASETS = [
+    ProceduralLobsterGraphDataset,
+    ProceduralPlanarGraphDataset,
+    ProceduralSBMGraphDataset,
+]
+
 
 @pytest.mark.parametrize("ds_cls", ALL_PROCEDURAL_DATASETS)
 def test_split_disjointness(ds_cls):

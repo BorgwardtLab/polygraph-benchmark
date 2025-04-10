@@ -82,25 +82,27 @@ def test_cache(ds_cls):
 def test_loading(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
-        assert isinstance(ds, AbstractDataset), "Should inherit from AbstractDataset"
+        assert isinstance(ds, AbstractDataset), (
+            "Should inherit from AbstractDataset"
+        )
         assert len(ds) > 0, "Dataset should have at least one item"
 
         sample_size = min(sample_size, len(ds))
 
         pyg_graphs = ds.sample(sample_size, as_nx=False)
-        assert (
-            len(pyg_graphs) == sample_size
-        ), "Dataset should return same number of items"
-        assert all(
-            isinstance(item, Data) for item in pyg_graphs
-        ), "Dataset should return PyG graphs"
+        assert len(pyg_graphs) == sample_size, (
+            "Dataset should return same number of items"
+        )
+        assert all(isinstance(item, Data) for item in pyg_graphs), (
+            "Dataset should return PyG graphs"
+        )
         nx_graphs = ds.sample(sample_size, as_nx=True)
-        assert (
-            len(nx_graphs) == sample_size
-        ), "NetworkX conversion should preserve sample size"
-        assert all(
-            isinstance(g, nx.Graph) for g in nx_graphs
-        ), "to_nx should return NetworkX graphs"
+        assert len(nx_graphs) == sample_size, (
+            "NetworkX conversion should preserve sample size"
+        )
+        assert all(isinstance(g, nx.Graph) for g in nx_graphs), (
+            "to_nx should return NetworkX graphs"
+        )
 
 
 @pytest.mark.skip
@@ -113,7 +115,9 @@ def test_graph_properties_slow(ds_cls):
         assert all(g.number_of_edges() > 0 for g in ds.to_nx())
         assert all(
             ds.is_valid(g)
-            for g in tqdm(ds.to_nx(), desc=f"Validating {ds_cls.__name__} {split}")
+            for g in tqdm(
+                ds.to_nx(), desc=f"Validating {ds_cls.__name__} {split}"
+            )
         )
 
 
@@ -169,9 +173,9 @@ def test_dataset_consistency(ds_cls):
     g1 = ds1[0]
     g2 = ds2[0]
 
-    assert torch.equal(
-        g1.edge_index, g2.edge_index
-    ), "Multiple loads should give consistent data"
+    assert torch.equal(g1.edge_index, g2.edge_index), (
+        "Multiple loads should give consistent data"
+    )
 
 
 # Ego datasets have non-unique graphs, which is apparently okay (?)

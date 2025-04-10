@@ -53,7 +53,9 @@ def download(raw_dir):
         test_path = download_url(TEST_URL, raw_dir)
         os.rename(test_path, os.path.join(raw_dir, "guacamol_v1_test.smiles"))
     else:
-        logger.info(f"Skipping download of test set, file already exists: {test_path}")
+        logger.info(
+            f"Skipping download of test set, file already exists: {test_path}"
+        )
 
     valid_path = os.path.join(raw_dir, "guacamol_v1_valid.smiles")
     if not os.path.exists(valid_path):
@@ -96,9 +98,9 @@ def check_smiles_graph_mapping_worker(smile_idx, smile):
     mol2 = Chem.MolFromSmiles(smile2)
     mol2 = add_hydrogens_and_stereochemistry(mol2)
     smile2 = Chem.MolToSmiles(mol2, canonical=True)
-    assert smiles_with_explicit_hydrogens(smile2) == smiles_with_explicit_hydrogens(
-        reconstructed_smiles
-    ), (
+    assert smiles_with_explicit_hydrogens(
+        smile2
+    ) == smiles_with_explicit_hydrogens(reconstructed_smiles), (
         smiles_with_explicit_hydrogens(smile2),
         smiles_with_explicit_hydrogens(reconstructed_smiles),
     )
@@ -111,7 +113,9 @@ def process(
     path = os.path.join(raw_dir, f"guacamol_v1_{split}.smiles")
     smile_list = [
         line.strip()
-        for line in tqdm(open(path).readlines(), desc=f"Processing {split} smiles")
+        for line in tqdm(
+            open(path).readlines(), desc=f"Processing {split} smiles"
+        )
     ]
 
     if limit is not None:

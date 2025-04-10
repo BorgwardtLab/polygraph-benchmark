@@ -29,7 +29,9 @@ def _spectre_link_to_storage(url):
     for split, adjs in split_adjs.items():
         for adj in adjs:
             edge_index, _ = torch_geometric.utils.dense_to_sparse(adj)
-            data_lists[split].append(Data(edge_index=edge_index, num_nodes=len(adj)))
+            data_lists[split].append(
+                Data(edge_index=edge_index, num_nodes=len(adj))
+            )
 
     return {
         key: GraphStorage.from_pyg_batch(Batch.from_data_list(lst))
@@ -53,4 +55,6 @@ if __name__ == "__main__":
     url = urls[args.dataset]
     whole_data = _spectre_link_to_storage(url)
     for key, val in whole_data.items():
-        torch.save(val.model_dump(), os.path.join(args.destination, f"{key}.pt"))
+        torch.save(
+            val.model_dump(), os.path.join(args.destination, f"{key}.pt")
+        )

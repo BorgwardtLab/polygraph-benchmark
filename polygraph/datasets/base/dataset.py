@@ -1,5 +1,5 @@
 """
-We implement various base classes for working with graph datasets. 
+We implement various base classes for working with graph datasets.
 These provide abstractions for loading, caching and accessing collections of graphs.
 
 Available classes:
@@ -9,14 +9,16 @@ Available classes:
     - [`ProceduralGraphDataset`][polygraph.datasets.base.dataset.ProceduralGraphDataset]: Abstract base class for generating a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] procedurally.
 """
 
+import hashlib
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
 from typing import List, Optional, Union
-import hashlib
 
 import networkx as nx
 import numpy as np
+from rich.console import Console
+from rich.table import Table
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
 
@@ -31,14 +33,14 @@ from polygraph.datasets.base.graph_storage import GraphStorage
 
 class AbstractDataset(ABC):
     """Abstract base class defining the dataset interface.
-    
+
     This class defines the core functionality that all graph datasets must implement.
     It provides methods for accessing graphs and converting between formats.
     """
 
     def to_nx(self) -> "NetworkXView":
         """Creates a [`NetworkXView`][polygraph.datasets.base.dataset.NetworkXView] view of this dataset that returns NetworkX graphs.
-        
+
         Returns:
             NetworkX view wrapper around this dataset
         """
@@ -48,12 +50,12 @@ class AbstractDataset(ABC):
     @abstractmethod
     def is_valid(graph: nx.Graph) -> bool:
         """Checks if a graph is structurally valid in the context of this dataset.
-        
+
         This method is optional and can be used in [`VUN`][polygraph.metrics.base.vun.VUN] metrics.
 
         Args:
             graph: NetworkX graph to validate
-            
+
         Returns:
             True if the graph is valid for this dataset, False otherwise
         """
@@ -62,10 +64,10 @@ class AbstractDataset(ABC):
     @abstractmethod
     def __getitem__(self, idx: int) -> Data:
         """Gets a graph from the dataset by index.
-        
+
         Args:
             idx: Index of the graph to retrieve
-            
+
         Returns:
             Graph as a PyTorch Geometric Data object
         """
@@ -74,7 +76,7 @@ class AbstractDataset(ABC):
     @abstractmethod
     def __len__(self) -> int:
         """Gets the total number of graphs in the dataset.
-        
+
         Returns:
             Number of graphs
         """
@@ -83,10 +85,10 @@ class AbstractDataset(ABC):
 
 class NetworkXView:
     """View of a dataset that provides graphs in NetworkX format.
-    
+
     This class wraps a dataset to provide access to graphs as NetworkX objects
     rather than PyTorch Geometric Data objects.
-    
+
     Args:
         base_dataset: The dataset to wrap
     """
@@ -110,10 +112,10 @@ class NetworkXView:
 
 class GraphDataset(AbstractDataset):
     """Basic dataset using a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] object for holding graphs.
-    
+
     This class provides functionality for accessing and sampling from a collection
     of graphs stored in memory or on disk via a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] object.
-    
+
     Args:
         data_store: GraphStorage object containing the dataset
     """
@@ -125,7 +127,9 @@ class GraphDataset(AbstractDataset):
         super().__init__()
         self._data_store = data_store
 
-    def __getitem__(self, idx: Union[int, List[int]]) -> Union[Data, List[Data]]:
+    def __getitem__(
+        self, idx: Union[int, List[int]]
+    ) -> Union[Data, List[Data]]:
         if isinstance(idx, int):
             return self._data_store.get_example(idx)
         return [self._data_store.get_example(i) for i in idx]
@@ -175,13 +179,80 @@ class GraphDataset(AbstractDataset):
             return to_nx(data_list)
         return data_list
 
+    @property
+    def min_nodes(self) -> int:
+        """Minimum number of nodes in a graph in the dataset."""
+        return self._data_store.indexing_info.node_slices[:, 0].min().item()
+
+    @property
+    def max_nodes(self) -> int:
+        """Maximum number of nodes in a graph in the dataset."""
+        return self._data_store.indexing_info.node_slices[:, 1].max().item()
+
+    @property
+    def avg_nodes(self) -> float:
+        """Average number of nodes in a graph in the dataset."""
+        return (
+            self._data_store.indexing_info.node_slices[:, 1]
+            .float()
+            .mean()
+            .item()
+        )
+
+    @property
+    def min_edges(self) -> int:
+        """Minimum number of edges in a graph in the dataset."""
+        return self._data_store.indexing_info.edge_slices[:, 0].min().item()
+
+    @property
+    def max_edges(self) -> int:
+        """Maximum number of edges in a graph in the dataset."""
+        return self._data_store.indexing_info.edge_slices[:, 1].max().item()
+
+    @property
+    def avg_edges(self) -> float:
+        """Average number of edges in a graph in the dataset."""
+        return (
+            self._data_store.indexing_info.edge_slices[:, 1]
+            .float()
+            .mean()
+            .item()
+        )
+
+    @property
+    def edge_node_ratio(self) -> float:
+        """Average number of edges per node in the dataset."""
+        return self.avg_edges / self.avg_nodes
+
+    def summary(self, precision: int = 2):
+        # Make sure we have a blank line before the table
+        console = Console()
+        console.print()
+
+        table = Table(title="Graph Dataset Statistics")
+        table.add_column("Metric", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Value", justify="left", style="magenta", no_wrap=True)
+        table.add_row("# of Graphs", str(len(self)))
+        table.add_row("Min # of Nodes", str(self.min_nodes))
+        table.add_row("Max # of Nodes", str(self.max_nodes))
+        table.add_row("Avg # of Nodes", f"{self.avg_nodes:.{precision}f}")
+        table.add_row("Min # of Edges", str(self.min_edges))
+        table.add_row("Max # of Edges", str(self.max_edges))
+        table.add_row("Avg # of Edges", f"{self.avg_edges:.{precision}f}")
+        table.add_row(
+            "Node/Edge Ratio", f"{self.edge_node_ratio:.{precision}f}"
+        )
+
+        console = Console()
+        console.print(table)
+
 
 class OnlineGraphDataset(GraphDataset):
     """Abstract base class for downloading and caching graph data.
-    
+
     This class handles downloading graph data from a URL and caching it locally.
     Subclasses must implement methods to specify the data source.
-    
+
     Args:
         split: Dataset split to load (e.g. 'train', 'test')
         memmap: Whether to memory-map the cached data. Useful for large datasets that do not fit into memory.
@@ -202,7 +273,9 @@ class OnlineGraphDataset(GraphDataset):
                     data_hash=self.hash_for_split(split),
                 )
             except FileNotFoundError:
-                download_to_cache(self.url_for_split(split), self.identifier, split)
+                download_to_cache(
+                    self.url_for_split(split), self.identifier, split
+                )
                 data_store = load_from_cache(
                     self.identifier,
                     split,
@@ -215,7 +288,7 @@ class OnlineGraphDataset(GraphDataset):
         if self._split != "train":
             warnings.warn(f"Sampling from {self._split} set, not training set.")
         return super().sample_graph_size(n_samples)
-    
+
     @property
     def identifier(self) -> str:
         """Identifier that incorporates the split."""
@@ -226,10 +299,10 @@ class OnlineGraphDataset(GraphDataset):
     @abstractmethod
     def url_for_split(self, split: str) -> str:
         """Gets the URL to download data for a specific split.
-        
+
         Args:
             split: Dataset split (e.g. 'train', 'test')
-            
+
         Returns:
             URL where the data can be downloaded
         """
@@ -238,12 +311,12 @@ class OnlineGraphDataset(GraphDataset):
     @abstractmethod
     def hash_for_split(self, split: str) -> str:
         """Gets the expected hash for a specific split's data.
-        
+
         This hash is used to validate downloaded data.
-        
+
         Args:
             split: Dataset split (e.g. 'train', 'test')
-            
+
         Returns:
             Hash string for validating the split's data
         """
@@ -252,10 +325,10 @@ class OnlineGraphDataset(GraphDataset):
 
 class ProceduralGraphDataset(GraphDataset):
     """Dataset that generates graphs procedurally.
-    
+
     This class handles caching of procedurally generated graph data.
     Subclasses must implement the graph generation logic.
-    
+
     Args:
         split: Dataset split to generate
         config_hash: Hash identifying the generation configuration
@@ -266,10 +339,14 @@ class ProceduralGraphDataset(GraphDataset):
         self._identifier = config_hash
         with CacheLock(self.identifier):
             try:
-                data_store = load_from_cache(self.identifier, split, mmap=memmap)
+                data_store = load_from_cache(
+                    self.identifier, split, mmap=memmap
+                )
             except FileNotFoundError:
                 write_to_cache(self.identifier, split, self.generate_data())
-                data_store = load_from_cache(self.identifier, split, mmap=memmap)
+                data_store = load_from_cache(
+                    self.identifier, split, mmap=memmap
+                )
         super().__init__(data_store)
 
     @property
@@ -279,7 +356,7 @@ class ProceduralGraphDataset(GraphDataset):
     @abstractmethod
     def generate_data(self) -> GraphStorage:
         """Generates the graph data for this dataset.
-        
+
         Returns:
             Generated graph data store
         """

@@ -12,12 +12,14 @@ import shutil
 import hashlib
 import filelock
 
+
 def file_hash(path: str) -> str:
     with open(path, "rb") as f:
         data_hash = hashlib.md5()
         while chunk := f.read(8192):
             data_hash.update(chunk)
     return data_hash.hexdigest()
+
 
 def identifier_to_path(identifier: str):
     cache_dir = os.environ.get("polygraph_CACHE_DIR")
@@ -52,7 +54,9 @@ def download_to_cache(url: str, identifier: str, split: str = "data"):
     os.makedirs(path, exist_ok=True)
     path = os.path.join(path, f"{split}.pt")
     if os.path.exists(path):
-        logger.debug(f"Couldn't download data to {path} because it already exists")
+        logger.debug(
+            f"Couldn't download data to {path} because it already exists"
+        )
         raise FileExistsError(
             f"Tried to download data to {path}, but path already exists"
         )
@@ -67,12 +71,20 @@ def write_to_cache(identifier: str, split: str, data: GraphStorage):
     logger.debug(f"Writing data to {path}")
     torch.save(data.model_dump(), path)
 
-def load_from_cache(identifier: str, split: str = "data", mmap: bool = False, data_hash: Optional[str] = None) -> GraphStorage:
+
+def load_from_cache(
+    identifier: str,
+    split: str = "data",
+    mmap: bool = False,
+    data_hash: Optional[str] = None,
+) -> GraphStorage:
     path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
     if not os.path.exists(path):
         raise FileNotFoundError
     if data_hash is not None and file_hash(path) != data_hash:
-        raise ValueError(f"Hash mismatch for {path}. Expected {data_hash}, got {file_hash}")
+        raise ValueError(
+            f"Hash mismatch for {path}. Expected {data_hash}, got {file_hash}"
+        )
 
     logger.debug(f"Loading data from {path}")
     data = torch.load(path, weights_only=True, mmap=mmap)
