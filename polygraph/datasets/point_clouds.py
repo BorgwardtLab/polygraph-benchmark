@@ -6,10 +6,10 @@ from polygraph.datasets.base import OnlineGraphDataset
 class PointCloudGraphDataset(OnlineGraphDataset):
     """Dataset of KNN-graphs of point clouds, proposed by Neumann et al. [1].
 
-    Available splits:
-        - `train`: 26 graphs
-        - `val`: 7 graphs
-        - `test`: 8 graphs
+    Dataset statistics:
+
+    {{ summary_md_table("PointCloudGraphDataset", ["train", "val", "test"]) }}
+
 
     Graph attributes:
         - `coords`: node-level feature describing the 3D coordinates of the point cloud.

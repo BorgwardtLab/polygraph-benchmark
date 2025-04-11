@@ -122,10 +122,9 @@ class LobsterGraphDataset(OnlineGraphDataset):
 
     A lobster graph is a tree which has a backbone path such that each node in the tree is at most two hops away from this backbone.
 
-    Available splits:
-        - `train`: 60 graphs
-        - `val`: 20 graphs
-        - `test`: 20 graphs
+    Dataset statistics:
+
+    {{ summary_md_table("LobsterGraphDataset", ["train", "val", "test"]) }}
 
     Warning:
         In the original dataset [1], the validation set was a subset of the training set. Here, we use disjoint splits.

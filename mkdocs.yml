@@ -32,7 +32,11 @@ nav:
 plugins:
   - search
   - mkdocstrings:
-      default_handler: python
+      handlers:
+        python:
+          options:
+            extensions:
+              - scripts/griffe_extension.py:JinjaDocstringExtension
       paths: [polygraph]
 
 markdown_extensions:
@@ -41,5 +45,5 @@ markdown_extensions:
 
 
 extra_javascript:
-  - javascripts/mathjax.js
+  - javascript/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

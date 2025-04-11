@@ -9,15 +9,14 @@ class DobsonDoigGraphDataset(OnlineGraphDataset):
     This dataset was later adopted by You et al. [2] in the area of graph generation. The splits we provide are disjoint, unlike in [2].
     We use the splitting strategy proposed in [3].
 
-    Available splits:
-        - `train`: 587 graphs
-        - `val`: 147 graphs
-        - `test`: 184 graphs
+    Dataset statistics:
+
+    {{ summary_md_table("DobsonDoigGraphDataset", ["train", "val", "test"]) }}
+
 
     Graph Attributes:
         - `residues`: Node-level attribute indicating the amino acid types
         - `is_enyzme`: Graph-level attribute indicating whether protein is an enzyme (1 or 2)
-
 
     References:
         [1] Dobson, P. and Doig, A. (2003).
@@ -32,7 +31,6 @@ class DobsonDoigGraphDataset(OnlineGraphDataset):
             [SPECTRE: Spectral Conditioning Helps to Overcome the Expressivity Limits
             of One-shot Graph Generators](https://arxiv.org/abs/2204.01613). In Proceedings of the 39th International
             Conference on Machine Learning (ICML).
-
     """
 
     _URL_FOR_SPLIT = {

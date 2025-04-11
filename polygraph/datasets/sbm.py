@@ -307,10 +307,10 @@ class SBMGraphDataset(OnlineGraphDataset):
     - The intra-community edge probability is set at 0.3.
     - The inter-community edge probability is set at 0.005.
 
-    Available splits:
-        - `train`: 128 graphs
-        - `val`: 32 graphs
-        - `test`: 40 graphs
+    Dataset statistics:
+
+    {{ summary_md_table("SBMGraphDataset", ["train", "val", "test"]) }}
+
 
     References:
         [1] Martinkus, K., Loukas, A., Perraudin, N., & Wattenhofer, R. (2022).

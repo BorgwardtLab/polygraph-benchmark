@@ -74,11 +74,9 @@ class PlanarGraphDataset(OnlineGraphDataset):
 
     Each graph consists of 64 nodes and is connected and planar.
 
+    Dataset statistics:
 
-    Available splits:
-        - `train`: 128 graphs
-        - `val`: 32 graphs
-        - `test`: 40 graphs
+    {{ summary_md_table("PlanarGraphDataset", ["train", "val", "test"]) }}
 
     References:
         [1] Martinkus, K., Loukas, A., Perraudin, N., & Wattenhofer, R. (2022).

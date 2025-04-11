@@ -8,10 +8,9 @@ class EgoGraphDataset(OnlineGraphDataset):
 
     The graphs are 3-hop ego networks with 50 to 399 nodes.
 
-    Available splits:
-        - `train`: 454 graphs
-        - `val`: 151 ego networks
-        - `test`: 152 ego networks
+    Dataset statistics:
+
+    {{ summary_md_table("EgoGraphDataset", ["train", "val", "test"]) }}
 
     References:
         [1] Sen, P., Namata, G., Bilgic, M., Getoor, L., Galligher, B., and Eliassi-Rad, T. (2008).
@@ -50,10 +49,10 @@ class SmallEgoGraphDataset(OnlineGraphDataset):
 
     The graphs of this dataset have at most 18 nodes.
 
-    Available splits:
-        - `train`: 120 graphs
-        - `val`: 40 graphs
-        - `test`: 40 graphs
+    Dataset statistics:
+
+    {{ summary_md_table("SmallEgoGraphDataset", ["train", "val", "test"]) }}
+    
     """
 
     _URL_FOR_SPLIT = {
