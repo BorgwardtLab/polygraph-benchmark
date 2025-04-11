@@ -212,9 +212,13 @@ class GraphDataset(AbstractDataset):
     def min_edges(self) -> int:
         """Minimum number of edges in a graph in the dataset."""
         return (
-            self._data_store.indexing_info.edge_slices[:, 1]
-            - self._data_store.indexing_info.edge_slices[:, 0]
-        ).min()
+            (
+                self._data_store.indexing_info.edge_slices[:, 1]
+                - self._data_store.indexing_info.edge_slices[:, 0]
+            )
+            .min()
+            .item()
+        )
 
     @property
     def max_edges(self) -> int:
@@ -251,7 +255,14 @@ class GraphDataset(AbstractDataset):
         console = Console()
         console.print()
 
-        table = Table(title="Graph Dataset Statistics")
+        if hasattr(self, "_split"):
+            table = Table(
+                title=f"Graph Dataset Statistics for {self.__class__.__name__} ({self._split} set)"
+            )
+        else:
+            table = Table(
+                title=f"Graph Dataset Statistics for {self.__class__.__name__}"
+            )
         table.add_column("Metric", justify="left", style="cyan", no_wrap=True)
         table.add_column("Value", justify="left", style="magenta", no_wrap=True)
         table.add_row("# of Graphs", str(len(self)))
@@ -264,7 +275,6 @@ class GraphDataset(AbstractDataset):
         table.add_row(
             "Node/Edge Ratio", f"{self.edge_node_ratio:.{precision}f}"
         )
-        table.add_row("Avg Degree", f"{self.avg_degree:.{precision}f}")
 
         console = Console()
         console.print(table)
