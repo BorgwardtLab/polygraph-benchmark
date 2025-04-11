@@ -21,7 +21,7 @@ import torch
 from rich.console import Console
 from rich.table import Table
 from torch_geometric.data import Data
-from torch_geometric.utils import to_networkx
+from torch_geometric.utils import is_undirected, to_networkx
 
 from polygraph.datasets.base.caching import (
     CacheLock,
@@ -181,6 +181,11 @@ class GraphDataset(AbstractDataset):
         return data_list
 
     @property
+    def is_undirected(self) -> bool:
+        """Whether the graphs in the dataset are undirected."""
+        return is_undirected(self._data_store.edge_index)
+
+    @property
     def min_nodes(self) -> int:
         """Minimum number of nodes in a graph in the dataset."""
         return (
@@ -211,7 +216,7 @@ class GraphDataset(AbstractDataset):
     @property
     def min_edges(self) -> int:
         """Minimum number of edges in a graph in the dataset."""
-        return (
+        min_edges = (
             (
                 self._data_store.indexing_info.edge_slices[:, 1]
                 - self._data_store.indexing_info.edge_slices[:, 0]
@@ -219,11 +224,14 @@ class GraphDataset(AbstractDataset):
             .min()
             .item()
         )
+        if self.is_undirected:
+            return min_edges // 2
+        return min_edges
 
     @property
     def max_edges(self) -> int:
         """Maximum number of edges in a graph in the dataset."""
-        return (
+        max_edges = (
             (
                 self._data_store.indexing_info.edge_slices[:, 1]
                 - self._data_store.indexing_info.edge_slices[:, 0]
@@ -231,11 +239,14 @@ class GraphDataset(AbstractDataset):
             .max()
             .item()
         )
+        if self.is_undirected:
+            return max_edges // 2
+        return max_edges
 
     @property
     def avg_edges(self) -> float:
         """Average number of edges in a graph in the dataset."""
-        return (
+        avg_edges = (
             (
                 self._data_store.indexing_info.edge_slices[:, 1]
                 - self._data_store.indexing_info.edge_slices[:, 0]
@@ -244,11 +255,14 @@ class GraphDataset(AbstractDataset):
             .mean()
             .item()
         )
+        if self.is_undirected:
+            return avg_edges / 2
+        return avg_edges
 
     @property
     def edge_node_ratio(self) -> float:
         """Average number of edges per node in the dataset."""
-        return self.avg_nodes / self.avg_edges
+        return self.avg_edges / self.avg_nodes
 
     def summary(self, precision: int = 2):
         # Make sure we have a blank line before the table
@@ -273,7 +287,7 @@ class GraphDataset(AbstractDataset):
         table.add_row("Max # of Edges", str(self.max_edges))
         table.add_row("Avg # of Edges", f"{self.avg_edges:.{precision}f}")
         table.add_row(
-            "Node/Edge Ratio", f"{self.edge_node_ratio:.{precision}f}"
+            "Edge/Node Ratio", f"{self.edge_node_ratio:.{precision}f}"
         )
 
         console = Console()
