@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 
 import networkx as nx
 import numpy as np
+import torch
 from rich.console import Console
 from rich.table import Table
 from torch_geometric.data import Data
@@ -182,18 +183,26 @@ class GraphDataset(AbstractDataset):
     @property
     def min_nodes(self) -> int:
         """Minimum number of nodes in a graph in the dataset."""
-        return self._data_store.indexing_info.node_slices[:, 0].min().item()
+        return (
+            torch.unique(self._data_store.batch, return_counts=True)[1]
+            .min()
+            .item()
+        )
 
     @property
     def max_nodes(self) -> int:
         """Maximum number of nodes in a graph in the dataset."""
-        return self._data_store.indexing_info.node_slices[:, 1].max().item()
+        return (
+            torch.unique(self._data_store.batch, return_counts=True)[1]
+            .max()
+            .item()
+        )
 
     @property
     def avg_nodes(self) -> float:
         """Average number of nodes in a graph in the dataset."""
         return (
-            self._data_store.indexing_info.node_slices[:, 1]
+            torch.unique(self._data_store.batch, return_counts=True)[1]
             .float()
             .mean()
             .item()
@@ -202,18 +211,31 @@ class GraphDataset(AbstractDataset):
     @property
     def min_edges(self) -> int:
         """Minimum number of edges in a graph in the dataset."""
-        return self._data_store.indexing_info.edge_slices[:, 0].min().item()
+        return (
+            self._data_store.indexing_info.edge_slices[:, 1]
+            - self._data_store.indexing_info.edge_slices[:, 0]
+        ).min()
 
     @property
     def max_edges(self) -> int:
         """Maximum number of edges in a graph in the dataset."""
-        return self._data_store.indexing_info.edge_slices[:, 1].max().item()
+        return (
+            (
+                self._data_store.indexing_info.edge_slices[:, 1]
+                - self._data_store.indexing_info.edge_slices[:, 0]
+            )
+            .max()
+            .item()
+        )
 
     @property
     def avg_edges(self) -> float:
         """Average number of edges in a graph in the dataset."""
         return (
-            self._data_store.indexing_info.edge_slices[:, 1]
+            (
+                self._data_store.indexing_info.edge_slices[:, 1]
+                - self._data_store.indexing_info.edge_slices[:, 0]
+            )
             .float()
             .mean()
             .item()
@@ -222,7 +244,7 @@ class GraphDataset(AbstractDataset):
     @property
     def edge_node_ratio(self) -> float:
         """Average number of edges per node in the dataset."""
-        return self.avg_edges / self.avg_nodes
+        return self.avg_nodes / self.avg_edges
 
     def summary(self, precision: int = 2):
         # Make sure we have a blank line before the table
@@ -242,6 +264,7 @@ class GraphDataset(AbstractDataset):
         table.add_row(
             "Node/Edge Ratio", f"{self.edge_node_ratio:.{precision}f}"
         )
+        table.add_row("Avg Degree", f"{self.avg_degree:.{precision}f}")
 
         console = Console()
         console.print(table)
