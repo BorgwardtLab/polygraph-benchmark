@@ -382,15 +382,26 @@ class ProceduralGraphDataset(GraphDataset):
         memmap: Whether to memory-map the cached data
     """
 
-    def __init__(self, split: str, config_hash: str, memmap: bool = False):
+    def __init__(
+        self,
+        split: str,
+        config_hash: str,
+        memmap: bool = False,
+        show_generation_progress: bool = False,
+    ):
         self._identifier = config_hash
+        self.show_generation_progress = show_generation_progress
         with CacheLock(self.identifier):
             try:
                 data_store = load_from_cache(
                     self.identifier, split, mmap=memmap
                 )
             except FileNotFoundError:
-                write_to_cache(self.identifier, split, self.generate_data())
+                write_to_cache(
+                    self.identifier,
+                    split,
+                    self.generate_data(),
+                )
                 data_store = load_from_cache(
                     self.identifier, split, mmap=memmap
                 )

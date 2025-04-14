@@ -1,14 +1,16 @@
+from typing import Literal, Tuple
+
+import joblib
 import networkx as nx
 import numpy as np
 from loguru import logger
 from scipy import stats
-from typing import Literal, Tuple
-import joblib
+from torch_geometric.data import Batch
+from torch_geometric.utils import from_networkx
+from tqdm import tqdm
 
 from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
-from torch_geometric.data import Batch
-from torch_geometric.utils import from_networkx
 
 
 def is_sbm_graph(
@@ -216,6 +218,7 @@ class ProceduralSBMGraphDataset(ProceduralGraphDataset):
         n_communities: Tuple[int, int] = (2, 5),
         n_nodes_per_community: Tuple[int, int] = (20, 40),
         memmap: bool = False,
+        show_generation_progress: bool = False,
     ):
         config_hash = joblib.hash(
             (
@@ -237,11 +240,21 @@ class ProceduralSBMGraphDataset(ProceduralGraphDataset):
         self._inter_p = inter_p
         self._n_communities = n_communities
         self._n_nodes_per_community = n_nodes_per_community
-        super().__init__(split, config_hash, memmap)
+        super().__init__(
+            split,
+            config_hash,
+            memmap,
+            show_generation_progress,
+        )
 
     def generate_data(self) -> GraphStorage:
         graphs = [
-            from_networkx(self._random_sbm()) for _ in range(self._num_graphs)
+            from_networkx(self._random_sbm())
+            for _ in tqdm(
+                range(self._num_graphs),
+                desc="Generating SBM graphs",
+                disable=not self.show_generation_progress,
+            )
         ]
         return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 

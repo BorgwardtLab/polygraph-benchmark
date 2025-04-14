@@ -1,11 +1,14 @@
-import numpy as np
-import networkx as nx
+from typing import Literal
+
 import joblib
+import networkx as nx
+import numpy as np
+from torch_geometric.data import Batch
+from torch_geometric.utils import from_networkx
+from tqdm import tqdm
+
 from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
-from torch_geometric.utils import from_networkx
-from torch_geometric.data import Batch
-from typing import Literal
 
 
 class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
@@ -28,6 +31,7 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
         n_nodes: int = 64,
         seed: int = 42,
         memmap: bool = False,
+        show_generation_progress: bool = False,
     ):
         config_hash = joblib.hash(
             (num_graphs, n_nodes, seed, split), hash_name="md5"
@@ -37,12 +41,21 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
         )
         self._num_graphs = num_graphs
         self._n_nodes = n_nodes
-        super().__init__(split, config_hash, memmap)
+        super().__init__(
+            split,
+            config_hash,
+            memmap,
+            show_generation_progress,
+        )
 
     def generate_data(self) -> GraphStorage:
         graphs = [
             from_networkx(self._random_planar())
-            for _ in range(self._num_graphs)
+            for _ in tqdm(
+                range(self._num_graphs),
+                desc="Generating planar graphs",
+                disable=not self.show_generation_progress,
+            )
         ]
         return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 

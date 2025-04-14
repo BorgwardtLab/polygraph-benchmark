@@ -1,14 +1,15 @@
 from copy import deepcopy
+from typing import Literal, Optional
 
-import networkx as nx
 import joblib
+import networkx as nx
 import numpy as np
-from typing import Optional, Literal
 from torch_geometric.data import Batch
+from torch_geometric.utils import from_networkx
+from tqdm import tqdm
 
 from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
-from torch_geometric.utils import from_networkx
 
 
 def is_lobster_graph(graph: nx.Graph) -> bool:
@@ -62,6 +63,7 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         max_number_of_nodes: Optional[int] = 100,
         seed: int = 42,
         memmap: bool = False,
+        show_generation_progress: bool = False,
     ):
         config_hash = joblib.hash(
             (
@@ -85,12 +87,21 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         self._p2 = p2
         self._min_number_of_nodes = min_number_of_nodes
         self._max_number_of_nodes = max_number_of_nodes
-        super().__init__(split, config_hash, memmap)
+        super().__init__(
+            split,
+            config_hash,
+            memmap,
+            show_generation_progress,
+        )
 
     def generate_data(self) -> GraphStorage:
         graphs = [
             from_networkx(self._random_lobster())
-            for _ in range(self._num_graphs)
+            for _ in tqdm(
+                range(self._num_graphs),
+                desc="Generating lobster graphs",
+                disable=not self.show_generation_progress,
+            )
         ]
         return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 
