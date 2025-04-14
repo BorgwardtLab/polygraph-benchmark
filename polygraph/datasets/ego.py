@@ -52,7 +52,7 @@ class SmallEgoGraphDataset(OnlineGraphDataset):
     Dataset statistics:
 
     {{ summary_md_table("SmallEgoGraphDataset", ["train", "val", "test"]) }}
-    
+
     """
 
     _URL_FOR_SPLIT = {

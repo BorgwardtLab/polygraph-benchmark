@@ -25,10 +25,6 @@ class MockDescriptorKernel(DescriptorKernel):
         return self
 
     @property
-    def is_adative(self):
-        return False
-
-    @property
     def num_kernels(self):
         return 1
 
@@ -39,6 +35,15 @@ def mock_descriptor_fn():
         return np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
 
     return _descriptor_fn
+
+
+def test_adaptive():
+    kernel = AdaptiveRBFKernel(mock_descriptor_fn, 1.0)
+    assert kernel.is_adaptive
+    kernel = LaplaceKernel(mock_descriptor_fn, 1.0)
+    assert not kernel.is_adaptive
+    kernel = LinearKernel(mock_descriptor_fn)
+    assert not kernel.is_adaptive
 
 
 def test_descriptor_kernel_base(mock_descriptor_fn, sample_graphs):

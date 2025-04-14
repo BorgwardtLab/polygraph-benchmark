@@ -4,7 +4,11 @@ import networkx as nx
 import numpy as np
 
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
-from polygraph.utils.mmd_utils import full_gram_from_blocks, mmd_from_gram
+from polygraph.utils.mmd_utils import (
+    full_gram_from_blocks,
+    mmd_from_gram,
+    mmd_from_full_gram,
+)
 
 __all__ = ["BootStrapMMDTest", "BootStrapMaxMMDTest"]
 
@@ -14,42 +18,52 @@ class _BootStrapTestBase:
         self,
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
+        variant: Literal["biased", "umve", "ustat"] = "ustat",
     ):
         self._kernel = kernel
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
-        self._num_graphs = len(reference_graphs)
+        self._num_ref_graphs = len(reference_graphs)
+        self._variant = variant
 
     def _sample_from_null_distribution(
         self,
         pre_gram_matrix: np.ndarray,
         n_samples: int,
-        variant: Literal["biased", "umve", "ustat"] = "ustat",
         seed: int = 42,
     ) -> np.ndarray:
-        assert (
-            pre_gram_matrix.shape[0] == pre_gram_matrix.shape[1]
-            and pre_gram_matrix.shape[0] % 2 == 0
-        )
+        assert pre_gram_matrix.shape[0] == pre_gram_matrix.shape[1]
         rng = np.random.default_rng(seed)
-        n = pre_gram_matrix.shape[0] // 2
+        n_generated = pre_gram_matrix.shape[0] - self._num_ref_graphs
         mmd_samples = []
-        permutation = np.arange(2 * n)
+        permutation = np.arange(n_generated + self._num_ref_graphs)
         for _ in range(n_samples):
             rng.shuffle(permutation)
-            pre_gram_matrix = pre_gram_matrix[permutation, :]
-            pre_gram_matrix = pre_gram_matrix[:, permutation]
-            kx = pre_gram_matrix[:n, :n]
-            ky = pre_gram_matrix[n:, n:]
-            kxy = pre_gram_matrix[:n, n:]
-            kx, kxy, ky = self._kernel.adapt(GramBlocks(kx, kxy, ky))
-            mmd_samples.append(mmd_from_gram(kx, ky, kxy, variant))
+            if self._kernel.is_adaptive:
+                # Bandwith may change depending on the data split
+                pre_gram_matrix = pre_gram_matrix[permutation, :]
+                pre_gram_matrix = pre_gram_matrix[:, permutation]
+
+                kx = pre_gram_matrix[:n_generated, :n_generated]
+                ky = pre_gram_matrix[n_generated:, n_generated:]
+                kxy = pre_gram_matrix[:n_generated, n_generated:]
+                kx, kxy, ky = self._kernel.adapt(GramBlocks(kx, kxy, ky))
+                mmd_samples.append(mmd_from_gram(kx, ky, kxy, self._variant))
+            else:
+                # Gram matrix is fixed
+                x_idx = permutation[:n_generated]
+                y_idx = permutation[n_generated:]
+                mmd_samples.append(
+                    mmd_from_full_gram(
+                        pre_gram_matrix, x_idx, y_idx, self._variant
+                    )
+                )
+
         mmd_samples = np.array(mmd_samples)
         return mmd_samples
 
     def _get_realized_and_samples(
         self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000
     ):
-        assert len(generated_graphs) == self._num_graphs
         descriptions = self._kernel.featurize(generated_graphs)
 
         pre_ref_vs_ref, pre_ref_vs_gen, pre_gen_vs_gen = self._kernel.pre_gram(
@@ -60,14 +74,14 @@ class _BootStrapTestBase:
             GramBlocks(pre_ref_vs_ref, pre_ref_vs_gen, pre_gen_vs_gen)
         )
         realized_mmd = mmd_from_gram(
-            ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="ustat"
+            ref_vs_ref, gen_vs_gen, ref_vs_gen, self._variant
         )
 
         full_pre_matrix = full_gram_from_blocks(
             pre_ref_vs_ref, pre_ref_vs_gen, pre_gen_vs_gen
         )
         mmd_samples = self._sample_from_null_distribution(
-            full_pre_matrix, n_samples=num_samples, variant="ustat", seed=42
+            full_pre_matrix, n_samples=num_samples, seed=42
         )
         assert len(mmd_samples) == num_samples
 
@@ -76,8 +90,15 @@ class _BootStrapTestBase:
 
 class BootStrapMMDTest(_BootStrapTestBase):
     def compute(
-        self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000
+        self,
+        generated_graphs: Collection[nx.Graph],
+        num_samples: int = 1000,
     ):
+        if self._kernel.num_kernels != 1:
+            raise ValueError(
+                f"{self.__class__.__name__} requires kernel with `num_kernels == 1`."
+            )
+
         realized_mmd, mmd_samples = self._get_realized_and_samples(
             generated_graphs, num_samples
         )
@@ -90,7 +111,7 @@ class BootStrapMaxMMDTest(_BootStrapTestBase):
     ):
         if self._kernel.num_kernels == 1:
             raise ValueError(
-                f"{self.__name__} requires kernel with `num_kernels > 1`."
+                f"{self.__class__.__name__} requires kernel with `num_kernels > 1`."
             )
 
         realized_mmd, mmd_samples = self._get_realized_and_samples(

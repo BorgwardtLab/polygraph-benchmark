@@ -15,51 +15,51 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           # Install the package in development mode first
           pip install -e .[dev]
-      
+
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-      
+
       - name: Build and deploy PR preview
         id: deploy
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
           PREVIEW_DIR="preview/pr-${PR_NUMBER}"
-          
+
           # Build MkDocs to a specific directory
           mkdocs build -d site
-          
+
           # Switch to gh-pages branch or create it if it doesn't exist
           git fetch origin gh-pages || git checkout -b gh-pages
           git checkout gh-pages || git checkout -b gh-pages
-          
+
           # Create or update PR preview directory
           mkdir -p ${PREVIEW_DIR}
           rm -rf ${PREVIEW_DIR}/*
           cp -r site/* ${PREVIEW_DIR}/
-          
+
           # Commit and push changes (only if there are changes)
           if git status --porcelain | grep .; then
             git add ${PREVIEW_DIR}
             git commit -m "Deploy PR #${PR_NUMBER} preview"
             git push -f origin gh-pages
           fi
-          
+
           # Set output for preview URL
           echo "preview_url=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/${PREVIEW_DIR}/" >> $GITHUB_OUTPUT
-      
+
       - name: Comment on PR
         if: success()
         uses: actions/github-script@v6
@@ -67,19 +67,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const previewUrl = '${{ steps.deploy.outputs.preview_url }}';
-            
+
             // Get existing comments
             const comments = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo
             });
-            
+
             // Check if we already posted a preview comment
-            const previewComment = comments.data.find(comment => 
+            const previewComment = comments.data.find(comment =>
               comment.body.includes('📚 MkDocs preview')
             );
-            
+
             if (previewComment) {
               // Update existing comment
               await github.rest.issues.updateComment({
@@ -104,12 +104,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -117,7 +117,7 @@ jobs:
           pip install -e .
           # Install documentation dependencies
           pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python mkdocs-terminal
-      
+
       - name: Deploy MkDocs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:

@@ -89,8 +89,8 @@ class DescriptorKernel(ABC):
     def get_subkernel(self, idx: int) -> "DescriptorKernel": ...
 
     @property
-    @abstractmethod
-    def is_adative(self) -> bool: ...
+    def is_adaptive(self) -> bool:
+        return type(self).adapt != DescriptorKernel.adapt
 
     @property
     @abstractmethod
@@ -185,10 +185,6 @@ class LaplaceKernel(DescriptorKernel):
         return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
     @property
-    def is_adative(self) -> bool:
-        False
-
-    @property
     def num_kernels(self) -> int:
         if isinstance(self.lbd, np.ndarray):
             assert self.lbd.ndim == 1
@@ -245,10 +241,6 @@ class GaussianTV(DescriptorKernel):
         return GaussianTV(self._descriptor_fn, self.bw[idx])
 
     @property
-    def is_adative(self) -> bool:
-        return False
-
-    @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
             assert self.bw.ndim == 1
@@ -301,10 +293,6 @@ class RBFKernel(DescriptorKernel):
         assert isinstance(self.bw, np.ndarray)
         assert isinstance(idx, int), type(idx)
         return RBFKernel(self._descriptor_fn, self.bw[idx])
-
-    @property
-    def is_adative(self) -> bool:
-        return False
 
     @property
     def num_kernels(self) -> int:
@@ -369,10 +357,6 @@ class AdaptiveRBFKernel(DescriptorKernel):
         )
 
     @property
-    def is_adative(self) -> bool:
-        return True
-
-    @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
             assert self.bw.ndim == 1
@@ -429,10 +413,6 @@ class LinearKernel(DescriptorKernel):
     @property
     def num_kernels(self) -> int:
         return 1
-
-    @property
-    def is_adative(self) -> bool:
-        return False
 
     def get_subkernel(self, idx: int) -> DescriptorKernel:
         assert idx == 0, idx
