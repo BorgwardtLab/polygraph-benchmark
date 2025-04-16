@@ -64,7 +64,8 @@ def summary_md_table(ds_name: str, splits: Iterable[str], precision: int = 2):
         "Min # of Edges",
         "Max # of Edges",
         "Avg # of Edges",
-        "Node/Edge Ratio",
+        "Edge/Node Ratio",
+        "Is Undirected",
     ]
 
     # Collect data for each split
@@ -81,6 +82,7 @@ def summary_md_table(ds_name: str, splits: Iterable[str], precision: int = 2):
             str(ds.max_edges),
             f"{ds.avg_edges:.{precision}f}",
             f"{ds.edge_node_ratio:.{precision}f}",
+            str(ds.is_undirected),
         ]
 
     # Create table data with metrics as rows and splits as columns
@@ -94,7 +96,11 @@ def summary_md_table(ds_name: str, splits: Iterable[str], precision: int = 2):
     # Generate headers with split names
     headers = ["Metric"] + [split.capitalize() for split in splits]
 
-    # Generate markdown table using tabulate
-    md_table = tabulate(table_data, headers=headers, tablefmt="pipe")
+    # Generate markdown table using tabulate with disable_numparse=True
+    md_table = tabulate(
+        table_data, headers=headers, tablefmt="pipe", disable_numparse=True
+    )
+
+    print(md_table)
 
     return md_table + "\n\n"
