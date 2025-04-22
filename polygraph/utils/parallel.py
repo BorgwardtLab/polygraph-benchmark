@@ -10,8 +10,17 @@ from typing import Any, Callable, Generator, Iterable, List
 
 import joblib
 from joblib import Parallel, delayed
-from rich.console import Console
-from rich.progress import Progress, TaskID
+from rich.progress import (
+    BarColumn,
+    Console,
+    MofNCompleteColumn,
+    Progress,
+    TaskID,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 console = Console()
 
@@ -86,14 +95,20 @@ def distribute_function(
         parallel_execution = (delayed(func)(x, **kwargs) for x in X)
 
     if show_progress:
-        with Progress(console=console) as progress:
+        with Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+        ) as progress:
             task_id = progress.add_task(description, total=total)
             with rich_joblib(progress, task_id):
-                Xt = Parallel(n_jobs=n_jobs, prefer="threads")(
-                    parallel_execution
-                )
+                Xt = Parallel(n_jobs=n_jobs)(parallel_execution)
     else:
-        Xt = Parallel(n_jobs=n_jobs, prefer="threads")(parallel_execution)
+        Xt = Parallel(n_jobs=n_jobs)(parallel_execution)
 
     return Xt
 

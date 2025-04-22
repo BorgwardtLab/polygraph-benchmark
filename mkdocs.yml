@@ -9,6 +9,7 @@ nav:
   - index.md
   - Installation: installation.md
   - Tutorials:
+    - Basic Usage: tutorials/basic_usage.md
     - Loading Datasets: tutorials/datasets.md
     - Evaluating Models: tutorials/evaluating_models.md
     - Defining Custom Metrics: tutorials/custom_metrics.md

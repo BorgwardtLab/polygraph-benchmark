@@ -1,8 +1,8 @@
+import warnings
 from typing import Any, Callable, Iterable, Optional
 
 import networkx as nx
 import numpy as np
-from loguru import logger
 from scipy.stats import mannwhitneyu, wilcoxon
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
@@ -209,12 +209,6 @@ class CelledTrainDistanceCopyingMetric:
             self.training_descriptors
         )
         self.test_descriptors_cells = self.kmeans.predict(self.test_descriptors)
-        logger.trace(
-            f"Training descriptors cells: {np.unique(self.training_descriptors_cells, return_counts=True)}"
-        )
-        logger.trace(
-            f"Test descriptors cells: {np.unique(self.test_descriptors_cells, return_counts=True)}"
-        )
 
     def compute(
         self,
@@ -223,19 +217,14 @@ class CelledTrainDistanceCopyingMetric:
     ) -> float:
         if tau is None:
             tau = 20 / len(generated_graphs)
-            logger.trace(
+            warnings.warn(
                 f"No tau provided, using default value of {tau} (20 / "
                 f"n_generated) as suggested by Meehan et al. (2021)",
             )
 
         generated_descriptors = self.descriptor(generated_graphs)
         generated_descriptors_cells = self.kmeans.predict(generated_descriptors)
-        logger.trace(
-            f"Generated descriptors cells: {len(generated_descriptors_cells)}"
-        )
-        logger.trace(
-            f"Generated descriptors cells: {np.unique(generated_descriptors_cells, return_counts=True)}"
-        )
+
         _, p_value = celled_distance_train_test(
             self.test_descriptors,
             self.test_descriptors_cells,

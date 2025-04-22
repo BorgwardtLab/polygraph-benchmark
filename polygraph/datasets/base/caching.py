@@ -1,16 +1,16 @@
+import hashlib
 import os
+import shutil
 import urllib
-from typing import Any, Sequence, Optional
+from typing import Any, Optional, Sequence
 
+import filelock
 import torch
 from appdirs import user_cache_dir
 from loguru import logger
 
 from polygraph import __version__
 from polygraph.datasets.base.graph_storage import GraphStorage
-import shutil
-import hashlib
-import filelock
 
 
 def file_hash(path: str) -> str:
@@ -54,9 +54,6 @@ def download_to_cache(url: str, identifier: str, split: str = "data"):
     os.makedirs(path, exist_ok=True)
     path = os.path.join(path, f"{split}.pt")
     if os.path.exists(path):
-        logger.debug(
-            f"Couldn't download data to {path} because it already exists"
-        )
         raise FileExistsError(
             f"Tried to download data to {path}, but path already exists"
         )
