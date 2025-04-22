@@ -7,7 +7,7 @@ from loguru import logger
 from scipy import stats
 from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
-from tqdm import tqdm
+from tqdm.rich import tqdm
 
 from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage

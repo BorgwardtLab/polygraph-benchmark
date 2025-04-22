@@ -10,7 +10,10 @@ from typing import Any, Callable, Generator, Iterable, List
 
 import joblib
 from joblib import Parallel, delayed
+from rich.console import Console
 from rich.progress import Progress, TaskID
+
+console = Console()
 
 
 def flatten_lists(lists: List[List[Any]]) -> List[Any]:
@@ -44,6 +47,7 @@ def rich_joblib(
             progress.update(
                 task_id,
                 advance=self.batch_size,
+                refresh=True,
             )
             return super().__call__(*args, **kwargs)
 
@@ -82,7 +86,7 @@ def distribute_function(
         parallel_execution = (delayed(func)(x, **kwargs) for x in X)
 
     if show_progress:
-        with Progress() as progress:
+        with Progress(console=console) as progress:
             task_id = progress.add_task(description, total=total)
             with rich_joblib(progress, task_id):
                 Xt = Parallel(n_jobs=n_jobs, prefer="threads")(

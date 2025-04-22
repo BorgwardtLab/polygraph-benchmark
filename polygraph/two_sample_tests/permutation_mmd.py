@@ -6,8 +6,8 @@ import numpy as np
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
 from polygraph.utils.mmd_utils import (
     full_gram_from_blocks,
-    mmd_from_gram,
     mmd_from_full_gram,
+    mmd_from_gram,
 )
 
 __all__ = ["BootStrapMMDTest", "BootStrapMaxMMDTest"]
