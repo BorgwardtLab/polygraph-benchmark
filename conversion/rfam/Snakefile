@@ -1,0 +1,118 @@
+import os
+import json
+
+# Configuration
+RFAM_VERSION = "15.0"
+MAX_RFAM_ID = 4310
+BASE_URL = f"https://ftp.ebi.ac.uk/pub/databases/Rfam/{RFAM_VERSION}/fasta_files"
+
+# Create output directories
+os.makedirs("structures", exist_ok=True)
+
+# Helper function to format Rfam ID with leading zeros
+def format_rfam_id(id):
+    return f"RF{str(id).zfill(5)}"
+
+# Rule to define the final output we want
+rule all:
+    input:
+        "combined_structures.json",
+        "train.pt",
+        "val.pt",
+        "test.pt"
+
+# Rule to download and decompress individual Rfam family files
+rule download_rfam_family:
+    output:
+        temp("raw_files/{rfam_id}.fa")
+    params:
+        url = lambda wildcards: f"{BASE_URL}/{wildcards.rfam_id}.fa.gz"
+    threads: 1
+    shell:
+        """
+        if wget -q --tries=3 --timeout=60 --retry-connrefused --waitretry=5 --wait=2 --random-wait --read-timeout=10 --no-content-disposition {params.url} -O {output}.gz; then
+            gunzip -q {output}.gz
+        else
+            touch {output}
+        fi
+        """
+
+# Rule to process structure for first sequence in each family
+rule process_structure:
+    input:
+        "raw_files/{rfam_id}.fa"
+    output:
+        temp("structures/{rfam_id}.json")
+    run:
+        # Check if file is empty
+        if os.path.getsize(input[0]) == 0:
+            # Create empty result for missing families
+            result = {
+                "sequence": None,
+                "structure": None,
+                "energy": None
+            }
+        else:
+            from Bio import SeqIO
+            import RNA
+
+            # Get first sequence from the file
+            with open(input[0]) as handle:
+                parser = SeqIO.parse(handle, "fasta")
+                for record in parser:
+                    sequence = str(record.seq).upper()
+                    if "N" not in sequence:
+                        break
+
+                if "N" in sequence:
+                    raise ValueError(f"All sequences must contain unknown nucleotides")
+
+            sequence = sequence.replace("T", "U")
+            # Calculate structure using RNA package
+            structure, energy = RNA.fold(sequence)
+
+            result = {
+                "sequence": sequence,
+                "structure": structure,
+                "energy": energy
+            }
+
+        with open(output[0], "w") as f:
+            json.dump(result, f, indent=2)
+
+# Rule to combine all structure files
+rule combine_structures:
+    input:
+        expand("structures/{rfam_id}.json",
+               rfam_id=[format_rfam_id(i) for i in range(1, MAX_RFAM_ID + 1)])
+    output:
+        "combined_structures.json"
+    log:
+        "logs/combine_structures.log"
+    run:
+        combined = {}
+        for filepath in input:
+            rfam_id = os.path.basename(filepath).replace('.json', '')
+            with open(filepath) as f:
+                data = json.load(f)
+                # Only include entries that have actual data
+                if data["sequence"] is not None:
+                    combined[rfam_id] = data
+
+        with open(log[0], 'w') as f:
+            print(f"Combined {len(combined)} families", file=f)
+
+        with open(output[0], "w") as f:
+            json.dump(combined, f, indent=2)
+
+rule convert_to_graphs:
+    input:
+        "combined_structures.json"
+    output:
+        "train.pt",
+        "val.pt",
+        "test.pt"
+    shell:
+        """
+        python to_graphs.py
+        """
