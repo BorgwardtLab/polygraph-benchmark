@@ -175,6 +175,9 @@ class OrbitCounts:
         Self-loops are automatically removed from input graphs.
     """
 
+    def __init__(self, graphlet_size: int = 4):
+        self._graphlet_size = graphlet_size
+
     def __call__(self, graphs: Iterable[nx.Graph]):
         # Check if any graph has a self-loop
         self_loops = [list(nx.selfloop_edges(g)) for g in graphs]
@@ -186,7 +189,9 @@ class OrbitCounts:
             for g, loops in zip(graphs, self_loops):
                 g.remove_edges_from(loops)
 
-        counts = orbit_count.batched_node_orbit_counts(graphs, graphlet_size=4)
+        counts = orbit_count.batched_node_orbit_counts(
+            graphs, graphlet_size=self._graphlet_size
+        )
         counts = [count.mean(axis=0) for count in counts]
         return np.stack(counts, axis=0)
 
