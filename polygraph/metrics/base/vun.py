@@ -133,6 +133,7 @@ class VUN:
         self,
         generated_samples: Iterable[nx.Graph],
         confidence_level: float = 0.95,
+        as_scalar_value_dict: bool = False,
     ) -> Dict[str, BinomConfidenceInterval]:
         """Computes VUN metrics for a collection of generated graphs.
 
@@ -195,4 +196,11 @@ class VUN:
             result_w_ci[key] = BinomConfidenceInterval(
                 mle=val / n_graphs, low=low, high=high
             )
+
+        if as_scalar_value_dict:
+            result_w_ci = {}
+            for key, val in result_w_ci.items():
+                for k, v in val._asdict().items():
+                    result_w_ci[f"{key}_{k}"] = v
+
         return result_w_ci
