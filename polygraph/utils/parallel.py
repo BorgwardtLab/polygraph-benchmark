@@ -68,6 +68,20 @@ def rich_joblib(
         joblib.parallel.BatchCompletionCallBack = old_batch_callback
 
 
+def create_progress_bar(show_progress: bool = True) -> Progress:
+    """Creates a standardized progress bar with preset columns."""
+    return Progress(
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+        disable=not show_progress,
+    )
+
+
 def distribute_function(
     func: Callable,
     X: Iterable,
@@ -82,10 +96,20 @@ def distribute_function(
         total = len(X)  # type: ignore
 
     if n_jobs == 1:
-        if use_enumerate:
-            return [func(idx, x, **kwargs) for idx, x in enumerate(X)]
-        else:
-            return [func(x, **kwargs) for x in X]
+        with create_progress_bar(show_progress) as progress:
+            task_id = progress.add_task(description, total=total)
+            results = []
+            if use_enumerate:
+                for idx, x in enumerate(X):
+                    result = func(idx, x, **kwargs)
+                    results.append(result)
+                    progress.update(task_id, advance=1, refresh=True)
+            else:
+                for x in X:
+                    result = func(x, **kwargs)
+                    results.append(result)
+                    progress.update(task_id, advance=1, refresh=True)
+        return results
 
     if use_enumerate:
         parallel_execution = (
@@ -95,15 +119,7 @@ def distribute_function(
         parallel_execution = (delayed(func)(x, **kwargs) for x in X)
 
     if show_progress:
-        with Progress(
-            TextColumn("[bold blue]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            MofNCompleteColumn(),
-            TimeElapsedColumn(),
-            TimeRemainingColumn(),
-            console=console,
-        ) as progress:
+        with create_progress_bar(show_progress) as progress:
             task_id = progress.add_task(description, total=total)
             with rich_joblib(progress, task_id):
                 Xt = Parallel(n_jobs=n_jobs)(parallel_execution)

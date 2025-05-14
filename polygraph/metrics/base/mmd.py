@@ -40,7 +40,7 @@ Example:
 
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Collection, Dict, Literal, Union
+from typing import Collection, Dict, Literal, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -197,7 +197,13 @@ class _DescriptorMMD2Interval(ABC):
         return mmd_samples
 
     @abstractmethod
-    def compute(*args, **kwargs) -> Union[MMDInterval, Dict[str, float]]: ...
+    def compute(
+        *args, **kwargs
+    ) -> Union[
+        MMDInterval,
+        Dict[str, float],
+        Tuple[Union[MMDInterval, Dict[str, float]], np.ndarray],
+    ]: ...
 
 
 class DescriptorMMD2Interval(_DescriptorMMD2Interval):
@@ -219,7 +225,12 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval):
         num_samples: int = 500,
         coverage: float = 0.95,
         as_scalar_value_dict: bool = False,
-    ) -> Union[MMDInterval, Dict[str, float]]:
+        return_samples: bool = False,
+    ) -> Union[
+        MMDInterval,
+        Dict[str, float],
+        Tuple[Union[MMDInterval, Dict[str, float]], np.ndarray],
+    ]:
         """Computes MMD² confidence intervals through subsampling.
 
         Args:
@@ -243,13 +254,19 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval):
         avg = np.mean(mmd_samples, axis=0)
         std = np.std(mmd_samples, axis=0)
         if as_scalar_value_dict:
-            return {
+            return_result = {
                 "mean": avg,
                 "std": std,
                 "low": low,
                 "high": high,
             }
-        return MMDInterval(mean=avg, std=std, low=low, high=high)
+        else:
+            return_result = MMDInterval(mean=avg, std=std, low=low, high=high)
+
+        if return_samples:
+            return return_result, mmd_samples
+        else:
+            return return_result
 
 
 class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
@@ -289,7 +306,12 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
         num_samples: int = 500,
         coverage: float = 0.95,
         as_scalar_value_dict: bool = False,
-    ) -> Union[MMDInterval, Dict[str, float]]:
+        return_samples: bool = False,
+    ) -> Union[
+        MMDInterval,
+        Dict[str, float],
+        Tuple[Union[MMDInterval, Dict[str, float]], np.ndarray],
+    ]:
         """Computes confidence intervals for maximum MMD² through subsampling.
 
         Args:
@@ -314,11 +336,18 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
         )
         avg = np.mean(mmd_samples, axis=0)
         std = np.std(mmd_samples, axis=0)
+
         if as_scalar_value_dict:
-            return {
+            return_result = {
                 "mean": avg,
                 "std": std,
                 "low": low,
                 "high": high,
             }
-        return MMDInterval(mean=avg, std=std, low=low, high=high)
+        else:
+            return_result = MMDInterval(mean=avg, std=std, low=low, high=high)
+
+        if return_samples:
+            return return_result, mmd_samples
+        else:
+            return return_result

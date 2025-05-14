@@ -142,7 +142,9 @@ class VUN:
             confidence_level: Confidence level for binomial proportion intervals
 
         Returns:
-            Dictionary mapping metric names to (estimate, lower bound, upper bound) tuples.
+            Dictionary mapping metric names to (estimate, lower bound, upper
+            bound) tuples. If as_scalar_value_dict is True, returns a dictionary
+            with scalar values, and if a metric returns None, it is set to -1.
 
         Raises:
             ValueError: If generated_samples is empty
@@ -198,9 +200,14 @@ class VUN:
             )
 
         if as_scalar_value_dict:
-            result_w_ci = {}
+            result_w_ci_scalar = {}
             for key, val in result_w_ci.items():
                 for k, v in val._asdict().items():
-                    result_w_ci[f"{key}_{k}"] = v
+                    result_w_ci_scalar[f"{key}_{k}"] = v
 
-        return result_w_ci
+            for key in list(result_w_ci_scalar.keys()):
+                if result_w_ci_scalar[key] is None:
+                    result_w_ci_scalar[key] = -1
+            return result_w_ci_scalar
+        else:
+            return result_w_ci

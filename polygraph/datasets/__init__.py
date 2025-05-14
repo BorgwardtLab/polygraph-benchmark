@@ -5,6 +5,7 @@ from .molecules import MOSES, QM9, Guacamol
 from .planar import PlanarGraphDataset, ProceduralPlanarGraphDataset
 from .point_clouds import PointCloudGraphDataset
 from .proteins import DobsonDoigGraphDataset
+from .rna import RFAMGraphDataset
 from .sbm import ProceduralSBMGraphDataset, SBMGraphDataset
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "SBMGraphDataset",
     "ProceduralSBMGraphDataset",
     "PointCloudGraphDataset",
+    "RFAMGraphDataset",
 ]
