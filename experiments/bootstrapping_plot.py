@@ -33,6 +33,15 @@ def setup_plotting_parameters(
     mpl.rcParams["axes.unicode_minus"] = False
 
 
+def format_dataset(dataset: str) -> str:
+    if "lobster" in dataset:
+        return "Lobster"
+    elif "sbm" in dataset:
+        return "SBM"
+    elif "planar" in dataset:
+        return "Planar"
+
+
 def format_descriptor(descriptor: str) -> str:
     """Format a descriptor string by splitting before the first capitalized character in camelCase.
 
@@ -81,67 +90,100 @@ def add_training_sample_size(df: pd.DataFrame) -> pd.DataFrame:
     for test_set_type in df.test_set_type.unique():
         for dataset_type in df.dataset_type.unique():
             if "procedural" in test_set_type and "sbm" in dataset_type:
-                df.loc[df.test_set_type == test_set_type, "n_train"] = (
-                    n_train_procedural
-                )
-                df.loc[df.test_set_type == test_set_type, "n_val"] = (
-                    n_val_sbm_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_test"] = (
-                    n_test_sbm_fixed
-                )
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_train",
+                ] = n_train_procedural
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_val",
+                ] = n_val_sbm_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_test",
+                ] = n_test_sbm_fixed
             elif "procedural" in test_set_type and "planar" in dataset_type:
-                df.loc[df.test_set_type == test_set_type, "n_train"] = (
-                    n_train_procedural
-                )
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_train",
+                ] = n_train_procedural
                 df.loc[df.test_set_type == test_set_type, "n_val"] = (
                     n_val_planar_fixed
                 )
-                df.loc[df.test_set_type == test_set_type, "n_test"] = (
-                    n_test_planar_fixed
-                )
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_test",
+                ] = n_test_planar_fixed
             elif "procedural" in test_set_type and "lobster" in dataset_type:
-                df.loc[df.test_set_type == test_set_type, "n_train"] = (
-                    n_train_procedural
-                )
-                df.loc[df.test_set_type == test_set_type, "n_val"] = (
-                    n_val_lobster_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_test"] = (
-                    n_test_lobster_fixed
-                )
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_train",
+                ] = n_train_procedural
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_val",
+                ] = n_val_lobster_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_test",
+                ] = n_test_lobster_fixed
 
             if "fixed" in test_set_type and "sbm" in dataset_type:
-                df.loc[df.test_set_type == test_set_type, "n_train"] = (
-                    n_train_sbm_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_val"] = (
-                    n_val_sbm_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_test"] = (
-                    n_test_sbm_fixed
-                )
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_train",
+                ] = n_train_sbm_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_val",
+                ] = n_val_sbm_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_test",
+                ] = n_test_sbm_fixed
             elif "fixed" in test_set_type and "planar" in dataset_type:
-                df.loc[df.test_set_type == test_set_type, "n_train"] = (
-                    n_train_planar_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_val"] = (
-                    n_val_planar_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_test"] = (
-                    n_test_planar_fixed
-                )
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_train",
+                ] = n_train_planar_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_val",
+                ] = n_val_planar_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_test",
+                ] = n_test_planar_fixed
             elif "fixed" in test_set_type and "lobster" in dataset_type:
-                df.loc[df.test_set_type == test_set_type, "n_train"] = (
-                    n_train_lobster_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_val"] = (
-                    n_val_lobster_fixed
-                )
-                df.loc[df.test_set_type == test_set_type, "n_test"] = (
-                    n_test_lobster_fixed
-                )
-
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_train",
+                ] = n_train_lobster_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_val",
+                ] = n_val_lobster_fixed
+                df.loc[
+                    (df.test_set_type == test_set_type)
+                    & (df.dataset_type == dataset_type),
+                    "n_test",
+                ] = n_test_lobster_fixed
     return df
 
 
@@ -243,10 +285,9 @@ def plot_individual_tests(df):
                         plt.xlabel("Number of Bootstrapped Graphs", labelpad=20)
                         plt.ylabel(f"Realized MMD ({format_variant(variant)})")
                         plt.title(
-                            f"Dataset: {dataset.capitalize()}, Descriptor: {format_descriptor(descriptor)}"
+                            f"Dataset: {format_dataset(dataset)}, Descriptor: {format_descriptor(descriptor)}"
                         )
                         plt.xscale("log", base=2)
-
                         n_train = (
                             df_generated.n_train.dropna().iloc[0]
                             if not df_generated.n_train.dropna().empty
