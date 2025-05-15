@@ -207,21 +207,25 @@ def generate_datasets():
                 ]
             )
 
-            if (
-                "autograph_generated"
-                in datasets[dataset][training_dataset].keys()
+            if any(
+                "autograph_generated" in key
+                for key in datasets[dataset][training_dataset].keys()
             ):
                 pyg_graphs = torch.load(
-                    datasets[dataset][training_dataset]["autograph_generated"],
+                    datasets[dataset][training_dataset][
+                        "autograph_generated_fixed"
+                    ],
                     weights_only=False,
                 )
-                datasets[dataset][training_dataset]["autograph_generated"] = (
-                    [to_networkx(g, to_undirected=True) for g in pyg_graphs]
-                )[:N_GENERATED_GRAPHS]
+                datasets[dataset][training_dataset][
+                    "autograph_generated_fixed"
+                ] = ([to_networkx(g, to_undirected=True) for g in pyg_graphs])[
+                    :N_GENERATED_GRAPHS
+                ]
             else:
-                datasets[dataset][training_dataset]["autograph_generated"] = (
-                    None
-                )
+                datasets[dataset][training_dataset][
+                    "autograph_generated_fixed"
+                ] = None
 
             datasets[dataset][training_dataset]["digress_generated_fixed"] = (
                 pickle.load(
@@ -326,45 +330,34 @@ def compute_bootstrapping_experiment(parameters, datasets):
             mmd_results=None,
         )
 
-    try:
-        max_mmd_bootstrap = MaxDescriptorMMD2Interval(
-            reference_dataset,
-            RBFKernel(
-                descriptor,
-                bw=np.array(
-                    [
-                        0.01,
-                        0.1,
-                        0.25,
-                        0.5,
-                        0.75,
-                        1.0,
-                        2.5,
-                        5.0,
-                        7.5,
-                        10.0,
-                    ]
-                ),
-            ),
-            variant=variant,
-        )
-        mmd_results, mmd_samples = max_mmd_bootstrap.compute(
-            test_set,
-            subsample_size=min(n_graphs, len(test_set)),
-            num_samples=N_BOOTSTRAPS,
-            return_samples=True,
-        )
-    except Exception:
-        return return_mmd_results(
-            dataset_type,
-            generation_procedure,
+    max_mmd_bootstrap = MaxDescriptorMMD2Interval(
+        reference_dataset,
+        RBFKernel(
             descriptor,
-            n_graphs,
-            variant,
-            test_set_type,
-            reason="Error computing mmd",
-            mmd_results=None,
-        )
+            bw=np.array(
+                [
+                    0.01,
+                    0.1,
+                    0.25,
+                    0.5,
+                    0.75,
+                    1.0,
+                    2.5,
+                    5.0,
+                    7.5,
+                    10.0,
+                ]
+            ),
+        ),
+        variant=variant,
+    )
+    mmd_results, mmd_samples = max_mmd_bootstrap.compute(
+        test_set,
+        subsample_size=min(n_graphs, len(test_set)),
+        num_samples=N_BOOTSTRAPS,
+        return_samples=True,
+    )
+
     save_mmd_samples(
         mmd_samples,
         dataset_type,
@@ -404,7 +397,7 @@ def main():
         "digress_generated_fixed",
         "test",
     ]
-    N_JOBS = 10
+    N_JOBS = 100
 
     parameters = list(
         itertools.product(
