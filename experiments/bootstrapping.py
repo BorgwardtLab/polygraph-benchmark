@@ -187,7 +187,7 @@ def generate_datasets():
     }
     logger.info("Loading generated graphs")
     for dataset in datasets.keys():
-        for training_dataset in ["procedural"]:
+        for training_dataset in ["procedural", "fixed"]:
             # Replace path with actual data
             generated_data_path = datasets[dataset][training_dataset][
                 "gran_generated_procedural"
@@ -237,8 +237,17 @@ def generate_datasets():
                     )
                 )
             )
-
     logger.info("Datasets initialized")
+    for dataset in datasets:
+        for training_dataset in datasets[dataset]:
+            for key in datasets[dataset][training_dataset]:
+                if datasets[dataset][training_dataset][key] is not None:
+                    if not isinstance(
+                        datasets[dataset][training_dataset][key], str
+                    ):
+                        logger.warning(
+                            f"Non-string value found in {dataset}/{training_dataset}/{key}"
+                        )
     return datasets
 
 
@@ -287,97 +296,111 @@ def return_mmd_results(
 
 
 def compute_bootstrapping_experiment(parameters, datasets):
-    (
-        dataset_type,
-        generation_procedure,
-        descriptor,
-        n_graphs,
-        variant,
-        test_set_type,
-    ) = parameters
-
-    if n_graphs > len(datasets[dataset_type][generation_procedure]["test"]):
-        return return_mmd_results(
+    try:
+        (
             dataset_type,
             generation_procedure,
             descriptor,
             n_graphs,
             variant,
             test_set_type,
-            reason="n_graphs > len(test_set)",
-            mmd_results=None,
-        )
+        ) = parameters
 
-    if test_set_type == "test":
-        reference_dataset = list(
-            datasets[dataset_type][generation_procedure]["train"]
-        )
-    else:
-        reference_dataset = datasets[dataset_type][generation_procedure]["test"]
+        if n_graphs > len(datasets[dataset_type][generation_procedure]["test"]):
+            return return_mmd_results(
+                dataset_type,
+                generation_procedure,
+                descriptor,
+                n_graphs,
+                variant,
+                test_set_type,
+                reason="n_graphs > len(test_set)",
+                mmd_results=None,
+            )
 
-    if test_set_type in datasets[dataset_type][generation_procedure].keys():
-        test_set = datasets[dataset_type][generation_procedure][test_set_type]
-    else:
-        test_set = None
-        return return_mmd_results(
-            dataset_type,
-            generation_procedure,
-            descriptor,
-            n_graphs,
-            variant,
-            test_set_type,
-            reason="No test set",
-            mmd_results=None,
-        )
+        if test_set_type == "test":
+            reference_dataset = list(
+                datasets[dataset_type][generation_procedure]["train"]
+            )
+        else:
+            reference_dataset = datasets[dataset_type][generation_procedure][
+                "test"
+            ]
 
-    max_mmd_bootstrap = MaxDescriptorMMD2Interval(
-        reference_dataset,
-        RBFKernel(
-            descriptor,
-            bw=np.array(
-                [
-                    0.01,
-                    0.1,
-                    0.25,
-                    0.5,
-                    0.75,
-                    1.0,
-                    2.5,
-                    5.0,
-                    7.5,
-                    10.0,
-                ]
+        if test_set_type in datasets[dataset_type][generation_procedure].keys():
+            test_set = datasets[dataset_type][generation_procedure][
+                test_set_type
+            ]
+        else:
+            test_set = None
+            return return_mmd_results(
+                dataset_type,
+                generation_procedure,
+                descriptor,
+                n_graphs,
+                variant,
+                test_set_type,
+                reason="No test set",
+                mmd_results=None,
+            )
+
+        max_mmd_bootstrap = MaxDescriptorMMD2Interval(
+            reference_dataset,
+            RBFKernel(
+                descriptor,
+                bw=np.array(
+                    [
+                        0.01,
+                        0.1,
+                        0.25,
+                        0.5,
+                        0.75,
+                        1.0,
+                        2.5,
+                        5.0,
+                        7.5,
+                        10.0,
+                    ]
+                ),
             ),
-        ),
-        variant=variant,
-    )
-    mmd_results, mmd_samples = max_mmd_bootstrap.compute(
-        test_set,
-        subsample_size=min(n_graphs, len(test_set)),
-        num_samples=N_BOOTSTRAPS,
-        return_samples=True,
-    )
-
-    save_mmd_samples(
-        mmd_samples,
-        dataset_type,
-        generation_procedure,
-        descriptor,
-        n_graphs,
-        variant,
-        test_set_type,
-    )
-
-    return return_mmd_results(
-        dataset_type,
-        generation_procedure,
-        descriptor,
-        n_graphs,
-        variant,
-        test_set_type,
-        reason="Success",
-        mmd_results=mmd_results,
-    )
+            variant=variant,
+        )
+        mmd_results, mmd_samples = max_mmd_bootstrap.compute(
+            test_set,
+            subsample_size=min(n_graphs, len(test_set)),
+            num_samples=N_BOOTSTRAPS,
+            return_samples=True,
+        )
+        save_mmd_samples(
+            mmd_samples,
+            dataset_type,
+            generation_procedure,
+            descriptor,
+            n_graphs,
+            variant,
+            test_set_type,
+        )
+        return return_mmd_results(
+            dataset_type,
+            generation_procedure,
+            descriptor,
+            n_graphs,
+            variant,
+            test_set_type,
+            reason="Success",
+            mmd_results=mmd_results,
+        )
+    except Exception as e:
+        return return_mmd_results(
+            dataset_type,
+            generation_procedure,
+            descriptor,
+            n_graphs,
+            variant,
+            test_set_type,
+            reason=f"Error: {e}",
+            mmd_results=None,
+        )
 
 
 def main():
