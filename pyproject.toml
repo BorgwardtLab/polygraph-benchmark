@@ -29,7 +29,6 @@ dependencies = [
     "pandas",
     "orbit-count",
     "numba",
-    "ViennaRNA==2.7.0"
 ]
 
 [project.optional-dependencies]
