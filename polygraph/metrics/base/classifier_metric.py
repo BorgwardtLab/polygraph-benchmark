@@ -1,4 +1,4 @@
-from typing import Collection, Literal, Optional, Callable, List, Tuple
+from typing import Collection, Literal, Optional, Callable, List, Tuple, Dict
 
 from sklearn.metrics import roc_auc_score, roc_curve
 from scipy.sparse import csr_array
@@ -186,6 +186,29 @@ class KernelClassifierMetric:
             threshold=threshold,
         )
         return train_metric, test_metric
+
+
+class MultiKernelClassifierMetric(KernelClassifierMetric):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        kernel: DescriptorKernel,
+        variant: Literal["auroc", "informedness"] = "informedness",
+    ):
+        self._kernel = kernel
+        self._reference_descriptions = self._kernel.featurize(reference_graphs)
+        if not self._kernel.num_kernels > 1:
+            raise ValueError(
+                "Must provide several kernels, i.e. a kernel with multiple parameters"
+            )
+        super().__init__(reference_graphs, kernel, variant)
+
+    def compute(
+        self, generated_graphs: Collection[nx.Graph]
+    ) -> Tuple[float, float]:
+        train_metric, test_metric = super().compute(generated_graphs)
+        best_kernel_idx = np.argmax(train_metric)
+        return train_metric[best_kernel_idx], test_metric[best_kernel_idx]
 
 
 def _classifier_cross_validation(
@@ -382,24 +405,35 @@ class LogisticRegressionClassifierMetric:
         return train_metric, test_metric
 
 
-class MultiKernelClassifierMetric(KernelClassifierMetric):
+class AggregateLogisticRegressionClassifierMetric:
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        descriptors: Dict[str, Callable[[List[nx.Graph]], np.ndarray]],
         variant: Literal["auroc", "informedness"] = "informedness",
     ):
-        self._kernel = kernel
-        self._reference_descriptions = self._kernel.featurize(reference_graphs)
-        if not self._kernel.num_kernels > 1:
-            raise ValueError(
-                "Must provide several kernels, i.e. a kernel with multiple parameters"
+        self._sub_metrics = {
+            name: LogisticRegressionClassifierMetric(
+                reference_graphs, descriptors[name], variant
             )
-        super().__init__(reference_graphs, kernel, variant)
+            for name in descriptors
+        }
 
-    def compute(
-        self, generated_graphs: Collection[nx.Graph]
-    ) -> Tuple[float, float]:
-        train_metric, test_metric = super().compute(generated_graphs)
-        best_kernel_idx = np.argmax(train_metric)
-        return train_metric[best_kernel_idx], test_metric[best_kernel_idx]
+    def compute(self, generated_graphs: Collection[nx.Graph]) -> Dict:
+        all_metrics = {
+            name: metric.compute(generated_graphs)
+            for name, metric in self._sub_metrics.items()
+        }
+        # Select the descriptor with the optimal train metric
+        optimal_descriptor = max(
+            all_metrics.values(), key=lambda x: all_metrics[x][0]
+        )
+        aggregate_metric = all_metrics[optimal_descriptor][1]
+        result = {
+            "polyscore": aggregate_metric,
+            "polyscore_descriptor": optimal_descriptor,
+            "subscores": {
+                name: metric[1] for name, metric in all_metrics.items()
+            },
+        }
+        return result
