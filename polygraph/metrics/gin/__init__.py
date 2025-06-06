@@ -14,3 +14,4 @@ References:
 
 from polygraph.metrics.gin.frechet_distance import *  # noqa
 from polygraph.metrics.gin.mmd import *  # noqa
+from polygraph.metrics.gin.classifier_metrics import *  # noqa

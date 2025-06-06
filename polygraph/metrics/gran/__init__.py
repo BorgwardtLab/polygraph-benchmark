@@ -33,3 +33,5 @@ References:
 from polygraph.metrics.gran.gaussian_tv_mmd import *  # noqa
 from polygraph.metrics.gran.rbf_mmd import *  # noqa
 from polygraph.metrics.gran.linear_mmd import *  # noqa
+from polygraph.metrics.gran.classifier_metrics import *  # noqa
+from polygraph.metrics.gran.classifier_metrics import *  # noqa
