@@ -1,4 +1,14 @@
-from typing import Collection, Literal, Optional, Callable, List, Tuple, Dict
+from typing import (
+    Collection,
+    Literal,
+    Optional,
+    Callable,
+    List,
+    Tuple,
+    Dict,
+    Union,
+)
+from collections import Counter
 
 from sklearn.metrics import roc_auc_score, roc_curve
 from scipy.sparse import csr_array
@@ -8,6 +18,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from polygraph.utils.kernels import DescriptorKernel
+from polygraph.metrics.base.metric_interval import MetricInterval
 
 __all__ = [
     "KernelClassifierMetric",
@@ -293,6 +304,109 @@ def _classifier_cross_validation(
     return scores
 
 
+def _descriptions_to_lr_metric(
+    ref_descriptions: Union[np.ndarray, csr_array],
+    gen_descriptions: Union[np.ndarray, csr_array],
+    variant: Literal["auroc", "informedness"] = "informedness",
+    rng: Optional[np.random.Generator] = None,
+):
+    rng = np.random.default_rng(0) if rng is None else rng
+
+    if isinstance(ref_descriptions, csr_array):
+        # Convert to dense array
+        num_features = (
+            max(
+                ref_descriptions.indices.max(),
+                gen_descriptions.indices.max(),
+            )
+            + 1
+        )
+        gen_descriptions = csr_array(
+            (
+                gen_descriptions.data,
+                gen_descriptions.indices,
+                gen_descriptions.indptr,
+            ),
+            shape=(gen_descriptions.shape[0], num_features),
+        ).toarray()
+        ref_descriptions = csr_array(
+            (
+                ref_descriptions.data,
+                ref_descriptions.indices,
+                ref_descriptions.indptr,
+            ),
+            shape=(ref_descriptions.shape[0], num_features),
+        ).toarray()
+
+    ref_train_idx = rng.choice(
+        len(ref_descriptions),
+        size=len(ref_descriptions) // 2,
+        replace=False,
+    )
+    ref_test_idx = np.setdiff1d(np.arange(len(ref_descriptions)), ref_train_idx)
+    gen_train_idx = rng.choice(
+        len(gen_descriptions), size=len(gen_descriptions) // 2, replace=False
+    )
+    gen_test_idx = np.setdiff1d(np.arange(len(gen_descriptions)), gen_train_idx)
+
+    scaler = StandardScaler()
+    train_ref_descriptions = ref_descriptions[ref_train_idx]
+    train_gen_descriptions = gen_descriptions[gen_train_idx]
+    test_ref_descriptions = ref_descriptions[ref_test_idx]
+    test_gen_descriptions = gen_descriptions[gen_test_idx]
+    scaler.fit(
+        np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
+    )
+    test_ref_descriptions = scaler.transform(test_ref_descriptions)
+    test_gen_descriptions = scaler.transform(test_gen_descriptions)
+    train_ref_descriptions = scaler.transform(train_ref_descriptions)
+    train_gen_descriptions = scaler.transform(train_gen_descriptions)
+
+    regressor = LogisticRegression(penalty="l2", max_iter=1000)
+
+    # Use custom cross-validation function
+    scores = _classifier_cross_validation(
+        regressor,
+        train_ref_descriptions,
+        train_gen_descriptions,
+        variant,
+        n_folds=5,
+    )
+
+    train_metric = np.mean(scores)
+
+    # Refit on all training data
+    train_all_descriptions = np.concatenate(
+        [train_ref_descriptions, train_gen_descriptions], axis=0
+    )
+    train_labels = np.concatenate(
+        [
+            np.ones(len(train_ref_descriptions)),
+            np.zeros(len(train_gen_descriptions)),
+        ]
+    )
+    regressor.fit(train_all_descriptions, train_labels)
+
+    ref_test_pred = regressor.decision_function(test_ref_descriptions)
+    gen_test_pred = regressor.decision_function(test_gen_descriptions)
+
+    if variant == "auroc":
+        test_metric = _scores_to_auroc(ref_test_pred, gen_test_pred)
+    elif variant == "informedness":
+        ref_train_pred = regressor.decision_function(train_ref_descriptions)
+        gen_train_pred = regressor.decision_function(train_gen_descriptions)
+        _, threshold = _scores_to_informedness_and_threshold(
+            ref_train_pred, gen_train_pred
+        )
+        test_metric = _scores_and_threshold_to_informedness(
+            ref_test_pred, gen_test_pred, threshold
+        )
+    else:
+        raise ValueError(f"Invalid variant: {variant}")
+
+    return train_metric, test_metric
+
+
 class LogisticRegressionClassifierMetric:
     def __init__(
         self,
@@ -308,101 +422,52 @@ class LogisticRegressionClassifierMetric:
         self, generated_graphs: Collection[nx.Graph]
     ) -> Tuple[float, float]:
         descriptions = self._descriptor(generated_graphs)
+        return _descriptions_to_lr_metric(
+            self._reference_descriptions,
+            descriptions,
+            variant=self._variant,
+        )
+
+
+class _LogisticRegressionClassifierMetricSamples:
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        descriptor: Callable[[List[nx.Graph]], np.ndarray],
+        variant: Literal["auroc", "informedness"] = "informedness",
+    ):
+        self._descriptor = descriptor
+        self._reference_descriptions = self._descriptor(reference_graphs)
+        self._variant = variant
+
+    def compute(
+        self,
+        generated_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 100,
+    ) -> np.ndarray:
+        descriptions = self._descriptor(generated_graphs)
         rng = np.random.default_rng(0)
-        if isinstance(self._reference_descriptions, csr_array):
-            # Convert to dense array
-            num_features = (
-                max(
-                    self._reference_descriptions.indices.max(),
-                    descriptions.indices.max(),
+        samples = []
+        for _ in range(num_samples):
+            ref_idx = rng.choice(
+                self._reference_descriptions.shape[0],
+                size=subsample_size,
+                replace=False,
+            )
+            gen_idx = rng.choice(
+                descriptions.shape[0], size=subsample_size, replace=False
+            )
+            samples.append(
+                _descriptions_to_lr_metric(
+                    self._reference_descriptions[ref_idx],
+                    descriptions[gen_idx],
+                    variant=self._variant,
+                    rng=rng,
                 )
-                + 1
             )
-            descriptions = csr_array(
-                (descriptions.data, descriptions.indices, descriptions.indptr),
-                shape=(descriptions.shape[0], num_features),
-            ).toarray()
-            ref_descriptions = csr_array(
-                (
-                    self._reference_descriptions.data,
-                    self._reference_descriptions.indices,
-                    self._reference_descriptions.indptr,
-                ),
-                shape=(self._reference_descriptions.shape[0], num_features),
-            ).toarray()
-        else:
-            ref_descriptions = self._reference_descriptions
-
-        ref_train_idx = rng.choice(
-            len(ref_descriptions),
-            size=len(ref_descriptions) // 2,
-            replace=False,
-        )
-        ref_test_idx = np.setdiff1d(
-            np.arange(len(ref_descriptions)), ref_train_idx
-        )
-        gen_train_idx = rng.choice(
-            len(descriptions), size=len(descriptions) // 2, replace=False
-        )
-        gen_test_idx = np.setdiff1d(np.arange(len(descriptions)), gen_train_idx)
-
-        scaler = StandardScaler()
-        train_ref_descriptions = ref_descriptions[ref_train_idx]
-        train_gen_descriptions = descriptions[gen_train_idx]
-        test_ref_descriptions = ref_descriptions[ref_test_idx]
-        test_gen_descriptions = descriptions[gen_test_idx]
-        scaler.fit(
-            np.concatenate(
-                [train_ref_descriptions, train_gen_descriptions], axis=0
-            )
-        )
-        test_ref_descriptions = scaler.transform(test_ref_descriptions)
-        test_gen_descriptions = scaler.transform(test_gen_descriptions)
-        train_ref_descriptions = scaler.transform(train_ref_descriptions)
-        train_gen_descriptions = scaler.transform(train_gen_descriptions)
-
-        regressor = LogisticRegression(penalty="l2", max_iter=1000)
-
-        # Use custom cross-validation function
-        scores = _classifier_cross_validation(
-            regressor,
-            train_ref_descriptions,
-            train_gen_descriptions,
-            self._variant,
-            n_folds=5,
-        )
-
-        train_metric = np.mean(scores)
-
-        # Refit on all training data
-        train_all_descriptions = np.concatenate(
-            [train_ref_descriptions, train_gen_descriptions], axis=0
-        )
-        train_labels = np.concatenate(
-            [
-                np.ones(len(train_ref_descriptions)),
-                np.zeros(len(train_gen_descriptions)),
-            ]
-        )
-        regressor.fit(train_all_descriptions, train_labels)
-
-        ref_test_pred = regressor.decision_function(test_ref_descriptions)
-        gen_test_pred = regressor.decision_function(test_gen_descriptions)
-
-        if self._variant == "auroc":
-            test_metric = _scores_to_auroc(ref_test_pred, gen_test_pred)
-        elif self._variant == "informedness":
-            ref_train_pred = regressor.decision_function(train_ref_descriptions)
-            gen_train_pred = regressor.decision_function(train_gen_descriptions)
-            _, threshold = _scores_to_informedness_and_threshold(
-                ref_train_pred, gen_train_pred
-            )
-            test_metric = _scores_and_threshold_to_informedness(
-                ref_test_pred, gen_test_pred, threshold
-            )
-        else:
-            raise ValueError(f"Invalid variant: {self._variant}")
-        return train_metric, test_metric
+        samples = np.array(samples)
+        return samples
 
 
 class AggregateLogisticRegressionClassifierMetric:
@@ -434,6 +499,62 @@ class AggregateLogisticRegressionClassifierMetric:
             "polyscore_descriptor": optimal_descriptor,
             "subscores": {
                 name: metric[1] for name, metric in all_metrics.items()
+            },
+        }
+        return result
+
+
+class AggregateLogisticRegressionClassifierMetricInterval:
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        descriptors: Dict[str, Callable[[List[nx.Graph]], np.ndarray]],
+        variant: Literal["auroc", "informedness"] = "informedness",
+    ):
+        self._sub_metrics = {
+            name: _LogisticRegressionClassifierMetricSamples(
+                reference_graphs, descriptors[name], variant
+            )
+            for name in descriptors
+        }
+
+    def compute(
+        self,
+        generated_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 100,
+    ) -> Dict:
+        all_sub_samples = {
+            name: metric.compute(generated_graphs, subsample_size, num_samples)
+            for name, metric in self._sub_metrics.items()
+        }
+        all_sub_intervals = {
+            name: MetricInterval.from_samples(all_sub_samples[name][:, 1])
+            for name in self._sub_metrics.keys()
+        }
+
+        optimal_descriptors = [
+            max(
+                self._sub_metrics.keys(), key=lambda x: all_sub_samples[x][i, 0]
+            )
+            for i in range(num_samples)
+        ]
+        aggregate_samples = np.array(
+            [
+                all_sub_samples[descriptor][i, 1]
+                for i, descriptor in enumerate(optimal_descriptors)
+            ]
+        )
+        aggregate_interval = MetricInterval.from_samples(aggregate_samples)
+
+        descriptor_counts = Counter(optimal_descriptors)
+
+        result = {
+            "polyscore": aggregate_interval,
+            "subscores": all_sub_intervals,
+            "polyscore_descriptor": {
+                key: descriptor_counts[key] / num_samples
+                for key in self._sub_metrics.keys()
             },
         }
         return result
