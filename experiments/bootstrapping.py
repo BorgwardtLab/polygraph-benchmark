@@ -295,6 +295,37 @@ def return_mmd_results(
     }
 
 
+def get_dataset_class(dataset_type):
+    if dataset_type == "sbm":
+        return ProceduralSBMGraphDataset
+    elif dataset_type == "planar":
+        return ProceduralPlanarGraphDataset
+    elif dataset_type == "lobster":
+        return ProceduralLobsterGraphDataset
+
+
+def compute_reference_set(
+    datasets, dataset_type, generation_procedure, test_set_type, n_graphs
+):
+    if generation_procedure == "fixed":
+        if test_set_type == "test":
+            reference_dataset = list(
+                datasets[dataset_type][generation_procedure]["train"]
+            )
+        else:
+            reference_dataset = datasets[dataset_type][generation_procedure][
+                "test"
+            ]
+    else:
+        dataset_class = get_dataset_class(dataset_type)
+        reference_dataset = dataset_class(
+            split="train",
+            num_graphs=n_graphs * 10,
+            show_generation_progress=False,
+        ).to_nx()
+    return reference_dataset
+
+
 def compute_bootstrapping_experiment(parameters, datasets):
     try:
         (
@@ -318,14 +349,13 @@ def compute_bootstrapping_experiment(parameters, datasets):
                 mmd_results=None,
             )
 
-        if test_set_type == "test":
-            reference_dataset = list(
-                datasets[dataset_type][generation_procedure]["train"]
-            )
-        else:
-            reference_dataset = datasets[dataset_type][generation_procedure][
-                "test"
-            ]
+        reference_dataset = compute_reference_set(
+            datasets,
+            dataset_type,
+            generation_procedure,
+            test_set_type,
+            n_graphs,
+        )
 
         if test_set_type in datasets[dataset_type][generation_procedure].keys():
             test_set = datasets[dataset_type][generation_procedure][
@@ -420,7 +450,7 @@ def main():
         "digress_generated_fixed",
         "test",
     ]
-    N_JOBS = 100
+    N_JOBS = 2
 
     parameters = list(
         itertools.product(
