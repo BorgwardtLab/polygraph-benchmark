@@ -426,7 +426,7 @@ class AggregateLogisticRegressionClassifierMetric:
         }
         # Select the descriptor with the optimal train metric
         optimal_descriptor = max(
-            all_metrics.values(), key=lambda x: all_metrics[x][0]
+            all_metrics.keys(), key=lambda x: all_metrics[x][0]
         )
         aggregate_metric = all_metrics[optimal_descriptor][1]
         result = {
