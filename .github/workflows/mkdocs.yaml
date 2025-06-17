@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install the package in development mode first
+          # Install the package in development mode
           pip install -e .[dev]
 
       - name: Configure Git
@@ -99,11 +99,12 @@ jobs:
             }
 
   deploy-main:
-    if: false  # This will prevent the job from running
-    # Original condition: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -114,14 +115,31 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Install the package in development mode
-          pip install -e .
-          # Install documentation dependencies
-          pip install mkdocs mkdocs-material mkdocstrings mkdocstrings-python mkdocs-terminal
+          pip install -e .[dev]
 
-      - name: Deploy MkDocs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_FILE: mkdocs.yml
-          EXTRA_PACKAGES: build-base
-          REQUIREMENTS: requirements-docs.txt
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Build and deploy to main
+        run: |
+          # Build MkDocs to site directory
+          mkdocs build -d site
+
+          # Switch to gh-pages branch or create it if it doesn't exist
+          git fetch origin gh-pages || git checkout -b gh-pages
+          git checkout gh-pages || git checkout -b gh-pages
+
+          # Update main documentation while preserving previews
+          # First, remove everything except the preview directory
+          find . -maxdepth 1 ! -name 'preview' ! -name '.' ! -name '..' -exec rm -rf {} +
+          # Then copy the new site contents
+          cp -r site/* .
+
+          # Commit and push changes (only if there are changes)
+          if git status --porcelain | grep .; then
+            git add .
+            git commit -m "Deploy main documentation"
+            git push -f origin gh-pages
+          fi
