@@ -132,8 +132,8 @@ jobs:
           git checkout gh-pages || git checkout -b gh-pages
 
           # Update main documentation while preserving previews
-          # First, remove everything except the preview directory
-          find . -maxdepth 1 ! -name 'preview' ! -name '.' ! -name '..' -exec rm -rf {} +
+          # First, remove everything except the preview and site directories
+          find . -maxdepth 1 ! -name 'preview' ! -name 'site' ! -name '.' ! -name '..' -exec rm -rf {} +
           # Then copy the new site contents
           cp -r site/* .
 
