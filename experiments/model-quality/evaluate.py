@@ -58,7 +58,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.experiment == "denoising-iterations":
-        steps = [15, 30, 45, 60, 75]
+        steps = [15, 30, 45, 60, 75, 90]
     else:
         steps = [119, 209, 299, 419, 509, 1019, 1499, 2009, 2519, 2999, 3479]
 
