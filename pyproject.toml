@@ -29,6 +29,7 @@ dependencies = [
     "pandas",
     "orbit-count",
     "numba",
+    "scikit-learn",
 ]
 
 [project.optional-dependencies]
