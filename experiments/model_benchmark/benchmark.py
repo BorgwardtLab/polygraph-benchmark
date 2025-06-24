@@ -79,12 +79,35 @@ def _load_digress_graphs(dataset_name):
     return pickle.load(open(file_path, "rb"))
 
 
+def _load_autograph_graphs(dataset_name):
+    autograph_root = (
+        "/fs/pool/pool-hartout/Documents/Git/AutoGraph/generated_graphs/"
+    )
+    autograph_paths = {
+        "PLANAR": "planar_procedural.pkl",
+        # "LOBSTER": "logs/train/polygraph_lobster_procedural/llama2-s/0/runs/2025-06-22_19-19-32/generated_graphs.pkl",
+        # "SBM": "logs/train/polygraph_sbm_procedural/llama2-s/0/runs/2025-06-22_19-19-32/generated_graphs.pkl",
+    }
+
+    if dataset_name not in autograph_paths:
+        raise ValueError(f"Invalid dataset for AutoGraph: {dataset_name}")
+
+    file_path = autograph_root + autograph_paths[dataset_name]
+    graphs = pickle.load(open(file_path, "rb"))
+
+    graphs = [g.to_undirected() for g in graphs]
+
+    return graphs
+
+
 def get_generated_graphs(model_name, dataset_name, debug):
     """Get generated graphs for a specific model and dataset"""
     if model_name == "GRAN":
         generated_graphs = _load_gran_graphs(dataset_name)
     elif model_name == "DIGRESS":
         generated_graphs = _load_digress_graphs(dataset_name)
+    elif model_name == "AUTOGRAPH":
+        generated_graphs = _load_autograph_graphs(dataset_name)
     else:
         raise ValueError(f"Invalid model: {model_name}")
 
@@ -97,10 +120,7 @@ def get_generated_graphs(model_name, dataset_name, debug):
 def get_dataset(dataset_name, model_name=None, debug=False):
     """Get the dataset for a given dataset name"""
 
-    if model_name is not None:
-        generated_graphs = get_generated_graphs(model_name, dataset_name, debug)
-    else:
-        generated_graphs = []
+    generated_graphs = get_generated_graphs(model_name, dataset_name, debug)
 
     if dataset_name == "SBM":
         train_set = ProceduralSBMGraphDataset(
@@ -215,9 +235,19 @@ def get_metric(
 
 def compute_metrics_for_model(parameters, subsample_size, num_samples, debug):
     model_name, dataset_name, metric_name = parameters
-    train_set, test_set, model_generated_graphs = get_dataset(
-        dataset_name, model_name, debug
-    )
+    try:
+        train_set, test_set, model_generated_graphs = get_dataset(
+            dataset_name, model_name, debug
+        )
+    except Exception:
+        result = {
+            "model": model_name,
+            "dataset": dataset_name,
+            "metric": metric_name,
+            "error": "Error loading generated graphs",
+        }
+        return None
+
     metric = get_metric(
         metric_name, train_set, test_set, model_generated_graphs, dataset_name
     )
@@ -237,11 +267,75 @@ def compute_metrics_for_model(parameters, subsample_size, num_samples, debug):
     result["model"] = model_name
     result["dataset"] = dataset_name
     result["metric"] = metric_name
+    result["error"] = ""
     return result
+
+
+def normalize_result_keys(result_list):
+    """
+    Add missing keys to result dictionaries to ensure consistent structure.
+
+    Args:
+        result_list: List of dictionaries containing metric computation results
+
+    Returns:
+        List of dictionaries with consistent keys, missing keys filled with None
+    """
+    if not result_list:
+        return result_list
+
+    # Filter out None results (from errors)
+    valid_results = [r for r in result_list if r is not None]
+
+    if not valid_results:
+        return []
+
+    # Collect all unique keys from all dictionaries
+    all_keys = set()
+    for result_dict in valid_results:
+        all_keys.update(result_dict.keys())
+
+    # Add missing keys to each dictionary with appropriate default values
+    normalized_results = []
+    for result_dict in valid_results:
+        normalized_dict = result_dict.copy()
+
+        for key in all_keys:
+            if key not in normalized_dict:
+                # Set appropriate default values based on key type
+                if key == "error":
+                    normalized_dict[key] = ""
+                elif key in ["model", "dataset", "metric"]:
+                    normalized_dict[key] = "unknown"
+                else:
+                    # For numeric metric values, use None (will become NaN in pandas)
+                    normalized_dict[key] = None
+
+        normalized_results.append(normalized_dict)
+
+    return normalized_results
 
 
 @app.command()
 def main(
+    dataset_names: list[str] = typer.Option(
+        ["PLANAR", "LOBSTER", "SBM"],
+        "--dataset-names",
+        "-d",
+        help="Dataset names",
+    ),
+    model_names: list[str] = typer.Option(
+        ["GRAN", "DIGRESS", "AUTOGRAPH"],
+        "--model-names",
+        "-m",
+        help="Model names",
+    ),
+    metric_names: list[str] = typer.Option(
+        ["VUN", "MMD_DEGREE", "MMD_CLUSTERING", "MMD_ORBIT", "MMD_SPECTRE"],
+        "--metric-names",
+        "-t",
+        help="Metric names",
+    ),
     subsample_size: int = typer.Option(
         1024,
         "--subsample-size",
@@ -257,12 +351,12 @@ def main(
     n_jobs: int = typer.Option(
         20, "--n-jobs", "-j", help="Number of parallel jobs"
     ),
-    debug: bool = typer.Option(False, "--debug", "-d", help="Debug mode"),
+    debug: bool = typer.Option(False, "--debug", "-b", help="Debug mode"),
 ):
     parameters = list(
         itertools.product(
-            ["GRAN", "DIGRESS"],
-            ["PLANAR", "LOBSTER", "SBM"],
+            model_names,
+            dataset_names,
             ["VUN", "MMD_DEGREE", "MMD_CLUSTERING", "MMD_ORBIT", "MMD_SPECTRE"],
         )
     )
@@ -275,6 +369,7 @@ def main(
         debug=debug,
         show_progress=not debug,
     )
+    result = normalize_result_keys(result)
     result = pd.DataFrame(result)
     result.to_csv(
         "./experiments/model_benchmark/results/results.csv", index=False
