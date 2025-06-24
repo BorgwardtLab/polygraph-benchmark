@@ -11,6 +11,10 @@ from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
 
 
+def is_planar_graph(graph: nx.Graph) -> bool:
+    return nx.is_connected(graph) and nx.is_planar(graph)
+
+
 class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
     """Procedural version of [`PlanarGraphDataset`][polygraph.datasets.PlanarGraphDataset].
 
@@ -62,7 +66,7 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
     @staticmethod
     def is_valid(graph: nx.Graph) -> bool:
         """Check if a graph is valid (connected and planar)."""
-        return nx.is_connected(graph) and nx.is_planar(graph)
+        return is_planar_graph(graph)
 
     def _random_planar(self):
         import scipy
@@ -123,7 +127,7 @@ class PlanarGraphDataset(OnlineGraphDataset):
         Returns:
             bool: True if the graph is connected and planar, False otherwise.
         """
-        return nx.is_connected(graph) and nx.is_planar(graph)
+        return is_planar_graph(graph)
 
     def hash_for_split(self, split: str) -> str:
         return self._HASH_FOR_SPLIT[split]

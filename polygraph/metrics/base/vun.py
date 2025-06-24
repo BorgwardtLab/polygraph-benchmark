@@ -131,14 +131,14 @@ class VUN:
 
     def compute(
         self,
-        generated_samples: Iterable[nx.Graph],
+        generated_graphs: Iterable[nx.Graph],
         confidence_level: float = 0.95,
         as_scalar_value_dict: bool = False,
     ) -> Dict[str, BinomConfidenceInterval]:
         """Computes VUN metrics for a collection of generated graphs.
 
         Args:
-            generated_samples: Collection of graphs to evaluate
+            generated_graphs: Collection of graphs to evaluate
             confidence_level: Confidence level for binomial proportion intervals
 
         Returns:
@@ -149,16 +149,16 @@ class VUN:
         Raises:
             ValueError: If generated_samples is empty
         """
-        n_graphs = len(generated_samples)
+        n_graphs = len(generated_graphs)
 
         if n_graphs == 0:
             raise ValueError("Generated samples must not be empty")
 
-        novel = [graph not in self._train_set for graph in generated_samples]
+        novel = [graph not in self._train_set for graph in generated_graphs]
 
         unique = []
         generated_set = _GraphSet()
-        for graph in generated_samples:
+        for graph in generated_graphs:
             unique.append(graph not in generated_set)
             generated_set.add(graph)
 
@@ -171,7 +171,7 @@ class VUN:
         }
 
         if self._validity_fn is not None:
-            valid = [self._validity_fn(graph) for graph in generated_samples]
+            valid = [self._validity_fn(graph) for graph in generated_graphs]
             unique_novel_valid = [
                 un and v for un, v in zip(unique_novel, valid)
             ]

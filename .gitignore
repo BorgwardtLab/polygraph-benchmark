@@ -1,9 +1,11 @@
 polygraph/orca
 logs/
 data/
-experiments/figures/*.pdf
-experiments/results/*.csv
-experiments/tables/*.tex
+experiments/*/*.pdf
+experiments/*/figures/*.pdf
+experiments/*/figures/*.png
+experiments/*/results/*.csv
+experiments/*/tables/*.tex
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

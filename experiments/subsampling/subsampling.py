@@ -1,8 +1,8 @@
 import itertools
 import os
 import pickle
-from pathlib import Path
 import random
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -499,7 +499,8 @@ def main(
         False, help="Enable debug mode for faster testing"
     ),
     output_file: str = typer.Option(
-        "./experiments/results/subsampling.csv", help="Output CSV file path"
+        "./experiments/subsampling/results/subsampling.csv",
+        help="Output CSV file path",
     ),
 ):
     datasets = generate_datasets(

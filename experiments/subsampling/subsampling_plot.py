@@ -6,8 +6,6 @@ import pandas as pd
 import seaborn as sns
 from loguru import logger
 from pyprojroot import here
-
-# Import tueplots components properly
 from tueplots import axes, bundles
 
 from polygraph.datasets import (
@@ -26,7 +24,7 @@ def load_global_rcparams() -> dict:
 def setup_plotting_parameters(
     venue: str = "icml2022",
     use_global_rcparams: bool = True,
-    font_source: str = "tueplots",  # "tueplots", "rcparams", or "hybrid"
+    font_source: str = "tueplots",
     resolution: int = 600,
     size: Optional[Tuple[float, float]] = None,
 ) -> None:
@@ -40,7 +38,6 @@ def setup_plotting_parameters(
         size: Custom figure size override
     """
 
-    # Start with tueplots bundle for the venue
     if venue == "icml2022":
         rcparams = bundles.icml2022()
     elif venue == "neurips2023":
@@ -48,15 +45,12 @@ def setup_plotting_parameters(
     elif venue == "iclr2024":
         rcparams = bundles.iclr2024()
     else:
-        # Default to ICML 2022 if venue not recognized
         rcparams = bundles.icml2022()
 
-    # Handle font settings based on source preference
     if use_global_rcparams:
         global_rcparams = load_global_rcparams()
 
         if font_source == "tueplots":
-            # Keep tueplots font settings, merge non-font settings from global
             font_keys = {
                 "font.family",
                 "font.serif",
@@ -77,7 +71,6 @@ def setup_plotting_parameters(
             rcparams.update(non_font_params)
 
         elif font_source == "rcparams":
-            # Use global rcparams fonts, merge non-font settings from tueplots
             font_keys = {
                 "font.family",
                 "font.serif",
@@ -93,12 +86,9 @@ def setup_plotting_parameters(
                 "mathtext.tt",
             }
 
-            # First update with all global params
             rcparams.update(global_rcparams)
 
-            # Fix font consistency if using rcparams fonts
             if rcparams.get("font.family") == "DejaVu Sans":
-                # Ensure consistent sans-serif setup
                 rcparams.update(
                     {
                         "font.family": "sans-serif",
@@ -113,15 +103,12 @@ def setup_plotting_parameters(
                 )
 
         elif font_source == "hybrid":
-            # Merge all settings, with some intelligent font coordination
             rcparams.update(global_rcparams)
 
-            # If there's a font family conflict, prefer serif consistency
             if (
                 rcparams.get("font.family") in ["DejaVu Sans"]
                 and "font.serif" in rcparams
             ):
-                # Convert to consistent serif setup
                 rcparams.update(
                     {
                         "font.family": "serif",
@@ -137,17 +124,13 @@ def setup_plotting_parameters(
                     }
                 )
 
-    # Override with custom size if provided
     if size is not None:
         rcparams["figure.figsize"] = size
 
-    # Set DPI
     rcparams["savefig.dpi"] = resolution
 
-    # Apply all settings
     plt.rcParams.update(rcparams)
 
-    # Log the applied font settings for debugging
     logger.info(
         f"Applied font settings - Family: {rcparams.get('font.family')}, "
         f"UseTeX: {rcparams.get('text.usetex')}, "
@@ -322,19 +305,13 @@ def format_variant(variant: str) -> str:
 
 
 def plot_individual_tests(df):
-    # Use tueplots context for consistent styling
     with plt.rc_context(axes.lines()):
         plt.tight_layout()
 
-        # Use seaborn colorblind palette for accessibility
         colors = sns.color_palette("colorblind", n_colors=2)
 
         main_test_color = colors[0]
         main_generated_color = colors[1]
-
-        # Create fills using the same colors with transparency
-        # pastel_test_color = main_test_color
-        # pastel_generated_color = main_generated_color
 
         for split in ["procedural"]:
             for descriptor in df.descriptor.unique():
@@ -362,13 +339,13 @@ def plot_individual_tests(df):
                                 x="n_graphs",
                                 y="mmd_results_mean",
                                 label="MMD Training vs. Test Set",
-                                color=main_test_color,  # Use main test color for the line
+                                color=main_test_color,
                             )
                             ax.fill_between(
                                 df_test.n_graphs,
                                 df_test.mmd_results_low,
                                 df_test.mmd_results_high,
-                                alpha=0.3,  # Use transparency instead of separate pastel colors
+                                alpha=0.3,
                                 color=main_test_color,
                             )
 
@@ -394,13 +371,13 @@ def plot_individual_tests(df):
                                 x="n_graphs",
                                 y="mmd_results_mean",
                                 label=f"MMD Test vs. {format_generated_set_name(generated_set_type, n_fixed_train[0])}",
-                                color=main_generated_color,  # Use main generated color for the line
+                                color=main_generated_color,
                             )
                             ax.fill_between(
                                 df_generated.n_graphs,
                                 df_generated.mmd_results_low,
                                 df_generated.mmd_results_high,
-                                alpha=0.3,  # Use transparency instead of separate pastel colors
+                                alpha=0.3,
                                 color=main_generated_color,
                             )
 
@@ -441,7 +418,6 @@ def plot_individual_tests(df):
                             plt.xticks(current_tick_locs, current_tick_labels)
 
                             if n_val != n_test:
-                                # Define your new ticks and labels
                                 new_tick_values = [n_train, n_val, n_test]
                                 new_tick_custom_labels = [
                                     f"Train ({int(n_train)})",
@@ -457,17 +433,14 @@ def plot_individual_tests(df):
                             y_min, y_max = ax.get_ylim()
                             text_offset = (y_max - y_min) * 0.06
 
-                            # Calculate x-axis limits before drawing labels
                             min_x_lim = min([32, n_train, n_val, n_test])
                             if min_x_lim <= 32:
-                                # to make sure we can see the ticks
                                 min_x_lim = min_x_lim - min_x_lim * 0.1
                             max_x_lim = 2048
 
                             for tick_val, tick_label in zip(
                                 new_tick_values, new_tick_custom_labels
                             ):
-                                # Only display labels if they fall within the x-axis limits
                                 if min_x_lim <= tick_val <= max_x_lim:
                                     ax.axvline(
                                         x=tick_val,
@@ -504,12 +477,10 @@ def main():
     sns.set_style("white")
     sns.set_palette("colorblind")
 
-    # Use tueplots fonts for consistent scientific publication formatting
-    # Options: "tueplots", "rcparams", or "hybrid"
     setup_plotting_parameters(
         venue="icml2022",
         use_global_rcparams=True,
-        font_source="tueplots",  # This ensures consistent font usage
+        font_source="tueplots",
     )
 
     df = pd.read_csv(here() / "experiments" / "results" / "bootstrapping.csv")
