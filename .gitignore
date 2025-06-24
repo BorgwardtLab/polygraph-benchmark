@@ -3,9 +3,12 @@ logs/
 data/
 experiments/*/*.pdf
 experiments/*/figures/*.pdf
+experiments/*/figures/individual/*.pdf
 experiments/*/figures/*.png
 experiments/*/results/*.csv
 experiments/*/tables/*.tex
+experiments/model_benchmark/benchmark_results.tex
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

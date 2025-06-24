@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 from loguru import logger
@@ -30,10 +30,10 @@ MODEL_DISPLAY_NAMES: Dict[str, str] = {
 
 METRIC_DISPLAY_NAMES: Dict[str, str] = {
     "VUN": "VUN",
-    "MMD_DEGREE": "MMD Degree",
-    "MMD_CLUSTERING": "MMD Clustering",
-    "MMD_ORBIT": "MMD Orbit",
-    "MMD_SPECTRE": "MMD Spectre",
+    "MMD_DEGREE": "MMD Deg.",
+    "MMD_CLUSTERING": "MMD Clust.",
+    "MMD_ORBIT": "MMD Orb.",
+    "MMD_SPECTRE": "MMD Eig.",
 }
 
 
@@ -101,15 +101,28 @@ def format_number(n: float) -> str:
         return f"{n:.2e}"
 
 
+def get_best_and_second_best_models(
+    metric_means: pd.Series, higher_is_better: bool
+) -> Tuple[Optional[str], Optional[str]]:
+    """Sorts models by performance and returns the best and second-best."""
+    if metric_means.empty:
+        return None, None
+
+    sorted_models = metric_means.sort_values(ascending=not higher_is_better)
+    best_model = sorted_models.index[0] if len(sorted_models) > 0 else None
+    second_best_model = (
+        sorted_models.index[1] if len(sorted_models) > 1 else None
+    )
+    return best_model, second_best_model
+
+
 def get_best_models(
     metric_means: pd.Series, higher_is_better: bool
 ) -> Optional[str]:
     """Sorts models by performance and returns the best."""
-    if metric_means.empty:
-        return None
-
-    sorted_models = metric_means.sort_values(ascending=not higher_is_better)
-    best_model = sorted_models.index[0] if len(sorted_models) > 0 else None
+    best_model, _ = get_best_and_second_best_models(
+        metric_means, higher_is_better
+    )
     return best_model
 
 
@@ -119,6 +132,7 @@ def format_cell(
     high_val: float,
     model: str,
     best_model: Optional[str],
+    second_best_model: Optional[str] = None,
 ) -> str:
     """Formats a single cell for the LaTeX table."""
     if pd.isna(mean_val):
@@ -127,15 +141,17 @@ def format_cell(
     mean_str = format_number(mean_val)
 
     if pd.isna(low_val) or pd.isna(high_val):
-        cell_str = mean_str
+        # Use makecell with empty second line to align with CI values
+        cell_str = f"\\makecell{{{mean_str} \\\\ \\scriptsize{{ }}}}"
     else:
         low_str = format_number(low_val)
         high_str = format_number(high_val)
         cell_str = f"\\makecell{{{mean_str} \\\\ \\scriptsize{{({low_str}, {high_str})}}}}"
 
     if model == best_model:
-        cell_str = f"\\textbf{{{cell_str}}}"
-
+        cell_str = f"\\textcolor{{cbred}}{{{cell_str}}}"
+    elif model == second_best_model:
+        cell_str = f"\\textcolor{{cbblue}}{{{cell_str}}}"
     return cell_str
 
 
@@ -146,16 +162,28 @@ def generate_merged_latex_table(df: pd.DataFrame) -> str:
 
     metrics_available = [m for m in METRIC_ORDER if m in df["metric"].unique()]
     metric_display_names = [
-        get_display_name(m, METRIC_DISPLAY_NAMES) for m in metrics_available
+        f"\\textbf{{{get_display_name(m, METRIC_DISPLAY_NAMES)}}}"
+        for m in metrics_available
     ]
     header_line = (
-        " & ".join(["Dataset", "Model"] + metric_display_names) + " \\\\"
+        " & ".join(
+            ["\\textbf{Dataset}", "\\textbf{Model}"] + metric_display_names
+        )
+        + " \\\\"
     )
 
     table_lines = []
     table_lines.append("\\begin{table*}")
+    table_lines.append("\\centering")
+    table_lines.append(
+        "\\setlength{\\tabcolsep}{4pt}  % Reduce horizontal spacing between columns"
+    )
+    table_lines.append(
+        "\\renewcommand{\\arraystretch}{0.9}  % Reduce vertical spacing between rows"
+    )
     table_lines.append("\\caption{Benchmark results across all datasets.}")
     table_lines.append("\\label{tab:merged_results}")
+    table_lines.append("\\scalebox{0.85}{")
     table_lines.append(
         "\\begin{tabular}{ll" + "c" * len(metrics_available) + "}"
     )
@@ -171,13 +199,17 @@ def generate_merged_latex_table(df: pd.DataFrame) -> str:
         )
 
         best_models_by_metric = {}
+        second_best_models_by_metric = {}
 
         for metric in metrics_available:
             if metric in pivot_df.columns.levels[1]:
                 is_higher_better = METRIC_HIGHER_IS_BETTER.get(metric, False)
                 metric_means = pivot_df.loc[:, ("mean", metric)].dropna()
-                best_model = get_best_models(metric_means, is_higher_better)
+                best_model, second_best_model = get_best_and_second_best_models(
+                    metric_means, is_higher_better
+                )
                 best_models_by_metric[metric] = best_model
+                second_best_models_by_metric[metric] = second_best_model
 
         models = sorted(pivot_df.index)
 
@@ -207,6 +239,7 @@ def generate_merged_latex_table(df: pd.DataFrame) -> str:
                         high_val,
                         model,
                         best_models_by_metric.get(metric),
+                        second_best_models_by_metric.get(metric),
                     )
                     cells.append(formatted_cell)
                 else:
@@ -219,6 +252,7 @@ def generate_merged_latex_table(df: pd.DataFrame) -> str:
 
     table_lines.append("\\bottomrule")
     table_lines.append("\\end{tabular}")
+    table_lines.append("}")
     table_lines.append("\\end{table*}")
 
     return "\n".join(table_lines)
@@ -237,12 +271,16 @@ def generate_latex_table_for_dataset(
     )
 
     best_models_by_metric = {}
+    second_best_models_by_metric = {}
 
     for metric in pivot_df.columns.levels[1]:
         is_higher_better = METRIC_HIGHER_IS_BETTER.get(metric, False)
         metric_means = pivot_df.loc[:, ("mean", metric)].dropna()
-        best_model = get_best_models(metric_means, is_higher_better)
+        best_model, second_best_model = get_best_and_second_best_models(
+            metric_means, is_higher_better
+        )
         best_models_by_metric[metric] = best_model
+        second_best_models_by_metric[metric] = second_best_model
 
     for model in pivot_df.index:
         for metric in formatted_df.columns:
@@ -256,6 +294,7 @@ def generate_latex_table_for_dataset(
                 high_val,
                 model,
                 best_models_by_metric[metric],
+                second_best_models_by_metric[metric],
             )
 
     # Reindex by METRIC_ORDER on columns instead of rows
@@ -263,9 +302,9 @@ def generate_latex_table_for_dataset(
         axis=1, how="all"
     )
 
-    # Apply display names to column headers
+    # Apply display names to column headers (with bold)
     display_columns = {
-        col: get_display_name(col, METRIC_DISPLAY_NAMES)
+        col: f"\\textbf{{{get_display_name(col, METRIC_DISPLAY_NAMES)}}}"
         for col in formatted_df.columns
     }
     formatted_df = formatted_df.rename(columns=display_columns)
@@ -297,6 +336,12 @@ def generate_complete_latex_document(
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{graphicx}
+
+% Define colorblind-friendly colors (Okabe & Ito palette)
+\definecolor{cbred}{RGB}{213,94,0}
+\definecolor{cbblue}{RGB}{0,114,178}
 
 \begin{document}
 """

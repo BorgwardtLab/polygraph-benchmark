@@ -243,7 +243,7 @@ def compute_metrics_for_model(parameters, subsample_size, num_samples, debug):
 @app.command()
 def main(
     subsample_size: int = typer.Option(
-        512,
+        1024,
         "--subsample-size",
         "-s",
         help="Subsample size for MMD calculations",
@@ -262,7 +262,7 @@ def main(
     parameters = list(
         itertools.product(
             ["GRAN", "DIGRESS"],
-            ["PLANAR", "LOBSTER"],
+            ["PLANAR", "LOBSTER", "SBM"],
             ["VUN", "MMD_DEGREE", "MMD_CLUSTERING", "MMD_ORBIT", "MMD_SPECTRE"],
         )
     )
