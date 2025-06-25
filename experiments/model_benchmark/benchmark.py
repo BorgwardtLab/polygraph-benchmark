@@ -21,6 +21,10 @@ from polygraph.datasets.planar import (
     ProceduralPlanarGraphDataset,
     is_planar_graph,
 )
+from polygraph.datasets.point_clouds import PointCloudGraphDataset
+from polygraph.datasets.proteins import (
+    DobsonDoigGraphDataset,
+)
 from polygraph.datasets.sbm import ProceduralSBMGraphDataset, is_sbm_graph
 from polygraph.metrics.base import VUN
 from polygraph.metrics.base.mmd import MaxDescriptorMMD2Interval
@@ -70,6 +74,7 @@ def _load_digress_graphs(dataset_name):
         "SBM": "sbm-procedural/epoch_1499.nx.pkl",
         "PLANAR": "planar-procedural/epoch_3479.nx.pkl",
         "LOBSTER": "lobster-procedural/epoch_989.nx.pkl",
+        "PROTEINS": "dobson-doig/epoch_4499.nx.pkl",
     }
 
     if dataset_name not in digress_paths:
@@ -85,6 +90,8 @@ def _load_autograph_graphs(dataset_name):
     )
     autograph_paths = {
         "PLANAR": "planar_procedural.pkl",
+        "POINTCLOUD": "pointcloud.pkl",
+        "PROTEINS": "proteins.pkl",
         # "LOBSTER": "logs/train/polygraph_lobster_procedural/llama2-s/0/runs/2025-06-22_19-19-32/generated_graphs.pkl",
         # "SBM": "logs/train/polygraph_sbm_procedural/llama2-s/0/runs/2025-06-22_19-19-32/generated_graphs.pkl",
     }
@@ -161,6 +168,23 @@ def get_dataset(dataset_name, model_name=None, debug=False):
         ).to_nx()
         return train_set, test_set, generated_graphs
 
+    elif dataset_name == "PROTEINS":
+        train_set = DobsonDoigGraphDataset(
+            split="train",
+        ).to_nx()
+        test_set = DobsonDoigGraphDataset(
+            split="test",
+        ).to_nx()
+        return train_set, test_set, generated_graphs
+
+    elif dataset_name == "POINTCLOUD":
+        train_set = PointCloudGraphDataset(
+            split="train",
+        ).to_nx()
+        test_set = PointCloudGraphDataset(
+            split="test",
+        ).to_nx()
+        return train_set, test_set, generated_graphs
     else:
         raise ValueError(f"Invalid dataset: {dataset_name}")
 
@@ -319,7 +343,7 @@ def normalize_result_keys(result_list):
 @app.command()
 def main(
     dataset_names: list[str] = typer.Option(
-        ["PLANAR", "LOBSTER", "SBM"],
+        ["PLANAR", "LOBSTER", "SBM", "PROTEINS", "POINTCLOUD"],
         "--dataset-names",
         "-d",
         help="Dataset names",
