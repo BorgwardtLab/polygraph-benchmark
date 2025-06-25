@@ -311,5 +311,6 @@ def main():
         plot_subsampling(df, model, variant)  # Combined plot
         plot_individual_subsampling(df, model, variant)  # Individual plots
 
+
 if __name__ == "__main__":
     main()
