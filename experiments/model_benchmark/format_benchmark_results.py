@@ -21,11 +21,14 @@ DATASET_DISPLAY_NAMES: Dict[str, str] = {
     "PLANAR": "Planar",
     "LOBSTER": "Lobster",
     "SBM": "SBM",
+    "PROTEINS": "Proteins",
+    "POINTCLOUD": "PointCloud",
 }
 
 MODEL_DISPLAY_NAMES: Dict[str, str] = {
     "DIGRESS": "\\textsc{DiGress}",
     "GRAN": "GRAN",
+    "AUTOGRAPH": "AutoGraph",
 }
 
 METRIC_DISPLAY_NAMES: Dict[str, str] = {
