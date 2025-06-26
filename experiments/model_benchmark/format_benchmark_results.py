@@ -17,6 +17,20 @@ METRIC_ORDER: List[str] = [
     "MMD_SPECTRE",
 ]
 
+DATASET_ORDER: List[str] = [
+    "PLANAR",
+    "LOBSTER",
+    "SBM",
+    "PROTEINS",
+    "POINTCLOUD",
+]
+
+MODEL_ORDER: List[str] = [
+    "AUTOGRAPH",
+    "DIGRESS",
+    "GRAN",
+]
+
 DATASET_DISPLAY_NAMES: Dict[str, str] = {
     "PLANAR": "Planar",
     "LOBSTER": "Lobster",
@@ -161,7 +175,11 @@ def format_cell(
 def generate_merged_latex_table(df: pd.DataFrame) -> str:
     """Generates a single LaTeX table with all datasets separated by rules."""
 
-    datasets = sorted(df["dataset"].unique())
+    # Use predefined order instead of alphabetical sorting
+    all_datasets = df["dataset"].unique()
+    datasets = [d for d in DATASET_ORDER if d in all_datasets]
+    # Add any datasets not in the predefined order at the end
+    datasets.extend([d for d in sorted(all_datasets) if d not in DATASET_ORDER])
 
     metrics_available = [m for m in METRIC_ORDER if m in df["metric"].unique()]
     metric_display_names = [
@@ -214,7 +232,11 @@ def generate_merged_latex_table(df: pd.DataFrame) -> str:
                 best_models_by_metric[metric] = best_model
                 second_best_models_by_metric[metric] = second_best_model
 
-        models = sorted(pivot_df.index)
+        # Use predefined order for models instead of alphabetical sorting
+        all_models = pivot_df.index
+        models = [m for m in MODEL_ORDER if m in all_models]
+        # Add any models not in the predefined order at the end
+        models.extend([m for m in sorted(all_models) if m not in MODEL_ORDER])
 
         for model_idx, model in enumerate(models):
             cells = []
@@ -284,6 +306,16 @@ def generate_latex_table_for_dataset(
         )
         best_models_by_metric[metric] = best_model
         second_best_models_by_metric[metric] = second_best_model
+
+    # Use predefined model order
+    all_models = pivot_df.index
+    ordered_models = [m for m in MODEL_ORDER if m in all_models]
+    ordered_models.extend(
+        [m for m in sorted(all_models) if m not in MODEL_ORDER]
+    )
+
+    # Reindex the pivot_df to use the specified order
+    pivot_df = pivot_df.reindex(ordered_models)
 
     for model in pivot_df.index:
         for metric in formatted_df.columns:
