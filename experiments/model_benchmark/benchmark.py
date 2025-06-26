@@ -234,7 +234,8 @@ def get_vun_metric(train_dataset, dataset_name):
     elif dataset_name == "LOBSTER":
         validity_fn = is_lobster_graph
     else:
-        raise ValueError(f"Invalid dataset: {dataset_name}")
+        # Return None for datasets that don't support VUN
+        return None
 
     return VUN(
         train_graphs=train_dataset,
@@ -257,11 +258,29 @@ def get_metric(
         raise ValueError(f"Invalid metric: {metric_name}")
 
 
+def get_dataset_subsample_size(
+    dataset_name, default_subsample_size, train, test, generated
+):
+    """Get dataset-specific subsample size
+    If the dataset is too large, we subsample the dataset to a smaller size that is 50% of the dataset size.
+    """
+    min_subset_size = min(len(train), len(test), len(generated))
+    return min(int(min_subset_size * 0.5), int(default_subsample_size * 0.5))
+
+
 def compute_metrics_for_model(parameters, subsample_size, num_samples, debug):
     model_name, dataset_name, metric_name = parameters
+    actual_subsample_size = ""
     try:
         train_set, test_set, model_generated_graphs = get_dataset(
             dataset_name, model_name, debug
+        )
+        actual_subsample_size = get_dataset_subsample_size(
+            dataset_name,
+            subsample_size,
+            train_set,
+            test_set,
+            model_generated_graphs,
         )
     except Exception:
         result = {
@@ -269,29 +288,54 @@ def compute_metrics_for_model(parameters, subsample_size, num_samples, debug):
             "dataset": dataset_name,
             "metric": metric_name,
             "error": "Error loading generated graphs",
+            "subsample_size": actual_subsample_size,
         }
-        return None
+        return result
 
     metric = get_metric(
         metric_name, train_set, test_set, model_generated_graphs, dataset_name
     )
 
-    if "MMD" in metric_name:
-        result = metric.compute(
-            generated_graphs=model_generated_graphs,
-            subsample_size=subsample_size,
-            num_samples=num_samples,
-            as_scalar_value_dict=True,
-        )
-    else:
-        result = metric.compute(
-            generated_graphs=model_generated_graphs,
-            as_scalar_value_dict=True,
-        )
+    # Handle case where metric is not available for this dataset
+    if metric is None:
+        result = {
+            "model": model_name,
+            "dataset": dataset_name,
+            "metric": metric_name,
+            "error": f"Metric {metric_name} not available for dataset {dataset_name}",
+            "subsample_size": actual_subsample_size,
+        }
+        return result
+
+    try:
+        if "MMD" in metric_name:
+            result, samples = metric.compute(
+                generated_graphs=model_generated_graphs,
+                subsample_size=actual_subsample_size,
+                num_samples=num_samples,
+                as_scalar_value_dict=True,
+                return_samples=True,
+            )
+            result["samples"] = samples
+        else:
+            result = metric.compute(
+                generated_graphs=model_generated_graphs,
+                as_scalar_value_dict=True,
+            )
+    except Exception as e:
+        result = {
+            "model": model_name,
+            "dataset": dataset_name,
+            "metric": metric_name,
+            "error": str(e),
+            "subsample_size": actual_subsample_size,
+        }
+        print(result)
     result["model"] = model_name
     result["dataset"] = dataset_name
     result["metric"] = metric_name
     result["error"] = ""
+    result["subsample_size"] = actual_subsample_size
     return result
 
 
@@ -308,31 +352,26 @@ def normalize_result_keys(result_list):
     if not result_list:
         return result_list
 
-    # Filter out None results (from errors)
     valid_results = [r for r in result_list if r is not None]
 
     if not valid_results:
         return []
 
-    # Collect all unique keys from all dictionaries
     all_keys = set()
     for result_dict in valid_results:
         all_keys.update(result_dict.keys())
 
-    # Add missing keys to each dictionary with appropriate default values
     normalized_results = []
     for result_dict in valid_results:
         normalized_dict = result_dict.copy()
 
         for key in all_keys:
             if key not in normalized_dict:
-                # Set appropriate default values based on key type
                 if key == "error":
                     normalized_dict[key] = ""
                 elif key in ["model", "dataset", "metric"]:
                     normalized_dict[key] = "unknown"
                 else:
-                    # For numeric metric values, use None (will become NaN in pandas)
                     normalized_dict[key] = None
 
         normalized_results.append(normalized_dict)
@@ -376,6 +415,9 @@ def main(
         20, "--n-jobs", "-j", help="Number of parallel jobs"
     ),
     debug: bool = typer.Option(False, "--debug", "-b", help="Debug mode"),
+    progress: bool = typer.Option(
+        True, "--progress", "-p", help="Show progress"
+    ),
 ):
     parameters = list(
         itertools.product(
@@ -391,7 +433,7 @@ def main(
         num_samples=num_samples,
         n_jobs=n_jobs,
         debug=debug,
-        show_progress=not debug,
+        show_progress=progress,
     )
     result = normalize_result_keys(result)
     result = pd.DataFrame(result)
