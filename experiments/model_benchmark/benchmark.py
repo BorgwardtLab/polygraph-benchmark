@@ -27,7 +27,19 @@ from polygraph.datasets.proteins import (
 )
 from polygraph.datasets.sbm import ProceduralSBMGraphDataset, is_sbm_graph
 from polygraph.metrics.base import VUN
-from polygraph.metrics.base.mmd import MaxDescriptorMMD2Interval
+from polygraph.metrics.base.mmd import (
+    MaxDescriptorMMD2Interval,
+)
+from polygraph.metrics.gran.gaussian_tv_mmd import (
+    GRANClusteringMMD2,
+    GRANClusteringMMD2Interval,
+    GRANDegreeMMD2,
+    GRANDegreeMMD2Interval,
+    GRANOrbitMMD2,
+    GRANOrbitMMD2Interval,
+    GRANSpectralMMD2,
+    GRANSpectralMMD2Interval,
+)
 from polygraph.utils.graph_descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
@@ -193,13 +205,13 @@ def get_mmd_metric(metric, test_dataset):
     """Get the MMD metric for a given dataset"""
     bws = np.array([0.1, 0.5, 1.0, 2.0, 5.0, 10.0])
 
-    if metric == "MMD_DEGREE":
+    if metric == "MMD_DEGREE_INTERVAL":
         return MaxDescriptorMMD2Interval(
             reference_graphs=test_dataset,
             kernel=RBFKernel(DegreeHistogram(max_degree=1000), bw=bws),
             variant="umve",
         )
-    elif metric == "MMD_CLUSTERING":
+    elif metric == "MMD_CLUSTERING_INTERVAL":
         return MaxDescriptorMMD2Interval(
             reference_graphs=test_dataset,
             kernel=RBFKernel(
@@ -207,18 +219,34 @@ def get_mmd_metric(metric, test_dataset):
             ),
             variant="umve",
         )
-    elif metric == "MMD_ORBIT":
+    elif metric == "MMD_ORBIT_INTERVAL":
         return MaxDescriptorMMD2Interval(
             reference_graphs=test_dataset,
             kernel=RBFKernel(OrbitCounts(graphlet_size=4), bw=bws),
             variant="umve",
         )
-    elif metric == "MMD_SPECTRE":
+    elif metric == "MMD_SPECTRE_INTERVAL":
         return MaxDescriptorMMD2Interval(
             reference_graphs=test_dataset,
             kernel=RBFKernel(EigenvalueHistogram(sparse=True), bw=bws),
             variant="umve",
         )
+    elif metric == "MMD_ORBIT_GRAN":
+        return GRANOrbitMMD2(reference_graphs=test_dataset)
+    elif metric == "MMD_ORBIT_GRAN_INTERVAL":
+        return GRANOrbitMMD2Interval(reference_graphs=test_dataset)
+    elif metric == "MMD_CLUSTERING_GRAN":
+        return GRANClusteringMMD2(reference_graphs=test_dataset)
+    elif metric == "MMD_CLUSTERING_GRAN_INTERVAL":
+        return GRANClusteringMMD2Interval(reference_graphs=test_dataset)
+    elif metric == "MMD_SPECTRE_GRAN":
+        return GRANSpectralMMD2(reference_graphs=test_dataset)
+    elif metric == "MMD_SPECTRE_GRAN_INTERVAL":
+        return GRANSpectralMMD2Interval(reference_graphs=test_dataset)
+    elif metric == "MMD_DEGREE_GRAN":
+        return GRANDegreeMMD2(reference_graphs=test_dataset)
+    elif metric == "MMD_DEGREE_GRAN_INTERVAL":
+        return GRANDegreeMMD2Interval(reference_graphs=test_dataset)
     else:
         raise ValueError(
             f"Invalid metric: {metric} for dataset: {test_dataset}"
@@ -308,7 +336,7 @@ def compute_metrics_for_model(parameters, subsample_size, num_samples, debug):
         return result
 
     try:
-        if "MMD" in metric_name:
+        if "MMD" in metric_name and "INTERVAL" in metric_name:
             result, samples = metric.compute(
                 generated_graphs=model_generated_graphs,
                 subsample_size=actual_subsample_size,
@@ -394,7 +422,21 @@ def main(
         help="Model names",
     ),
     metric_names: list[str] = typer.Option(
-        ["VUN", "MMD_DEGREE", "MMD_CLUSTERING", "MMD_ORBIT", "MMD_SPECTRE"],
+        [
+            "VUN",
+            "MMD_DEGREE_INTERVAL",
+            "MMD_CLUSTERING_INTERVAL",
+            "MMD_ORBIT_INTERVAL",
+            "MMD_SPECTRE_INTERVAL",
+            "MMD_DEGREE_GRAN",
+            "MMD_CLUSTERING_GRAN",
+            "MMD_ORBIT_GRAN",
+            "MMD_SPECTRE_GRAN",
+            "MMD_DEGREE_GRAN_INTERVAL",
+            "MMD_CLUSTERING_GRAN_INTERVAL",
+            "MMD_ORBIT_GRAN_INTERVAL",
+            "MMD_SPECTRE_GRAN_INTERVAL",
+        ],
         "--metric-names",
         "-t",
         help="Metric names",
@@ -423,7 +465,7 @@ def main(
         itertools.product(
             model_names,
             dataset_names,
-            ["VUN", "MMD_DEGREE", "MMD_CLUSTERING", "MMD_ORBIT", "MMD_SPECTRE"],
+            metric_names,
         )
     )
     result = distribute_function(
