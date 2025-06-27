@@ -6,6 +6,9 @@ from polygraph.datasets.base import OnlineGraphDataset
 class PointCloudGraphDataset(OnlineGraphDataset):
     """Dataset of KNN-graphs of point clouds, proposed by Neumann et al. [1].
 
+    {{ plot_first_k_graphs("PointCloudGraphDataset", "train", 3, node_size=20) }}
+
+
     Dataset statistics:
 
     {{ summary_md_table("PointCloudGraphDataset", ["train", "val", "test"]) }}

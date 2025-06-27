@@ -8,6 +8,8 @@ class EgoGraphDataset(OnlineGraphDataset):
 
     The graphs are 3-hop ego networks with 50 to 399 nodes.
 
+    {{ plot_first_k_graphs("EgoGraphDataset", "train", 3) }}
+
     Dataset statistics:
 
     {{ summary_md_table("EgoGraphDataset", ["train", "val", "test"]) }}
@@ -48,6 +50,8 @@ class SmallEgoGraphDataset(OnlineGraphDataset):
     """Dataset of smaller ego networks extracted from Citeseer.
 
     The graphs of this dataset have at most 18 nodes.
+
+    {{ plot_first_k_graphs("SmallEgoGraphDataset", "train", 3) }}
 
     Dataset statistics:
 

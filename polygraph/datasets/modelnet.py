@@ -8,6 +8,8 @@ class ModelNet10GraphDataset(OnlineGraphDataset):
 
     The graphs are constructed by sampling a random number of points on the object's surface and computing a 4-NN graph.
 
+    {{ plot_first_k_graphs("ModelNet10GraphDataset", "train", 3, node_size=7) }}
+
     Dataset statistics:
 
     {{ summary_md_table("ModelNet10GraphDataset", ["train", "val", "test"]) }}

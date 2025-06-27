@@ -133,6 +133,8 @@ class LobsterGraphDataset(OnlineGraphDataset):
 
     A lobster graph is a tree which has a backbone path such that each node in the tree is at most two hops away from this backbone.
 
+    {{ plot_first_k_graphs("LobsterGraphDataset", "train", 3, node_size=50) }}
+
     Dataset statistics:
 
     {{ summary_md_table("LobsterGraphDataset", ["train", "val", "test"]) }}

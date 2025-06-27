@@ -9,6 +9,9 @@ class DobsonDoigGraphDataset(OnlineGraphDataset):
     This dataset was later adopted by You et al. [2] in the area of graph generation. The splits we provide are disjoint, unlike in [2].
     We use the splitting strategy proposed in [3].
 
+    {{ plot_first_k_graphs("DobsonDoigGraphDataset", "train", 3, node_size=25) }}
+
+
     Dataset statistics:
 
     {{ summary_md_table("DobsonDoigGraphDataset", ["train", "val", "test"]) }}

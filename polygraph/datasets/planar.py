@@ -91,6 +91,9 @@ class PlanarGraphDataset(OnlineGraphDataset):
 
     Each graph consists of 64 nodes and is connected and planar.
 
+    {{ plot_first_k_graphs("PlanarGraphDataset", "train", 3) }}
+
+
     Dataset statistics:
 
     {{ summary_md_table("PlanarGraphDataset", ["train", "val", "test"]) }}

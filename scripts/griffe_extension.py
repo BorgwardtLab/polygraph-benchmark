@@ -18,6 +18,7 @@ class JinjaDocstringExtension(griffe.Extension):
 
         # Add utility functions to the context
         self.context["summary_md_table"] = summary_md_table
+        self.context["plot_first_k_graphs"] = plot_first_k_graphs
 
         # Add any additional kwargs to the context
         self.context.update(kwargs)
@@ -104,3 +105,45 @@ def summary_md_table(ds_name: str, splits: Iterable[str], precision: int = 2):
     print(md_table)
 
     return md_table + "\n\n"
+
+
+def plot_first_k_graphs(
+    ds_name: str, split: str = "train", k: int = 4, node_size: int = 100
+):
+    """Plot the first k graphs from a dataset and return markdown image links.
+
+    Args:
+        ds_name: Name of the dataset class
+        split: Dataset split to use
+        k: Number of graphs to plot
+
+    Returns:
+        String with markdown image links
+    """
+    import matplotlib.pyplot as plt
+    import networkx as nx
+    from pathlib import Path
+
+    # Get dataset
+    ds = globals()[ds_name](split).to_nx()
+    k = min(k, len(ds))
+
+    # Create plots directory
+    Path("docs/images").mkdir(parents=True, exist_ok=True)
+
+    fig, axes = plt.subplots(1, k, figsize=(3.3 * k, 3.3))
+
+    # Plot each graph
+    for i in range(k):
+        graph_data = ds[i]
+
+        nx.draw(graph_data, ax=axes[i], node_size=node_size, with_labels=False)
+
+    plt.tight_layout()
+
+    # Save plot
+    filename = f"{ds_name}_{split}_first_{k}.png"
+    plt.savefig(f"docs/images/{filename}", dpi=150, bbox_inches="tight")
+    plt.close()
+
+    return f"![First {k} graphs](/images/{filename})\n\n"

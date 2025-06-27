@@ -320,6 +320,8 @@ class SBMGraphDataset(OnlineGraphDataset):
     - The intra-community edge probability is set at 0.3.
     - The inter-community edge probability is set at 0.005.
 
+    {{ plot_first_k_graphs("SBMGraphDataset", "train", 3, node_size=50) }}
+
     Dataset statistics:
 
     {{ summary_md_table("SBMGraphDataset", ["train", "val", "test"]) }}
