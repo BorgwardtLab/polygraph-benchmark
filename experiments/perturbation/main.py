@@ -3,6 +3,8 @@ import numpy as np
 import argparse
 import random
 import networkx as nx
+from itertools import product
+from functools import partial
 
 from polygraph.metrics.gran import (
     GRANOrbitMMD2,
@@ -21,15 +23,15 @@ from polygraph.metrics.gran import (
     RBFDegreeInformedness,
     RBFSpectralInformedness,
     RBFClusteringInformedness,
-    LRClusteringInformedness,
-    LROrbitInformedness,
-    LRDegreeInformedness,
-    LRSpectralInformedness,
+    ClassifierClusteringMetric,
+    ClassifierOrbitMetric,
+    ClassifierDegreeeMetric,
+    ClassifierSpectralMetric,
 )
 from polygraph.metrics.gin import (
     RBFGraphNeuralNetworkMMD2,
     RBFGraphNeuralNetworkInformedness,
-    LRGraphNeuralNetworkInformedness,
+    GraphNeuralNetworkClassifierMetric,
 )
 from polygraph.datasets import (
     ProceduralSBMGraphDataset,
@@ -46,6 +48,30 @@ from perturbations import (
     EdgeAdditionPerturbation,
 )
 
+import faulthandler
+import threadpoolctl
+import torch
+
+faulthandler.enable()
+print(threadpoolctl.threadpool_info())
+
+
+def run_evaluation(graphs, metrics_dict):
+    """A top-level, picklable function to run evaluations."""
+    metric_items = list(metrics_dict.items())
+    random.shuffle(metric_items)  # Try to ensure uniform resource usage
+    result = {}
+    for name, m in metric_items:
+        print(f"Computing {name}...")
+        result[name] = m.compute(graphs)
+        # Force garbage collection after each metric
+        import gc
+
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    return result
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -58,7 +84,24 @@ if __name__ == "__main__":
     )
     parser.add_argument("--dump-dir", type=str, default="")
     parser.add_argument("--max-noise-level", type=float, default=1.0)
+    parser.add_argument("--num-workers", type=int, default=2)
+    parser.add_argument(
+        "--classifiers", type=str, nargs="+", default=["tabpfn", "lr"]
+    )
+    parser.add_argument(
+        "--variants", type=str, nargs="+", default=["informedness", "jsd"]
+    )
+    parser.add_argument("--no-memoize", action="store_true")
     args = parser.parse_args()
+
+    output_path = os.path.join(
+        args.dump_dir,
+        f"perturbation_{args.dataset}_{args.perturbation_type}.csv",
+    )
+
+    if os.path.exists(output_path):
+        print(f"Output file {output_path} already exists. Exiting.")
+        exit(0)
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -115,7 +158,12 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Dataset {args.dataset} not supported")
 
-    metrics = {
+    reference_graphs = list(reference_graphs)
+    perturbed_graphs = list(perturbed_graphs)
+
+    metrics = {}
+
+    mmd_metrics = {
         "orbit_tv": GRANOrbitMMD2(reference_graphs),
         "degree_tv": GRANDegreeMMD2(reference_graphs),
         "spectral_tv": GRANSpectralMMD2(reference_graphs),
@@ -125,29 +173,77 @@ if __name__ == "__main__":
         "spectral_rbf": RBFSpectralMMD2(reference_graphs),
         "clustering_rbf": RBFClusteringMMD2(reference_graphs),
         "gin_rbf": RBFGraphNeuralNetworkMMD2(reference_graphs),
-        "gin_rbf_informedness": RBFGraphNeuralNetworkInformedness(
-            reference_graphs
-        ),
-        "gin_lr_informedness": LRGraphNeuralNetworkInformedness(
-            reference_graphs
-        ),
-        "orbit_rbf_informedness": RBFOrbitInformedness(reference_graphs),
-        "degree_rbf_informedness": RBFDegreeInformedness(reference_graphs),
-        "spectral_rbf_informedness": RBFSpectralInformedness(reference_graphs),
-        "clustering_rbf_informedness": RBFClusteringInformedness(
-            reference_graphs
-        ),
-        "orbit_lr_informedness": LROrbitInformedness(reference_graphs),
-        "degree_lr_informedness": LRDegreeInformedness(reference_graphs),
-        "spectral_lr_informedness": LRSpectralInformedness(reference_graphs),
-        "clustering_lr_informedness": LRClusteringInformedness(
-            reference_graphs
-        ),
     }
 
-    evaluator = lambda graphs: {
-        name: m.compute(graphs) for name, m in metrics.items()
+    if "informedness" in args.variants:
+        rkhs_informedness_metrics = {
+            "gin_rbf_informedness": RBFGraphNeuralNetworkInformedness(
+                reference_graphs
+            ),
+            "gin_lr_informedness": GraphNeuralNetworkClassifierMetric(
+                reference_graphs
+            ),
+            "orbit_rbf_informedness": RBFOrbitInformedness(reference_graphs),
+            "degree_rbf_informedness": RBFDegreeInformedness(reference_graphs),
+            "spectral_rbf_informedness": RBFSpectralInformedness(
+                reference_graphs
+            ),
+            "clustering_rbf_informedness": RBFClusteringInformedness(
+                reference_graphs
+            ),
+        }
+    else:
+        rkhs_informedness_metrics = {}
+
+    prob_classifier_metrics = {}
+
+    possible_classifiers = {"lr": "logistic", "tabpfn": "tabpfn"}
+    possible_variants = {"informedness": "informedness-adaptive", "jsd": "jsd"}
+
+    for classifier, metric_variant in product(args.classifiers, args.variants):
+        prob_classifier_metrics[f"orbit_{classifier}_{metric_variant}"] = (
+            ClassifierOrbitMetric(
+                reference_graphs,
+                variant=possible_variants[metric_variant],
+                classifier=possible_classifiers[classifier],
+            )
+        )
+        prob_classifier_metrics[f"degree_{classifier}_{metric_variant}"] = (
+            ClassifierDegreeeMetric(
+                reference_graphs,
+                variant=possible_variants[metric_variant],
+                classifier=possible_classifiers[classifier],
+            )
+        )
+        prob_classifier_metrics[f"spectral_{classifier}_{metric_variant}"] = (
+            ClassifierSpectralMetric(
+                reference_graphs,
+                variant=possible_variants[metric_variant],
+                classifier=possible_classifiers[classifier],
+            )
+        )
+        prob_classifier_metrics[f"clustering_{classifier}_{metric_variant}"] = (
+            ClassifierClusteringMetric(
+                reference_graphs,
+                variant=possible_variants[metric_variant],
+                classifier=possible_classifiers[classifier],
+            )
+        )
+        prob_classifier_metrics[f"gin_{classifier}_{metric_variant}"] = (
+            GraphNeuralNetworkClassifierMetric(
+                reference_graphs,
+                variant=possible_variants[metric_variant],
+                classifier=possible_classifiers[classifier],
+            )
+        )
+
+    metrics = {
+        **mmd_metrics,
+        **rkhs_informedness_metrics,
+        **prob_classifier_metrics,
     }
+
+    evaluator = partial(run_evaluation, metrics_dict=metrics)
 
     perturbations = {
         "edge_rewiring": EdgeRewiringPerturbation,
@@ -161,8 +257,11 @@ if __name__ == "__main__":
     )
 
     df = perturbation.evaluate(
-        np.linspace(0, args.max_noise_level, args.num_steps)
+        np.linspace(0, args.max_noise_level, args.num_steps),
+        num_workers=args.num_workers,
+        memoize=not args.no_memoize,
+        verbose=True,
     )
 
     fname = f"perturbation_{args.dataset}_{args.perturbation_type}.csv"
-    df.to_csv(os.path.join(args.dump_dir, fname), index=False)
+    df.to_csv(output_path, index=False)

@@ -19,9 +19,10 @@ import copy
 import warnings
 from collections import Counter
 from hashlib import blake2b
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Callable, Iterable, List, Optional, Tuple, Union, Literal
 
 import networkx as nx
+import pygsp as pg
 import numpy as np
 import orbit_count
 import torch
@@ -175,8 +176,11 @@ class OrbitCounts:
         Self-loops are automatically removed from input graphs.
     """
 
-    def __init__(self, graphlet_size: int = 4):
+    def __init__(
+        self, graphlet_size: int = 4, mode: Literal["node", "edge"] = "node"
+    ):
         self._graphlet_size = graphlet_size
+        self._mode = mode
 
     def __call__(self, graphs: Iterable[nx.Graph]):
         # Check if any graph has a self-loop
@@ -189,9 +193,14 @@ class OrbitCounts:
             for g, loops in zip(graphs, self_loops):
                 g.remove_edges_from(loops)
 
-        counts = orbit_count.batched_node_orbit_counts(
-            graphs, graphlet_size=self._graphlet_size
-        )
+        if self._mode == "node":
+            counts = orbit_count.batched_node_orbit_counts(
+                graphs, graphlet_size=self._graphlet_size
+            )
+        elif self._mode == "edge":
+            counts = orbit_count.batched_edge_orbit_counts(
+                graphs, graphlet_size=self._graphlet_size
+            )
         counts = [count.mean(axis=0) for count in counts]
         return np.stack(counts, axis=0)
 
@@ -519,3 +528,64 @@ class WeisfeilerLehmanDescriptor:
             ),
             shape=(n_graphs, 2**31),
         )
+
+
+class WaveletDescriptor:
+    def __init__(self, n_filters=12, bound=1.4):
+        class DMG(object):
+            """Dummy Normalized Graph"""
+
+            lmax = 2
+
+        self.filters = pg.filters.Abspline(DMG, n_filters)
+        self.bound = np.max(self.filters.evaluate(np.arange(0, 2, 0.01)))
+
+    def __call__(self, graphs: Iterable[nx.Graph]) -> csr_array:
+        results = []
+        for graph in graphs:
+            eigvals, eigvecs = np.linalg.eigh(
+                nx.normalized_laplacian_matrix(graph).todense()
+            )
+            results.append(
+                self.get_spectral_filter_worker(
+                    eigvecs, eigvals, self.filters, self.bound
+                )
+            )
+        return np.array(results)
+
+    @staticmethod
+    def get_spectral_filter_worker(eigvec, eigval, filters, bound=1.4):
+        ges = filters.evaluate(eigval)
+        linop = []
+        for ge in ges:
+            linop.append(eigvec @ np.diag(ge) @ eigvec.T)
+        linop = np.array(linop)
+        norm_filt = np.sum(linop**2, axis=2)
+        hist_range = [0, bound]
+        hist = np.array(
+            [np.histogram(x, range=hist_range, bins=100)[0] for x in norm_filt]
+        )  # NOTE: change number of bins
+        return hist.flatten()
+
+
+class RandomWalkDescriptor:
+    def __init__(self, length: int = 16):
+        self.length = length
+
+    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
+        result_list = []
+        for graph in graphs:
+            pe_list = []
+            sparse_adj = nx.to_scipy_sparse_array(graph)
+            out = sparse_adj
+
+            loop_index = np.arange(sparse_adj.shape[0])
+
+            for _ in range(self.length):
+                out = out @ sparse_adj
+                pe_list.append(out[loop_index, loop_index])
+
+            pe_list = np.stack(pe_list, axis=1)
+            result_list.append(pe_list.mean(axis=0))
+
+        return np.stack(result_list, axis=0)

@@ -1,3 +1,5 @@
+import graph_tool as _  # noqa: F401
+
 import pickle as pkl
 import pandas as pd
 import os
@@ -12,7 +14,7 @@ from polygraph.datasets import (
     ProceduralSBMGraphDataset,
 )
 from polygraph.metrics.base import (
-    AggregateLogisticRegressionClassifierMetric,
+    AggregateClassifierMetric,
 )
 from polygraph.utils.graph_descriptors import (
     OrbitCounts,
@@ -65,23 +67,28 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.experiment == "dobson-doig":
-        reference = DobsonDoigGraphDataset(
-            split="val" if not args.test else "test"
-        ).to_nx()
+        ds = DobsonDoigGraphDataset(split="val" if not args.test else "test")
     elif args.experiment == "lobster-procedural":
-        reference = ProceduralLobsterGraphDataset(
-            split="val" if not args.test else "test", num_graphs=1024
-        ).to_nx()
+        ds = ProceduralLobsterGraphDataset(
+            split="val" if not args.test else "test", num_graphs=2048
+        )
     elif args.experiment == "planar-procedural":
-        reference = ProceduralPlanarGraphDataset(
+        ds = ProceduralPlanarGraphDataset(
             split="val" if not args.test else "test", num_graphs=1024
-        ).to_nx()
+        )
     elif args.experiment == "sbm-procedural":
-        reference = ProceduralSBMGraphDataset(
-            split="val" if not args.test else "test", num_graphs=1024
-        ).to_nx()
+        ds = ProceduralSBMGraphDataset(
+            split="val" if not args.test else "test", num_graphs=2048
+        )
     else:
         raise ValueError(f"Experiment {args.experiment} not found")
+
+    if args.experiment not in ["dobson-doig", "sbm-procedural"]:
+        validity_fn = ds.is_valid
+    else:
+        validity_fn = lambda x: True
+
+    reference = ds.to_nx()
 
     descriptors = {
         "orbit_pgs": OrbitCounts(),
@@ -89,11 +96,11 @@ if __name__ == "__main__":
         "spectral_pgs": EigenvalueHistogram(),
         "clustering_pgs": ClusteringHistogram(100),
         "gin_pgs": RandomGIN(seed=42),
+        "orbit5_pgs": OrbitCounts(5),
     }
-    metric = AggregateLogisticRegressionClassifierMetric(
-        reference, descriptors, "informedness"
-    )
-    mmd = AggregateMMD(reference)
+    metric = AggregateClassifierMetric(reference, descriptors, "jsd", "tabpfn")
+
+    # mmd = AggregateMMD(reference)
 
     results = {
         "orbit_pgs": [],
@@ -101,38 +108,50 @@ if __name__ == "__main__":
         "spectral_pgs": [],
         "clustering_pgs": [],
         "gin_pgs": [],
+        "orbit5_pgs": [],
         "pgs": [],
         "epoch": [],
-        "orbit_mmd": [],
-        "degree_mmd": [],
-        "spectral_mmd": [],
-        "clustering_mmd": [],
-        "gin_mmd": [],
+        # "orbit_mmd": [],
+        # "degree_mmd": [],
+        # "spectral_mmd": [],
+        # "clustering_mmd": [],
+        # "gin_mmd": [],
+        "validity": [],
     }
 
     sample_path = os.path.join(
         "/fs/pool/pool-mlsb/polygraph/digress-samples/", args.experiment
     )
 
-    for file in tqdm(list(os.listdir(sample_path))):
-        if not file.endswith(".pkl"):
-            continue
+    all_files = [
+        fname for fname in os.listdir(sample_path) if fname.endswith(".pkl")
+    ]
+    all_files.sort(key=lambda x: int(x.split("_")[-1].split(".")[0]))
+
+    for file in tqdm(all_files):
         epoch = int(file.split("_")[-1].split(".")[0])
         with open(os.path.join(sample_path, file), "rb") as f:
             data = pkl.load(f)
-        assert len(data) == 1024
+        assert len(data) == len(reference)
         data = [
             nx.from_numpy_array(d[1].numpy()) for d in data[: len(reference)]
         ]
         eval = metric.compute(data)
-        mmd_eval = mmd.compute(data)
+        # mmd_eval = mmd.compute(data)
 
         results["epoch"].append(epoch)
         results["pgs"].append(eval["polyscore"])
         for key, value in eval["subscores"].items():
             results[key].append(value)
-        for key, value in mmd_eval.items():
-            results[key].append(value)
+        # for key, value in mmd_eval.items():
+        #    results[key].append(value)
+
+        validity_list = [validity_fn(d) for d in tqdm(data[:128])]
+
+        print(eval)
+        results["validity"].append(sum(validity_list) / len(validity_list))
+
+        print(pd.DataFrame(results).sort_values(by="epoch"))
 
     results = pd.DataFrame(results)
     results = results.sort_values(by="epoch")

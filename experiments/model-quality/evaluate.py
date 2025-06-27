@@ -5,10 +5,16 @@ import torch
 import networkx as nx
 import argparse
 from tqdm import tqdm
+from pathlib import Path
+import os
 
-from polygraph.datasets import ProceduralPlanarGraphDataset
+from polygraph.datasets import (
+    ProceduralPlanarGraphDataset,
+    ProceduralLobsterGraphDataset,
+    ProceduralSBMGraphDataset,
+)
 from polygraph.metrics.base import (
-    AggregateLogisticRegressionClassifierMetric,
+    AggregateClassifierMetric,
 )
 from polygraph.metrics.gran import (
     RBFClusteringMMD2,
@@ -50,19 +56,52 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--experiment",
+        "--checkpoint-folder",
         type=str,
-        default="denoising-iterations",
-        choices=["denoising-iterations", "training-iterations"],
+    )
+    parser.add_argument(
+        "--metric",
+        type=str,
+        default="jsd",
+        choices=["jsd", "informedness"],
+    )
+    parser.add_argument(
+        "--reference",
+        type=str,
+        choices=["planar", "sbm", "lobster"],
+    )
+    parser.add_argument(
+        "--num-graphs",
+        type=int,
+        default=2048,
     )
     args = parser.parse_args()
 
-    if args.experiment == "denoising-iterations":
-        steps = [15, 30, 45, 60, 75, 90]
-    else:
-        steps = [119, 209, 299, 419, 509, 1019, 1499, 2009, 2519, 2999, 3479]
+    checkpoints = list(Path(args.checkpoint_folder).glob("*.pkl"))
+    steps = []
+    for p in checkpoints:
+        try:
+            steps.append(int(p.stem.split("_")[-1]))
+        except ValueError:
+            steps.append(int(p.stem.split("_")[-2]))
 
-    ds = ProceduralPlanarGraphDataset("reference", num_graphs=1024)
+    perm = np.argsort(steps)
+    checkpoints = [checkpoints[i] for i in perm]
+    steps = [steps[i] for i in perm]
+
+    if args.reference == "planar":
+        ds = ProceduralPlanarGraphDataset(
+            "reference", num_graphs=args.num_graphs
+        )
+    elif args.reference == "sbm":
+        ds = ProceduralSBMGraphDataset("reference", num_graphs=args.num_graphs)
+    elif args.reference == "lobster":
+        ds = ProceduralLobsterGraphDataset(
+            "reference", num_graphs=args.num_graphs
+        )
+    else:
+        raise ValueError(f"Invalid reference: {args.reference}")
+
     reference = ds.to_nx()
     descriptors = {
         "orbit_pgs": OrbitCounts(),
@@ -71,9 +110,7 @@ if __name__ == "__main__":
         "clustering_pgs": ClusteringHistogram(100),
         "gin_pgs": RandomGIN(seed=42),
     }
-    metric = AggregateLogisticRegressionClassifierMetric(
-        reference, descriptors, "informedness"
-    )
+    metric = AggregateClassifierMetric(reference, descriptors, args.metric)
     mmd = AggregateMMD(reference)
 
     results = {
@@ -92,33 +129,32 @@ if __name__ == "__main__":
         "num_steps": [],
     }
 
-    for num_steps in tqdm(steps):
-        with open(
-            f"/fs/pool/pool-mlsb/polygraph/model-quality/{args.experiment}/{num_steps}_steps.pkl",
-            "rb",
-        ) as f:
+    for ckpt, step in tqdm(zip(checkpoints, steps), total=len(checkpoints)):
+        with open(ckpt, "rb") as f:
             data = pkl.load(f)
         data = [nx.from_numpy_array(d[1].numpy()) for d in data]
-        assert len(data) == 1024
-        eval = metric.compute(data)
+        assert len(data) >= args.num_graphs
+        data = data[: args.num_graphs]
+        eval_result = metric.compute(data)
 
         mmd_eval = mmd.compute(data)
 
         for key, val in mmd_eval.items():
             results[key].append(val)
 
-        for key, val in eval["subscores"].items():
+        for key, val in eval_result["subscores"].items():
             results[key].append(val)
 
-        results["num_steps"].append(num_steps)
-        results["polyscore"].append(eval["polyscore"])
+        results["num_steps"].append(step)
+        results["polyscore"].append(eval_result["polyscore"])
         results["validity"].append(
             sum(ds.is_valid(d) for d in data) / len(data)
         )
 
     results = pd.DataFrame(results)
-    print(results)
+    # sort by step
+    results = results.sort_values(by="num_steps")
     results.to_csv(
-        f"/fs/pool/pool-mlsb/polygraph/model-quality/{args.experiment}/results.csv",
+        os.path.join(args.checkpoint_folder, "results.csv"),
         index=False,
     )

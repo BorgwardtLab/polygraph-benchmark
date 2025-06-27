@@ -9,6 +9,7 @@ from typing import (
     Union,
 )
 from collections import Counter
+import warnings
 
 from sklearn.metrics import roc_auc_score, roc_curve
 from scipy.sparse import csr_array
@@ -16,13 +17,16 @@ from scipy.sparse import csr_array
 import networkx as nx
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
+import torch
+from tabpfn import TabPFNClassifier
 from polygraph.utils.kernels import DescriptorKernel
 from polygraph.metrics.base.metric_interval import MetricInterval
 
 __all__ = [
     "KernelClassifierMetric",
-    "LogisticRegressionClassifierMetric",
+    "ClassifierMetric",
     "MultiKernelClassifierMetric",
 ]
 
@@ -49,6 +53,16 @@ def _scores_to_auroc(ref_scores, gen_scores):
             ground_truth, np.concatenate([ref_scores, gen_scores])
         )
     return auroc
+
+
+def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10):
+    """Estimate Jensen-Shannon distance based on classifier probabilities."""
+    divergence = 0.5 * (
+        np.log2(ref_scores + eps).mean()
+        + np.log2(1 - gen_scores + eps).mean()
+        + 2
+    )
+    return np.sqrt(np.clip(divergence, 0, 1))
 
 
 def _scores_to_informedness_and_threshold(ref_scores, gen_scores):
@@ -111,7 +125,9 @@ def _train_test_eval(
     ref_eval_idx,
     gen_train_idx,
     gen_eval_idx,
-    variant: Literal["auroc", "informedness"] = "auroc",
+    variant: Literal[
+        "auroc", "informedness-adaptive"
+    ] = "informedness-adaptive",
     threshold: Optional[float] = None,
 ):
     ref_scores = np.mean(
@@ -122,17 +138,21 @@ def _train_test_eval(
     ) - np.mean(gen_vs_gen[gen_train_idx][:, gen_eval_idx], axis=0)
     if variant == "auroc":
         return _scores_to_auroc(ref_scores, gen_scores)
-    elif variant == "informedness":
+    elif variant == "informedness-adaptive":
         return _scores_and_threshold_to_informedness(
             ref_scores, gen_scores, threshold
         )
+    else:
+        raise ValueError(f"Invalid variant: {variant}")
 
 
 def _leave_one_out_eval(
     ref_vs_ref,
     ref_vs_gen,
     gen_vs_gen,
-    variant: Literal["auroc", "informedness"] = "auroc",
+    variant: Literal[
+        "auroc", "informedness-adaptive"
+    ] = "informedness-adaptive",
 ):
     num_ref = len(ref_vs_ref)
     num_gen = len(gen_vs_gen)
@@ -145,7 +165,7 @@ def _leave_one_out_eval(
     ) / (num_gen - 1)
     if variant == "auroc":
         return _scores_to_auroc(ref_scores, gen_scores), None
-    elif variant == "informedness":
+    elif variant == "informedness-adaptive":
         return _scores_to_informedness_and_threshold(ref_scores, gen_scores)
     else:
         raise ValueError(f"Invalid variant: {variant}")
@@ -156,7 +176,9 @@ class KernelClassifierMetric:
         self,
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
-        variant: Literal["auroc", "informedness"] = "informedness",
+        variant: Literal[
+            "auroc", "informedness-adaptive"
+        ] = "informedness-adaptive",
     ):
         self._kernel = kernel
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
@@ -204,7 +226,9 @@ class MultiKernelClassifierMetric(KernelClassifierMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
-        variant: Literal["auroc", "informedness"] = "informedness",
+        variant: Literal[
+            "auroc", "informedness-adaptive"
+        ] = "informedness-adaptive",
     ):
         self._kernel = kernel
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
@@ -223,17 +247,17 @@ class MultiKernelClassifierMetric(KernelClassifierMetric):
 
 
 def _classifier_cross_validation(
-    regressor,
+    classifier,
     train_ref_descriptions,
     train_gen_descriptions,
     variant,
-    n_folds=5,
+    n_folds=4,
 ):
     """
     Perform stratified k-fold cross-validation with proper threshold selection for informedness.
 
     Args:
-        regressor: The classifier model to use
+        classifier: The classifier model to use
         train_ref_descriptions: Feature vectors for reference graphs
         train_gen_descriptions: Feature vectors for generated graphs
         variant: Either "auroc" or "informedness"
@@ -242,8 +266,6 @@ def _classifier_cross_validation(
     Returns:
         List of scores for each fold
     """
-    from sklearn.model_selection import StratifiedKFold
-
     # Combine data and create labels
     X = np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
     y = np.concatenate(
@@ -263,10 +285,17 @@ def _classifier_cross_validation(
         y_train, y_val = y[train_idx], y[val_idx]
 
         # Train model
-        regressor.fit(X_train, y_train)
+        if np.all(X_train == X_train[0]):
+            warnings.warn(
+                "Input to classifier is constant, setting all scores to 0.5"
+            )
+            predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
+        else:
+            classifier.fit(X_train, y_train)
+            predict_proba = classifier.predict_proba
 
         # Get validation predictions
-        val_pred = regressor.predict_proba(X_val)[:, 1]
+        val_pred = predict_proba(X_val)[:, 1]
 
         # Get reference and generated indices in validation set
         val_ref_idx = np.where(y_val == 1)[0]
@@ -280,8 +309,12 @@ def _classifier_cross_validation(
             # Compute AUROC
             score = _scores_to_auroc(val_ref_pred, val_gen_pred)
         elif variant == "informedness":
-            # For informedness, we need to find the threshold on training data
-            train_pred = regressor.predict_proba(X_train)[:, 1]
+            threshold = 0.5
+            score = _scores_and_threshold_to_informedness(
+                val_ref_pred, val_gen_pred, threshold
+            )
+        elif variant == "informedness-adaptive":
+            train_pred = predict_proba(X_train)[:, 1]
             train_ref_idx = np.where(y_train == 1)[0]
             train_gen_idx = np.where(y_train == 0)[0]
             train_ref_pred = train_pred[train_ref_idx]
@@ -296,6 +329,8 @@ def _classifier_cross_validation(
             score = _scores_and_threshold_to_informedness(
                 val_ref_pred, val_gen_pred, threshold
             )
+        elif variant == "jsd":
+            score = _scores_to_jsd(val_ref_pred, val_gen_pred)
         else:
             raise ValueError(f"Invalid variant: {variant}")
 
@@ -304,10 +339,13 @@ def _classifier_cross_validation(
     return scores
 
 
-def _descriptions_to_lr_metric(
+def _descriptions_to_classifier_metric(
     ref_descriptions: Union[np.ndarray, csr_array],
     gen_descriptions: Union[np.ndarray, csr_array],
-    variant: Literal["auroc", "informedness"] = "informedness",
+    variant: Literal[
+        "auroc", "informedness", "informedness-adaptive", "jsd"
+    ] = "informedness-adaptive",
+    classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     rng: Optional[np.random.Generator] = None,
 ):
     rng = np.random.default_rng(0) if rng is None else rng
@@ -362,15 +400,22 @@ def _descriptions_to_lr_metric(
     train_ref_descriptions = scaler.transform(train_ref_descriptions)
     train_gen_descriptions = scaler.transform(train_gen_descriptions)
 
-    regressor = LogisticRegression(penalty="l2", max_iter=1000)
+    if classifier == "logistic":
+        classifier = LogisticRegression(penalty="l2", max_iter=1000)
+    elif classifier == "tabpfn":
+        classifier = TabPFNClassifier(
+            device="cuda" if torch.cuda.is_available() else "cpu"
+        )
+    else:
+        raise ValueError(f"Invalid classifier: {classifier}")
 
     # Use custom cross-validation function
     scores = _classifier_cross_validation(
-        regressor,
+        classifier,
         train_ref_descriptions,
         train_gen_descriptions,
         variant,
-        n_folds=5,
+        n_folds=4,
     )
 
     train_metric = np.mean(scores)
@@ -385,60 +430,85 @@ def _descriptions_to_lr_metric(
             np.zeros(len(train_gen_descriptions)),
         ]
     )
-    regressor.fit(train_all_descriptions, train_labels)
 
-    ref_test_pred = regressor.decision_function(test_ref_descriptions)
-    gen_test_pred = regressor.decision_function(test_gen_descriptions)
+    # Check if train_all_descriptions is constant across rows
+    if np.all(train_all_descriptions == train_all_descriptions[0]):
+        warnings.warn(
+            "Input to classifier is constant, setting all scores to 0.5"
+        )
+        predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
+    else:
+        classifier.fit(train_all_descriptions, train_labels)
+        predict_proba = classifier.predict_proba
+
+    ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]
+    gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]
 
     if variant == "auroc":
         test_metric = _scores_to_auroc(ref_test_pred, gen_test_pred)
     elif variant == "informedness":
-        ref_train_pred = regressor.decision_function(train_ref_descriptions)
-        gen_train_pred = regressor.decision_function(train_gen_descriptions)
+        threshold = 0.5
+        test_metric = _scores_and_threshold_to_informedness(
+            ref_test_pred, gen_test_pred, threshold
+        )
+    elif variant == "informedness-adaptive":
+        ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]
+        gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]
         _, threshold = _scores_to_informedness_and_threshold(
             ref_train_pred, gen_train_pred
         )
         test_metric = _scores_and_threshold_to_informedness(
             ref_test_pred, gen_test_pred, threshold
         )
+    elif variant == "jsd":
+        test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
     else:
         raise ValueError(f"Invalid variant: {variant}")
 
     return train_metric, test_metric
 
 
-class LogisticRegressionClassifierMetric:
+class ClassifierMetric:
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
         descriptor: Callable[[List[nx.Graph]], np.ndarray],
-        variant: Literal["auroc", "informedness"] = "informedness",
+        variant: Literal[
+            "auroc", "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
+        self._classifier = classifier
 
     def compute(
         self, generated_graphs: Collection[nx.Graph]
     ) -> Tuple[float, float]:
         descriptions = self._descriptor(generated_graphs)
-        return _descriptions_to_lr_metric(
+        return _descriptions_to_classifier_metric(
             self._reference_descriptions,
             descriptions,
             variant=self._variant,
+            classifier=self._classifier,
         )
 
 
-class _LogisticRegressionClassifierMetricSamples:
+class _ClassifierMetricSamples:
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
         descriptor: Callable[[List[nx.Graph]], np.ndarray],
-        variant: Literal["auroc", "informedness"] = "informedness",
+        variant: Literal[
+            "auroc", "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
+        self._classifier = classifier
 
     def compute(
         self,
@@ -459,27 +529,31 @@ class _LogisticRegressionClassifierMetricSamples:
                 descriptions.shape[0], size=subsample_size, replace=False
             )
             samples.append(
-                _descriptions_to_lr_metric(
+                _descriptions_to_classifier_metric(
                     self._reference_descriptions[ref_idx],
                     descriptions[gen_idx],
                     variant=self._variant,
                     rng=rng,
+                    classifier=self._classifier,
                 )
             )
         samples = np.array(samples)
         return samples
 
 
-class AggregateLogisticRegressionClassifierMetric:
+class AggregateClassifierMetric:
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
         descriptors: Dict[str, Callable[[List[nx.Graph]], np.ndarray]],
-        variant: Literal["auroc", "informedness"] = "informedness",
+        variant: Literal[
+            "auroc", "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._sub_metrics = {
-            name: LogisticRegressionClassifierMetric(
-                reference_graphs, descriptors[name], variant
+            name: ClassifierMetric(
+                reference_graphs, descriptors[name], variant, classifier
             )
             for name in descriptors
         }
@@ -489,6 +563,7 @@ class AggregateLogisticRegressionClassifierMetric:
             name: metric.compute(generated_graphs)
             for name, metric in self._sub_metrics.items()
         }
+        print(all_metrics)
         # Select the descriptor with the optimal train metric
         optimal_descriptor = max(
             all_metrics.keys(), key=lambda x: all_metrics[x][0]
@@ -504,16 +579,19 @@ class AggregateLogisticRegressionClassifierMetric:
         return result
 
 
-class AggregateLogisticRegressionClassifierMetricInterval:
+class AggregateClassifierMetricInterval:
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
         descriptors: Dict[str, Callable[[List[nx.Graph]], np.ndarray]],
-        variant: Literal["auroc", "informedness"] = "informedness",
+        variant: Literal[
+            "auroc", "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._sub_metrics = {
-            name: _LogisticRegressionClassifierMetricSamples(
-                reference_graphs, descriptors[name], variant
+            name: _ClassifierMetricSamples(
+                reference_graphs, descriptors[name], variant, classifier
             )
             for name in descriptors
         }

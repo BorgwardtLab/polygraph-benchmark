@@ -1,10 +1,10 @@
-from typing import Collection
+from typing import Collection, Literal
 
 import networkx as nx
 import numpy as np
 
 from polygraph.metrics.base.classifier_metric import (
-    LogisticRegressionClassifierMetric,
+    ClassifierMetric,
     MultiKernelClassifierMetric,
 )
 from polygraph.utils.kernels import AdaptiveRBFKernel
@@ -17,13 +17,13 @@ from polygraph.utils.graph_descriptors import (
 
 __all__ = [
     "RBFOrbitInformedness",
-    "LROrbitInformedness",
+    "ClassifierOrbitMetric",
     "RBFClusteringInformedness",
-    "LRClusteringInformedness",
+    "ClassifierClusteringMetric",
     "RBFDegreeInformedness",
-    "LRDegreeInformedness",
+    "ClassifierDegreeeMetric",
     "RBFSpectralInformedness",
-    "LRSpectralInformedness",
+    "ClassifierSpectralMetric",
 ]
 
 
@@ -37,16 +37,24 @@ class RBFOrbitInformedness(MultiKernelClassifierMetric):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
-            variant="informedness",
+            variant="informedness-adaptive",
         )
 
 
-class LROrbitInformedness(LogisticRegressionClassifierMetric):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+class ClassifierOrbitMetric(ClassifierMetric):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        variant: Literal[
+            "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "logistic",
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             descriptor=OrbitCounts(),
-            variant="informedness",
+            variant=variant,
+            classifier=classifier,
         )
 
 
@@ -60,16 +68,24 @@ class RBFClusteringInformedness(MultiKernelClassifierMetric):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
-            variant="informedness",
+            variant="informedness-adaptive",
         )
 
 
-class LRClusteringInformedness(LogisticRegressionClassifierMetric):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+class ClassifierClusteringMetric(ClassifierMetric):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        variant: Literal[
+            "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "logistic",
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             descriptor=ClusteringHistogram(bins=100),
-            variant="informedness",
+            variant=variant,
+            classifier=classifier,
         )
 
 
@@ -83,16 +99,24 @@ class RBFDegreeInformedness(MultiKernelClassifierMetric):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
-            variant="informedness",
+            variant="informedness-adaptive",
         )
 
 
-class LRDegreeInformedness(LogisticRegressionClassifierMetric):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+class ClassifierDegreeeMetric(ClassifierMetric):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        variant: Literal[
+            "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "logistic",
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             descriptor=SparseDegreeHistogram(),
-            variant="informedness",
+            variant=variant,
+            classifier=classifier,
         )
 
 
@@ -106,14 +130,22 @@ class RBFSpectralInformedness(MultiKernelClassifierMetric):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
-            variant="informedness",
+            variant="informedness-adaptive",
         )
 
 
-class LRSpectralInformedness(LogisticRegressionClassifierMetric):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+class ClassifierSpectralMetric(ClassifierMetric):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        variant: Literal[
+            "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "logistic",
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             descriptor=EigenvalueHistogram(),
-            variant="informedness",
+            variant=variant,
+            classifier=classifier,
         )

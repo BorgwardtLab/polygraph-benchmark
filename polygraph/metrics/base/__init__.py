@@ -10,9 +10,9 @@ from polygraph.metrics.base.mmd import (
     MaxDescriptorMMD2Interval,
 )
 from polygraph.metrics.base.classifier_metric import (
-    AggregateLogisticRegressionClassifierMetric,
-    LogisticRegressionClassifierMetric,
-    AggregateLogisticRegressionClassifierMetricInterval,
+    AggregateClassifierMetric,
+    ClassifierMetric,
+    AggregateClassifierMetricInterval,
 )
 from polygraph.metrics.base.vun import VUN
 from polygraph.metrics.base.metric_interval import MetricInterval
@@ -27,7 +27,7 @@ __all__ = [
     "MaxDescriptorMMD2",
     "MaxDescriptorMMD2Interval",
     "VUN",
-    "LogisticRegressionClassifierMetric",
-    "AggregateLogisticRegressionClassifierMetric",
-    "AggregateLogisticRegressionClassifierMetricInterval",
+    "ClassifierMetric",
+    "AggregateClassifierMetric",
+    "AggregateClassifierMetricInterval",
 ]

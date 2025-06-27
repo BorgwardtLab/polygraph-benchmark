@@ -1,12 +1,12 @@
 """Concrete definitions of kernel AUROCs using GIN descriptor."""
 
-from typing import Collection
+from typing import Collection, Literal
 
 import networkx as nx
 import numpy as np
 
 from polygraph.metrics.base.classifier_metric import (
-    LogisticRegressionClassifierMetric,
+    ClassifierMetric,
     MultiKernelClassifierMetric,
 )
 from polygraph.utils.graph_descriptors import (
@@ -21,7 +21,7 @@ from typing import Optional, List, Union
 
 __all__ = [
     "RBFGraphNeuralNetworkInformedness",
-    "LRGraphNeuralNetworkInformedness",
+    "GraphNeuralNetworkClassifierMetric",
 ]
 
 
@@ -52,14 +52,18 @@ class RBFGraphNeuralNetworkInformedness(MultiKernelClassifierMetric):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
-            variant="informedness",
+            variant="informedness-adaptive",
         )
 
 
-class LRGraphNeuralNetworkInformedness(LogisticRegressionClassifierMetric):
+class GraphNeuralNetworkClassifierMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
+        variant: Literal[
+            "informedness", "informedness-adaptive", "jsd"
+        ] = "informedness-adaptive",
+        classifier: Literal["logistic", "tabpfn"] = "logistic",
         node_feat_loc: Optional[List[str]] = None,
         node_feat_dim: int = 1,
         edge_feat_loc: Optional[List[str]] = None,
@@ -78,5 +82,6 @@ class LRGraphNeuralNetworkInformedness(LogisticRegressionClassifierMetric):
                 ),
                 reference_graphs,
             ),
-            variant="informedness",
+            variant=variant,
+            classifier=classifier,
         )
