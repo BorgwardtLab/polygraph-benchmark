@@ -562,9 +562,7 @@ class AggregateClassifierMetric:
         all_metrics = {
             name: metric.compute(generated_graphs)
             for name, metric in self._sub_metrics.items()
-        }
-        print(all_metrics)
-        # Select the descriptor with the optimal train metric
+        }  # Select the descriptor with the optimal train metric
         optimal_descriptor = max(
             all_metrics.keys(), key=lambda x: all_metrics[x][0]
         )

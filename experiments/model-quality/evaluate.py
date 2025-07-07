@@ -1,3 +1,5 @@
+import graph_tool as gt  # noqa: F401
+
 import pickle as pkl
 import pandas as pd
 import numpy as np
@@ -136,6 +138,7 @@ if __name__ == "__main__":
         assert len(data) >= args.num_graphs
         data = data[: args.num_graphs]
         eval_result = metric.compute(data)
+        print(eval_result, flush=True)
 
         mmd_eval = mmd.compute(data)
 
