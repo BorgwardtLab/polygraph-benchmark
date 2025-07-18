@@ -130,13 +130,15 @@ class GraphDataset(AbstractDataset):
 
     def __getitem__(
         self, idx: Union[int, List[int], slice]
-    ) -> Union[Data, List[Data]]:
+    ) -> Union[Data, List[Data], "GraphDataset"]:
         if isinstance(idx, int):
             return self._data_store.get_example(idx)
         elif isinstance(idx, slice):
             indices = list(range(*idx.indices(len(self))))
-            return [self._data_store.get_example(i) for i in indices]
-        return [self._data_store.get_example(i) for i in idx]
+            self._data_store = self._data_store.subset(indices)
+            return self
+        else:
+            return [self._data_store.get_example(i) for i in idx]
 
     def __len__(self):
         return len(self._data_store)

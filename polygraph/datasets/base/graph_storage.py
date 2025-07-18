@@ -3,8 +3,8 @@ We store graphs in [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphS
 and can be indexed efficiently to retrieve PyTorch Geometric `Data` objects.
 """
 
-from typing import Any, Dict, List, Optional
 from importlib.metadata import version
+from typing import Any, Dict, List, Optional
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
@@ -105,6 +105,31 @@ class GraphStorage(BaseModel):
     def __len__(self):
         """Number of graphs in the collection."""
         return self.num_graphs
+
+    def subset(self, indices: List[int]) -> "GraphStorage":
+        """Create a new GraphStorage with only the graphs at the specified indices.
+
+        Args:
+            indices: List of graph indices to include in the subset
+
+        Returns:
+            New GraphStorage containing only the specified graphs
+        """
+        from torch_geometric.data import Batch
+
+        # Extract the individual graphs at the specified indices
+        graphs = [self.get_example(idx) for idx in indices]
+
+        # Create a batch from the graphs
+        batch = Batch.from_data_list(graphs)
+
+        # Create new GraphStorage from the batch
+        return GraphStorage.from_pyg_batch(
+            batch,
+            edge_attrs=list(self.edge_attr.keys()),
+            node_attrs=list(self.node_attr.keys()),
+            graph_attrs=list(self.graph_attr.keys()),
+        )
 
     @staticmethod
     def from_pyg_batch(
