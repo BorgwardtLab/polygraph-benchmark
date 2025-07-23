@@ -16,6 +16,45 @@ autograph_sbm_proc_small = "/fs/pool/pool-hartout/Documents/Git/AutoGraph/logs/t
 autograph_sbm_proc_large = "/fs/pool/pool-hartout/Documents/Git/AutoGraph/logs/train/polygraph_sbm_procedural/llama2-s/0/runs/2025-07-21_12-03-47/csv_logs/version_0/metrics.csv"
 
 
+def remove_consecutive_duplicates(x, y, indices):
+    """
+    Remove consecutive entries where val loss (x) values are identical.
+
+    Args:
+        x: pandas Series or array of x values (validation loss)
+        y: pandas Series or array of y values
+        indices: array of corresponding indices
+
+    Returns:
+        tuple: (filtered_x, filtered_y, filtered_indices)
+    """
+    if len(x) <= 1:
+        return x, y, indices
+
+    # Convert to numpy arrays for easier manipulation
+    x_vals = x.values if hasattr(x, "values") else np.array(x)
+    y_vals = y.values if hasattr(y, "values") else np.array(y)
+
+    # Find points where x (val loss) changes from the previous point
+    diff_x = np.diff(
+        x_vals, prepend=x_vals[0] + 1
+    )  # prepend ensures first point is kept
+
+    # Keep points where x changed (only consider validation loss)
+    keep_mask = diff_x != 0
+
+    # Filter the data
+    if isinstance(x, pd.Series):
+        filtered_x = x.iloc[keep_mask]
+        filtered_y = y.iloc[keep_mask]
+    else:
+        filtered_x = x_vals[keep_mask]
+        filtered_y = y_vals[keep_mask]
+
+    filtered_indices = indices[keep_mask]
+    return filtered_x, filtered_y, filtered_indices
+
+
 def main():
     df_small = pd.read_csv(autograph_sbm_proc_small)
     df_large = pd.read_csv(autograph_sbm_proc_large)
@@ -38,13 +77,24 @@ def main():
     y_large = y_large.iloc[:min_len]
     indices_large = np.arange(min_len)
 
+    # Remove consecutive duplicates
+    x_small, y_small, indices_small = remove_consecutive_duplicates(
+        x_small, y_small, indices_small
+    )
+    x_large, y_large, indices_large = remove_consecutive_duplicates(
+        x_large, y_large, indices_large
+    )
+
     # Create the plot
     fig, ax = plt.subplots(figsize=(4, 3))
 
     # Plot small values with summer colormap
-    points_small = np.array([x_small.values, y_small.values]).T.reshape(
-        -1, 1, 2
-    )
+    points_small = np.array(
+        [
+            x_small.values if hasattr(x_small, "values") else x_small,
+            y_small.values if hasattr(y_small, "values") else y_small,
+        ]
+    ).T.reshape(-1, 1, 2)
     segments_small = np.concatenate(
         [points_small[:-1], points_small[1:]], axis=1
     )
@@ -52,7 +102,7 @@ def main():
     norm_small = plt.Normalize(indices_small.min(), indices_small.max())
     lc_small = LineCollection(segments_small, cmap="autumn", norm=norm_small)
     lc_small.set_array(indices_small[:-1])
-    lc_small.set_linewidth(2)
+    lc_small.set_linewidth(1)  # Reduced from 2 to 1
     _ = ax.add_collection(lc_small)
 
     # Add scatter points for small values
@@ -61,17 +111,20 @@ def main():
         y_small,
         c=indices_small,
         cmap="autumn",
-        s=30,
+        s=15,  # Reduced from 30 to 15
         alpha=0.7,
         edgecolors="black",
-        linewidth=0.5,
+        linewidth=0.3,  # Reduced from 0.5 to 0.3
         label="Small",
     )
 
     # Plot large values with winter colormap
-    points_large = np.array([x_large.values, y_large.values]).T.reshape(
-        -1, 1, 2
-    )
+    points_large = np.array(
+        [
+            x_large.values if hasattr(x_large, "values") else x_large,
+            y_large.values if hasattr(y_large, "values") else y_large,
+        ]
+    ).T.reshape(-1, 1, 2)
     segments_large = np.concatenate(
         [points_large[:-1], points_large[1:]], axis=1
     )
@@ -79,7 +132,7 @@ def main():
     norm_large = plt.Normalize(indices_large.min(), indices_large.max())
     lc_large = LineCollection(segments_large, cmap="winter", norm=norm_large)
     lc_large.set_array(indices_large[:-1])
-    lc_large.set_linewidth(2)
+    lc_large.set_linewidth(1)  # Reduced from 2 to 1
     _ = ax.add_collection(lc_large)
 
     # Add scatter points for large values
@@ -88,10 +141,10 @@ def main():
         y_large,
         c=indices_large,
         cmap="winter",
-        s=30,
+        s=15,  # Reduced from 30 to 15
         alpha=0.7,
         edgecolors="white",
-        linewidth=0.5,
+        linewidth=0.3,  # Reduced from 0.5 to 0.3
         label="Large",
     )
 
@@ -107,8 +160,18 @@ def main():
     cbar_large.set_label("Large - Time Step", rotation=270, labelpad=15)
 
     # Set axis limits with some padding to accommodate both datasets
-    all_x = np.concatenate([x_small, x_large])
-    all_y = np.concatenate([y_small, y_large])
+    all_x = np.concatenate(
+        [
+            x_small.values if hasattr(x_small, "values") else x_small,
+            x_large.values if hasattr(x_large, "values") else x_large,
+        ]
+    )
+    all_y = np.concatenate(
+        [
+            y_small.values if hasattr(y_small, "values") else y_small,
+            y_large.values if hasattr(y_large, "values") else y_large,
+        ]
+    )
     ax.set_xlim(all_x.min() * 0.99, all_x.max() * 1.01)
     ax.set_ylim(all_y.min() * 0.95, all_y.max() * 1.05)
 
