@@ -65,7 +65,7 @@ if __name__ == "__main__":
         "--metric",
         type=str,
         default="jsd",
-        choices=["jsd", "informedness"],
+        choices=["jsd", "informedness", "informedness-adaptive"],
     )
     parser.add_argument(
         "--reference",
@@ -77,7 +77,18 @@ if __name__ == "__main__":
         type=int,
         default=2048,
     )
+    parser.add_argument(
+        "--filename",
+        type=str,
+        default="results.csv",
+    )
     args = parser.parse_args()
+
+    result_path = os.path.join(args.checkpoint_folder, args.filename)
+
+    if os.path.exists(result_path):
+        print(f"Result file {result_path} already exists, skipping...")
+        exit()
 
     checkpoints = list(Path(args.checkpoint_folder).glob("*.pkl"))
     steps = []
@@ -113,6 +124,7 @@ if __name__ == "__main__":
         "gin_pgs": RandomGIN(seed=42),
     }
     metric = AggregateClassifierMetric(reference, descriptors, args.metric)
+
     mmd = AggregateMMD(reference)
 
     results = {
@@ -135,7 +147,7 @@ if __name__ == "__main__":
         with open(ckpt, "rb") as f:
             data = pkl.load(f)
         data = [nx.from_numpy_array(d[1].numpy()) for d in data]
-        assert len(data) >= args.num_graphs
+        assert len(data) == 8192, f"Expected 8192 graphs, got {len(data)}"
         data = data[: args.num_graphs]
         eval_result = metric.compute(data)
         print(eval_result, flush=True)
@@ -158,6 +170,6 @@ if __name__ == "__main__":
     # sort by step
     results = results.sort_values(by="num_steps")
     results.to_csv(
-        os.path.join(args.checkpoint_folder, "results.csv"),
+        result_path,
         index=False,
     )
