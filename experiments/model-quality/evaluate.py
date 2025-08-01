@@ -82,6 +82,10 @@ if __name__ == "__main__":
         type=str,
         default="results.csv",
     )
+    parser.add_argument(
+        "--skip-assert",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     result_path = os.path.join(args.checkpoint_folder, args.filename)
@@ -147,7 +151,9 @@ if __name__ == "__main__":
         with open(ckpt, "rb") as f:
             data = pkl.load(f)
         data = [nx.from_numpy_array(d[1].numpy()) for d in data]
-        assert len(data) == 8192, f"Expected 8192 graphs, got {len(data)}"
+        assert args.skip_assert or len(data) == 8192, (
+            f"Expected 8192 graphs, got {len(data)}"
+        )
         data = data[: args.num_graphs]
         eval_result = metric.compute(data)
         print(eval_result, flush=True)
