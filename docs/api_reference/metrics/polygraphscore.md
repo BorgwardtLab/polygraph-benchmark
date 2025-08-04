@@ -1,6 +1,6 @@
-# Graph Descriptors
+# PolyGraphScore
 
-::: polygraph.utils.graph_descriptors
+::: polygraph.metrics.base.classifier_metric
     options:
         show_root_heading: false
         show_root_toc_entry: false

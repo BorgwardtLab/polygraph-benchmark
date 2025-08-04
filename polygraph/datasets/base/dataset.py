@@ -97,10 +97,19 @@ class NetworkXView:
     def __init__(self, base_dataset: AbstractDataset):
         self._base_dataset = base_dataset
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Gets the number of graphs in the dataset."""
         return len(self._base_dataset)
 
     def __getitem__(self, idx: int) -> nx.Graph:
+        """Gets a graph from the dataset by index.
+
+        Args:
+            idx: Index of the graph to retrieve
+
+        Returns:
+            Graph as a NetworkX object
+        """
         pyg_graph = self._base_dataset[idx]
         return to_networkx(
             pyg_graph,

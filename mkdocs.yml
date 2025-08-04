@@ -15,20 +15,30 @@ nav:
     - Defining Custom Metrics: tutorials/custom_metrics.md
   - API Reference:
     - polygraph.metrics:
-      - Base MMD Classes: api_reference/metrics/base_mmd.md
-      - Other Base Metrics: api_reference/metrics/other_base.md
-      - GRAN Metrics: api_reference/metrics/gran.md
-      - GIN Metrics: api_reference/metrics/gin.md
+      - Overview: api_reference/metrics/index.md
+      - MMD: api_reference/metrics/mmd.md
+      - PolyGraphScore: api_reference/metrics/polygraphscore.md
+      - VUN: api_reference/metrics/vun.md
+      - Frechet: api_reference/metrics/frechet.md
     - polygraph.datasets:
-      - Dataset Abstractions: api_reference/datasets/base.md
-      - Small Synthetic Datasets: api_reference/datasets/small_synthetic.md
-      - Procedural Datasets: api_reference/datasets/procedural.md
-      - Real-World Datasets: api_reference/datasets/real_world_topologies.md
-      - Molecule Datasets: api_reference/datasets/molecules.md
+      - Dataset Base Classes: api_reference/datasets/dataset_base_classes.md
+      - NetworkX View: api_reference/datasets/networkx_view.md
+      - Graph Serialization: api_reference/datasets/graph_serialization.md
     - polygraph.utils:
       - Graph Descriptors: api_reference/utils/graph_descriptors.md
       - Graph Kernels: api_reference/utils/graph_kernels.md
-      - MMD Utilities: api_reference/utils/mmd_utils.md
+  - Metrics:
+    - GRAN: metrics/gran.md
+    - GIN: metrics/gin.md
+  - Datasets:
+    - Small Synthetic Datasets: datasets/small_synthetic.md
+    - Procedural Datasets: datasets/procedural.md
+    - Real-World Datasets: datasets/real_world_topologies.md
+    - Molecule Datasets: datasets/molecules.md
+  - Utils:
+    - Graph Descriptors: utils/descriptors.md
+    - Graph Kernels: utils/kernels.md
+    - MMD Utilities: utils/mmd_utils.md
 
 plugins:
   - search

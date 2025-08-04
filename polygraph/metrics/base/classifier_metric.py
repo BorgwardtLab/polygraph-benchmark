@@ -1,3 +1,10 @@
+"""PolyGraphScores to compare graph distributions.
+
+PolyGraphScores compare generated graphs to reference graphs by fitting a binary classifier to discriminate between the two.
+Performance metrics of this classifier lower-bound intrinsic probability metrics.
+Multiple graph descriptors may be combined within PolyGraphScores to yield a theoretically grounded summary metric.
+"""
+
 from typing import (
     Collection,
     Literal,
