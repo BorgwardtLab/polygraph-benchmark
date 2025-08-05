@@ -5,6 +5,8 @@ import networkx as nx
 import numpy as np
 import scipy
 
+from polygraph.metrics.base.interfaces import GenerationMetric
+
 
 __all__ = ["FittedFrechetDistance", "FrechetDistance"]
 
@@ -91,7 +93,7 @@ def fit_gaussian(
     return GaussianParameters(mean=mean, covariance=cov)
 
 
-class FittedFrechetDistance:
+class FittedFrechetDistance(GenerationMetric):
     """Frechet distance using pre-computed Gaussian parameters.
 
     This class accepts pre-computed Gaussian parameters rather than fitting them,
@@ -130,7 +132,7 @@ class FittedFrechetDistance:
         )
 
 
-class FrechetDistance:
+class FrechetDistance(GenerationMetric):
     """Computes Frechet distance between reference and generated graphs.
 
     The Frechet distance is computed by fitting Gaussian distributions to graph

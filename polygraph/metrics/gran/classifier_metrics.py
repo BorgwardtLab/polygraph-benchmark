@@ -20,15 +20,14 @@ __all__ = [
 ]
 
 
-
 class ClassifierOrbitMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
         variant: Literal[
-            "informedness", "informedness-adaptive", "jsd"
-        ] = "informedness-adaptive",
-        classifier: Literal["logistic", "tabpfn"] = "logistic",
+            "informedness", "jsd"
+        ] = "jsd",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -43,9 +42,9 @@ class ClassifierClusteringMetric(ClassifierMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         variant: Literal[
-            "informedness", "informedness-adaptive", "jsd"
-        ] = "informedness-adaptive",
-        classifier: Literal["logistic", "tabpfn"] = "logistic",
+            "informedness", "jsd"
+        ] = "jsd",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -60,9 +59,9 @@ class ClassifierDegreeeMetric(ClassifierMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         variant: Literal[
-            "informedness", "informedness-adaptive", "jsd"
-        ] = "informedness-adaptive",
-        classifier: Literal["logistic", "tabpfn"] = "logistic",
+            "informedness", "jsd"
+        ] = "jsd",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -78,9 +77,9 @@ class ClassifierSpectralMetric(ClassifierMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         variant: Literal[
-            "informedness", "informedness-adaptive", "jsd"
-        ] = "informedness-adaptive",
-        classifier: Literal["logistic", "tabpfn"] = "logistic",
+            "informedness", "jsd"
+        ] = "jsd",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
             reference_graphs=reference_graphs,

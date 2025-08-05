@@ -15,7 +15,7 @@ nav:
     - Defining Custom Metrics: tutorials/custom_metrics.md
   - API Reference:
     - polygraph.metrics:
-      - Overview: api_reference/metrics/index.md
+      - Interface: api_reference/metrics/interface.md
       - MMD: api_reference/metrics/mmd.md
       - PolyGraphScore: api_reference/metrics/polygraphscore.md
       - VUN: api_reference/metrics/vun.md

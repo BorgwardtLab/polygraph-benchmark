@@ -28,6 +28,7 @@ import torch
 from tabpfn import TabPFNClassifier
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.utils.graph_descriptors import GraphDescriptor
+from polygraph.metrics.base.interfaces import GenerationMetric, GenerationMetricInterval
 
 
 __all__ = [
@@ -204,7 +205,7 @@ def _descriptions_to_classifier_metric(
     gen_descriptions: Union[np.ndarray, csr_array],
     variant: Literal[
         "informedness", "jsd"
-    ] = "informedness",
+    ] = "jsd",
     classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     rng: Optional[np.random.Generator] = None,
 ):
@@ -321,7 +322,7 @@ def _descriptions_to_classifier_metric(
     return train_metric, test_metric
 
 
-class ClassifierMetric:
+class ClassifierMetric(GenerationMetric):
     """Classifier-based metric using a single graph descriptor.
 
     Args:
@@ -336,7 +337,7 @@ class ClassifierMetric:
         descriptor: GraphDescriptor,
         variant: Literal[
             "informedness", "jsd"
-        ] = "informedness",
+        ] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._descriptor = descriptor
@@ -371,7 +372,7 @@ class _ClassifierMetricSamples:
         descriptor: GraphDescriptor,
         variant: Literal[
             "informedness", "jsd"
-        ] = "informedness",
+        ] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._descriptor = descriptor
@@ -410,7 +411,7 @@ class _ClassifierMetricSamples:
         return samples
 
 
-class PolyGraphScore:
+class PolyGraphScore(GenerationMetric):
     """PolyGraphScore to compare graph distributions.
 
     Args:
@@ -425,7 +426,7 @@ class PolyGraphScore:
         descriptors: Dict[str, GraphDescriptor],
         variant: Literal[
             "informedness", "jsd"
-        ] = "informedness",
+        ] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._sub_metrics = {
@@ -465,14 +466,14 @@ class PolyGraphScore:
         return result
 
 
-class PolyGraphScoreInterval:
+class PolyGraphScoreInterval(GenerationMetricInterval):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
         descriptors: Dict[str, GraphDescriptor],
         variant: Literal[
             "informedness", "jsd"
-        ] = "informedness",
+        ] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._sub_metrics = {

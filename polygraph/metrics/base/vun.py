@@ -15,6 +15,8 @@ from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Optional
 import networkx as nx
 from scipy.stats import binomtest
 
+from polygraph.metrics.base.interfaces import GenerationMetric
+
 __all__ = ["VUN"]
 
 BinomConfidenceInterval = namedtuple(
@@ -108,7 +110,7 @@ class _GraphSet:
         return hash_set
 
 
-class VUN:
+class VUN(GenerationMetric):
     """Computes Valid-Unique-Novel metrics for generated graphs.
 
     Measures what fraction of generated graphs are valid (optional), unique

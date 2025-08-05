@@ -24,9 +24,9 @@ class GraphNeuralNetworkClassifierMetric(ClassifierMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         variant: Literal[
-            "informedness", "informedness-adaptive", "jsd"
-        ] = "informedness-adaptive",
-        classifier: Literal["logistic", "tabpfn"] = "logistic",
+            "informedness", "jsd"
+        ] = "jsd",
+        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
         node_feat_loc: Optional[List[str]] = None,
         node_feat_dim: int = 1,
         edge_feat_loc: Optional[List[str]] = None,

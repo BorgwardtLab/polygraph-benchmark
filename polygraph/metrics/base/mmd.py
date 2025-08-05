@@ -47,6 +47,7 @@ import numpy as np
 
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
 from polygraph.utils.mmd_utils import mmd_from_gram
+from polygraph.metrics.base.interfaces import GenerationMetric, GenerationMetricInterval
 
 __all__ = [
     "DescriptorMMD2",
@@ -60,7 +61,7 @@ __all__ = [
 MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
 
 
-class DescriptorMMD2:
+class DescriptorMMD2(GenerationMetric):
     """Computes squared MMD between reference and generated graphs using a kernel.
 
     Args:
@@ -206,7 +207,7 @@ class _DescriptorMMD2Interval(ABC):
     ]: ...
 
 
-class DescriptorMMD2Interval(_DescriptorMMD2Interval):
+class DescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
     """Computes MMD² confidence intervals using subsampling.
 
     Estimates uncertainty in MMD² by repeatedly computing it on random subsamples
@@ -269,7 +270,7 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval):
             return return_result
 
 
-class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval):
+class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
     """Computes confidence intervals for maximum MMD² across kernel parameters.
 
     Similar to DescriptorMMD2Interval but takes the maximum across different kernel
