@@ -3,6 +3,25 @@
 This module provides various functions that convert networkx graphs into numerical
 representations suitable for kernel methods. Each descriptor is callable with an iterable of graphs and returns either a dense
 `numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
+They implement the [`GraphDescriptor`][polygraph.utils.graph_descriptors.GraphDescriptor] interface.
+
+
+Descriptors may, for example, be implemented as follows:
+
+```python 
+from typing import Iterable
+import networkx as nx
+import numpy as np
+
+def my_descriptor(graphs: Iterable[nx.Graph]) -> np.ndarray:
+    hists = [nx.degree_histogram(graph) for graph in graphs]
+    hists = [
+        np.concatenate([hist, np.zeros(128 - len(hist))], axis=0)
+        for hist in hists
+    ]
+    hists = np.stack(hists, axis=0)
+    return hists / hists.sum(axis=1, keepdims=True) # shape: (n_graphs, n_features)
+```
 
 Available descriptors:
     - [`SparseDegreeHistogram`][polygraph.utils.graph_descriptors.SparseDegreeHistogram]: Sparse degree distribution
@@ -19,10 +38,9 @@ import copy
 import warnings
 from collections import Counter
 from hashlib import blake2b
-from typing import Callable, Iterable, List, Optional, Tuple, Union, Literal
+from typing import Protocol, Callable, Iterable, List, Optional, Tuple, Union, Literal
 
 import networkx as nx
-import pygsp as pg
 import numpy as np
 import orbit_count
 import torch
@@ -35,9 +53,10 @@ from polygraph.utils.gin import GIN
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
 
 
+
 def sparse_histogram(
     values: np.ndarray, bins: np.ndarray, density: bool = False
-):
+) -> Tuple[np.ndarray, np.ndarray]:
     """Sparse version of np.histogram.
 
     Same as np.histogram but returns a tuple (index, counts) where index is a numpy
@@ -59,7 +78,7 @@ def sparse_histogram(
 def sparse_histograms_to_array(
     sparse_histograms: List[Tuple[np.ndarray, np.ndarray, np.ndarray]],
     num_bins: int,
-):
+) -> csr_array:
     index = np.concatenate(
         [sparse_histogram[0] for sparse_histogram in sparse_histograms]
     )
@@ -73,7 +92,25 @@ def sparse_histograms_to_array(
     return csr_array((data, index, ptr), (len(sparse_histograms), num_bins))
 
 
-class DegreeHistogram:
+class GraphDescriptor(Protocol):
+    """Interface for graph descriptors.
+
+    A graph descriptor is a callable that takes an iterable of networkx graphs and returns a numpy array or a sparse matrix.
+    """
+
+    def __call__(self, graphs: Iterable[nx.Graph]) -> Union[np.ndarray, csr_array]:
+        """Compute features of graphs.
+
+        Args:
+            graphs: Iterable of networkx graphs
+
+        Returns:
+            Features of graphs. Dense numpy array or sparse matrix of shape `(n_graphs, n_features)`.
+        """
+        ...
+
+
+class DegreeHistogram(GraphDescriptor):
     """Computes normalized degree distributions of graphs.
 
     For each graph, computes a histogram of node degrees and normalizes it to sum to 1.
@@ -98,7 +135,7 @@ class DegreeHistogram:
         return hists / hists.sum(axis=1, keepdims=True)
 
 
-class SparseDegreeHistogram:
+class SparseDegreeHistogram(GraphDescriptor):
     """Memory-efficient version of degree distribution computation.
 
     Similar to DegreeHistogram but returns a sparse matrix, making it suitable for
@@ -121,7 +158,7 @@ class SparseDegreeHistogram:
         return result
 
 
-class ClusteringHistogram:
+class ClusteringHistogram(GraphDescriptor):
     """Computes histograms of local clustering coefficients.
 
     For each graph, computes the distribution of local clustering coefficients
@@ -169,7 +206,7 @@ class ClusteringHistogram:
             return hists / hists.sum(axis=1, keepdims=True)
 
 
-class OrbitCounts:
+class OrbitCounts(GraphDescriptor):
     """Computes graph orbit statistics .
 
     Warning:
@@ -205,7 +242,7 @@ class OrbitCounts:
         return np.stack(counts, axis=0)
 
 
-class EigenvalueHistogram:
+class EigenvalueHistogram(GraphDescriptor):
     """Computes eigenvalue histogram of normalized Laplacian.
 
     For each graph, computes the eigenvalue spectrum of its normalized Laplacian
@@ -251,7 +288,7 @@ class EigenvalueHistogram:
             return np.stack(histograms, axis=0)
 
 
-class RandomGIN:
+class RandomGIN(GraphDescriptor):
     """Random Graph Isomorphism Network for graph embeddings.
 
     Initializes a randomly weighted Graph Isomorphism Network (GIN) and uses it
@@ -316,7 +353,7 @@ class RandomGIN:
         self.edge_feat_loc = edge_feat_loc
 
     @torch.inference_mode()
-    def __call__(self, graphs: Iterable[nx.Graph]):
+    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         pyg_graphs = [
             from_networkx(
                 g,
@@ -356,7 +393,7 @@ class RandomGIN:
         return graph_embeds.cpu().detach().numpy()
 
 
-class NormalizedDescriptor:
+class NormalizedDescriptor(GraphDescriptor):
     """Standardizes graph descriptors using reference graph statistics.
 
     Wraps a graph descriptor to standardize its output features (zero mean, unit variance)
@@ -379,12 +416,12 @@ class NormalizedDescriptor:
         self._scaler = StandardScaler()
         self._scaler.fit(self._descriptor_fn(ref_graphs))
 
-    def __call__(self, graphs: Iterable[nx.Graph]):
+    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         result = self._descriptor_fn(graphs)
         return self._scaler.transform(result)
 
 
-class WeisfeilerLehmanDescriptor:
+class WeisfeilerLehmanDescriptor(GraphDescriptor):
     """Weisfeiler-Lehman subtree features for graphs.
 
     Computes graph features by iteratively hashing node neighborhoods using the
@@ -529,63 +566,3 @@ class WeisfeilerLehmanDescriptor:
             shape=(n_graphs, 2**31),
         )
 
-
-class WaveletDescriptor:
-    def __init__(self, n_filters=12, bound=1.4):
-        class DMG(object):
-            """Dummy Normalized Graph"""
-
-            lmax = 2
-
-        self.filters = pg.filters.Abspline(DMG, n_filters)
-        self.bound = np.max(self.filters.evaluate(np.arange(0, 2, 0.01)))
-
-    def __call__(self, graphs: Iterable[nx.Graph]) -> csr_array:
-        results = []
-        for graph in graphs:
-            eigvals, eigvecs = np.linalg.eigh(
-                nx.normalized_laplacian_matrix(graph).todense()
-            )
-            results.append(
-                self.get_spectral_filter_worker(
-                    eigvecs, eigvals, self.filters, self.bound
-                )
-            )
-        return np.array(results)
-
-    @staticmethod
-    def get_spectral_filter_worker(eigvec, eigval, filters, bound=1.4):
-        ges = filters.evaluate(eigval)
-        linop = []
-        for ge in ges:
-            linop.append(eigvec @ np.diag(ge) @ eigvec.T)
-        linop = np.array(linop)
-        norm_filt = np.sum(linop**2, axis=2)
-        hist_range = [0, bound]
-        hist = np.array(
-            [np.histogram(x, range=hist_range, bins=100)[0] for x in norm_filt]
-        )  # NOTE: change number of bins
-        return hist.flatten()
-
-
-class RandomWalkDescriptor:
-    def __init__(self, length: int = 16):
-        self.length = length
-
-    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
-        result_list = []
-        for graph in graphs:
-            pe_list = []
-            sparse_adj = nx.to_scipy_sparse_array(graph)
-            out = sparse_adj
-
-            loop_index = np.arange(sparse_adj.shape[0])
-
-            for _ in range(self.length):
-                out = out @ sparse_adj
-                pe_list.append(out[loop_index, loop_index])
-
-            pe_list = np.stack(pe_list, axis=1)
-            result_list.append(pe_list.mean(axis=0))
-
-        return np.stack(result_list, axis=0)

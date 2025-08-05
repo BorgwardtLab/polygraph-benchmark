@@ -8,3 +8,10 @@
         show_full_path: false
         heading_level: 2
         members: []
+
+::: polygraph.utils.graph_descriptors.GraphDescriptor
+    options:
+        show_root_heading: true
+        show_source: false
+        heading_level: 2
+        members: [__call__]

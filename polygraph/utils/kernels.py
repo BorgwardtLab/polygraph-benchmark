@@ -47,7 +47,7 @@ Example:
 
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Any, Callable, Iterable, Union, Literal
+from typing import Any, Iterable, Union, Literal
 from typing_extensions import TypeAlias
 
 import networkx as nx
@@ -59,8 +59,9 @@ from polygraph.utils.sparse_dist import (
     sparse_euclidean,
     sparse_manhattan,
 )
+from polygraph.utils.graph_descriptors import GraphDescriptor
 
-GraphDescriptorFn = Callable[[Iterable[nx.Graph]], np.ndarray]
+
 MatrixLike: TypeAlias = Union[np.ndarray, csr_array]
 
 GramBlocks = namedtuple(
@@ -79,7 +80,7 @@ class DescriptorKernel(ABC):
         descriptor_fn: Function that transforms graphs into descriptor vectors/matrices
     """
 
-    def __init__(self, descriptor_fn: GraphDescriptorFn):
+    def __init__(self, descriptor_fn: GraphDescriptor):
         self._descriptor_fn = descriptor_fn
 
     @abstractmethod
@@ -175,7 +176,7 @@ class LaplaceKernel(DescriptorKernel):
     """
 
     def __init__(
-        self, descriptor_fn: GraphDescriptorFn, lbd: Union[float, np.ndarray]
+        self, descriptor_fn: GraphDescriptor, lbd: Union[float, np.ndarray]
     ):
         super().__init__(descriptor_fn)
         self.lbd = lbd
@@ -231,7 +232,7 @@ class GaussianTV(DescriptorKernel):
     """
 
     def __init__(
-        self, descriptor_fn: GraphDescriptorFn, bw: Union[float, np.ndarray]
+        self, descriptor_fn: GraphDescriptor, bw: Union[float, np.ndarray]
     ):
         super().__init__(descriptor_fn)
         self.bw = bw
@@ -284,7 +285,7 @@ class RBFKernel(DescriptorKernel):
     """
 
     def __init__(
-        self, descriptor_fn: GraphDescriptorFn, bw: Union[float, np.ndarray]
+        self, descriptor_fn: GraphDescriptor, bw: Union[float, np.ndarray]
     ) -> None:
         super().__init__(descriptor_fn)
         self.bw = bw
@@ -342,7 +343,7 @@ class AdaptiveRBFKernel(DescriptorKernel):
 
     def __init__(
         self,
-        descriptor_fn: GraphDescriptorFn,
+        descriptor_fn: GraphDescriptor,
         bw: Union[float, np.ndarray],
         variant: Literal["mean", "median"] = "mean",
     ) -> None:

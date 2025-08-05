@@ -1,6 +1,6 @@
 # PolyGraphScore
 
-::: polygraph.metrics.base.classifier_metric
+::: polygraph.metrics.base.polygraphscore
     options:
         show_root_heading: false
         show_root_toc_entry: false
@@ -8,3 +8,21 @@
         show_full_path: false
         heading_level: 2
         members: []
+
+## Estimating Distances with a Single Descriptor
+
+::: polygraph.metrics.base.ClassifierMetric
+    options:
+        show_root_heading: true
+        show_full_path: true
+        show_source: false
+        heading_level: 3
+
+## Combining Descriptors
+
+::: polygraph.metrics.base.PolyGraphScore
+    options:
+        show_root_heading: true
+        show_full_path: true
+        show_source: false
+        heading_level: 3
