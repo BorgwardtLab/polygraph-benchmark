@@ -1,13 +1,10 @@
 from typing import Collection, Literal
 
 import networkx as nx
-import numpy as np
 
 from polygraph.metrics.base.polygraphscore import (
     ClassifierMetric,
-    MultiKernelClassifierMetric,
 )
-from polygraph.utils.kernels import AdaptiveRBFKernel
 from polygraph.utils.graph_descriptors import (
     OrbitCounts,
     ClusteringHistogram,
