@@ -10,7 +10,7 @@ nav:
   - Installation: installation.md
   - Tutorials:
     - Basic Usage: tutorials/basic_usage.md
-    - Loading Datasets: tutorials/datasets.md
+    - Metrics Overview: tutorials/metrics_overview.md
     - Evaluating Models: tutorials/evaluating_models.md
     - Defining Custom Metrics: tutorials/custom_metrics.md
   - API Reference:
@@ -51,6 +51,7 @@ plugins:
       paths: [polygraph]
 
 markdown_extensions:
+  - admonition
   - pymdownx.arithmatex:
       generic: true
 
