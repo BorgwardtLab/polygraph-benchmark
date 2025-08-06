@@ -32,7 +32,7 @@ def test_vun_scores() -> None:
     )  # Triangle, Square, and duplicate Triangle
 
     vun = VUN(ref_graphs)
-    vun_scores = vun.compute(gen_graphs)
+    vun_scores = vun.compute(gen_graphs, uncertainty=True)
 
     assert vun_scores["unique"].mle == 2 / 3, (
         "Should have 2 unique graphs out of 3"
@@ -50,24 +50,40 @@ def test_vun_empty_inputs() -> None:
         VUN([]).compute([])
 
 
+def test_vun_without_uncertainty() -> None:
+    ref_graphs = create_test_graphs()
+    gen_graphs = create_test_graphs()
+
+    vun = VUN(ref_graphs)
+    vun_scores1 = vun.compute(gen_graphs, uncertainty=False)
+    vun_scores2 = vun.compute(gen_graphs, uncertainty=True)
+
+    assert len(vun_scores1) == len(vun_scores2)
+
+    for key in vun_scores1.keys():
+        assert vun_scores1[key] == vun_scores2[key].mle
+
+
 def test_vun_with_real_dataset() -> None:
     ds = PlanarGraphDataset("train")
     ref_graphs = list(ds.to_nx())[:10]
     gen_graphs = list(ds.to_nx())[10:20]
 
     vun = VUN(ref_graphs, validity_fn=ds.is_valid)
-    vun_scores = vun.compute(gen_graphs)
+    vun_scores = vun.compute(gen_graphs, uncertainty=True)
 
     assert vun_scores["unique"].mle == 1, "All graphs should be unique"
     assert vun_scores["novel"].mle == 1, "All graphs should be novel"
     assert vun_scores["valid"].mle == 1, "All graphs should be valid"
 
-    vun_scores = vun.compute(ref_graphs)
+    vun_scores = vun.compute(ref_graphs, uncertainty=True)
     assert vun_scores["unique"].mle == 1, "All graphs should be unique"
     assert vun_scores["novel"].mle == 0, "No novel graphs expected"
     assert vun_scores["valid"].mle == 1, "All graphs should be valid"
 
-    vun_scores = vun.compute([gen_graphs[0] for _ in range(10)])
+    vun_scores = vun.compute(
+        [gen_graphs[0] for _ in range(10)], uncertainty=True
+    )
     assert vun_scores["unique"].mle == 0.1, (
         "Only one of 10 graphs should be unique"
     )

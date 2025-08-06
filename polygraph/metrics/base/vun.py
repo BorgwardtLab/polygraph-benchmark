@@ -134,20 +134,20 @@ class VUN(GenerationMetric):
     def compute(
         self,
         generated_graphs: Iterable[nx.Graph],
+        uncertainty: bool = True,
         confidence_level: float = 0.95,
-        as_scalar_value_dict: bool = False,
     ) -> Dict[str, BinomConfidenceInterval]:
         """Computes VUN metrics for a collection of generated graphs.
 
         Args:
             generated_graphs: Collection of graphs to evaluate
+            uncertainty: Whether to compute uncertainty intervals for the metrics
             confidence_level: Confidence level for binomial proportion intervals
 
         Returns:
-            Dictionary mapping metric names to (estimate, lower bound, upper
-            bound) tuples. If as_scalar_value_dict is True, returns a dictionary
-            with scalar values, and if a metric returns None, it is set to -1.
-
+            Dictionary containing metrics. If `uncertainty` is `True`, contains
+            confidence intervals as tuples (estimate, lower bound, upper
+            bound). Otherwise returns only the estimate.
         Raises:
             ValueError: If generated_samples is empty
         """
@@ -188,28 +188,19 @@ class VUN(GenerationMetric):
                 }
             )
 
-        result_w_ci = {}
-        for key, val in result.items():
-            if "unique" not in key:
-                interval = binomtest(k=val, n=n_graphs).proportion_ci(
-                    confidence_level=confidence_level
+        if uncertainty:
+            result_w_ci = {}
+            for key, val in result.items():
+                if "unique" not in key:
+                    interval = binomtest(k=val, n=n_graphs).proportion_ci(
+                        confidence_level=confidence_level
+                    )
+                    low, high = interval.low, interval.high
+                else:
+                    low, high = None, None
+                result_w_ci[key] = BinomConfidenceInterval(
+                    mle=val / n_graphs, low=low, high=high
                 )
-                low, high = interval.low, interval.high
-            else:
-                low, high = None, None
-            result_w_ci[key] = BinomConfidenceInterval(
-                mle=val / n_graphs, low=low, high=high
-            )
-
-        if as_scalar_value_dict:
-            result_w_ci_scalar = {}
-            for key, val in result_w_ci.items():
-                for k, v in val._asdict().items():
-                    result_w_ci_scalar[f"{key}_{k}"] = v
-
-            for key in list(result_w_ci_scalar.keys()):
-                if result_w_ci_scalar[key] is None:
-                    result_w_ci_scalar[key] = -1
-            return result_w_ci_scalar
-        else:
             return result_w_ci
+        else:
+            return {key: val / n_graphs for key, val in result.items()}
