@@ -373,12 +373,12 @@ class _ClassifierMetricSamples:
         samples = []
         for _ in range(num_samples):
             ref_idx = rng.choice(
-                self._reference_descriptions.shape[0],
+                self._reference_descriptions.shape[0],   # pyright: ignore
                 size=subsample_size,
                 replace=False,
             )
             gen_idx = rng.choice(
-                descriptions.shape[0], size=subsample_size, replace=False
+                descriptions.shape[0], size=subsample_size, replace=False   # pyright: ignore
             )
             samples.append(
                 _descriptions_to_classifier_metric(

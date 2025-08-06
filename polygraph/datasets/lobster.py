@@ -22,7 +22,7 @@ def is_lobster_graph(graph: nx.Graph) -> bool:
         leaves = [n for n, d in graph.degree() if d == 1]   # pyright: ignore
         graph.remove_nodes_from(leaves)
 
-        num_nodes = len(graph.nodes())
+        num_nodes = len(graph.nodes())   # pyright: ignore
         num_degree_one = [d for n, d in graph.degree() if d == 1]   # pyright: ignore
         num_degree_two = [d for n, d in graph.degree() if d == 2]   # pyright: ignore
 

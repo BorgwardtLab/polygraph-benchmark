@@ -153,7 +153,7 @@ class SparseDegreeHistogram(GraphDescriptor):
         ptr[1:] = np.cumsum([len(idx) for idx in index]).astype(np.int32)
         result = csr_array(
             (np.concatenate(data), np.concatenate(index), ptr),
-            (len(graphs), 100_000),
+            (len(hists), 100_000),
         )
         return result
 
@@ -223,6 +223,7 @@ class OrbitCounts(GraphDescriptor):
 
     def __call__(self, graphs: Iterable[nx.Graph]):
         # Check if any graph has a self-loop
+        graphs = list(graphs)
         self_loops = [list(nx.selfloop_edges(g)) for g in graphs]
         if any(len(loops) > 0 for loops in self_loops):
             warnings.warn(
@@ -389,7 +390,7 @@ class RandomGIN(GraphDescriptor):
                 self._device
             )
 
-        batch = Batch.from_data_list(pyg_graphs).to(self._device)
+        batch = Batch.from_data_list(pyg_graphs).to(self._device)   # pyright: ignore
 
         graph_embeds = self._feat_fn(
             feats, batch.edge_index, batch.batch, edge_attr=edge_attr

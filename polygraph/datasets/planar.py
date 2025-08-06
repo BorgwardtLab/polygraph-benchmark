@@ -37,7 +37,7 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
         memmap: bool = False,
         show_generation_progress: bool = False,
     ):
-        config_hash: str = joblib.hash(
+        config_hash: str = joblib.hash(          # pyright: ignore  
             (num_graphs, n_nodes, seed, split), hash_name="md5"
         )
         self._rng = np.random.default_rng(
