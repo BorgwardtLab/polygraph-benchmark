@@ -3,7 +3,6 @@ from polygraph.metrics.base.frechet_distance import (
     FrechetDistance,
 )
 from polygraph.metrics.base.mmd import (
-    MMDInterval,
     DescriptorMMD2,
     DescriptorMMD2Interval,
     MaxDescriptorMMD2,
@@ -27,7 +26,6 @@ __all__ = [
     "MetricInterval",
     "FittedFrechetDistance",
     "FrechetDistance",
-    "MMDInterval",
     "DescriptorMMD2",
     "DescriptorMMD2Interval",
     "MaxDescriptorMMD2",

@@ -3,6 +3,7 @@ import numpy as np
 
 
 class MetricInterval:
+    """Class for representing uncertainty quantifications of a metric."""
     def __init__(
         self,
         mean: float,
@@ -45,6 +46,18 @@ class MetricInterval:
         std = np.std(samples, axis=0)
 
         return cls(mean=mean, std=std, low=low, high=high, coverage=coverage)
+
+    def __getitem__(self, key: str) -> float:
+        if key == "mean":
+            return self.mean
+        elif key == "std":
+            return self.std
+        elif key == "low":
+            return self.low
+        elif key == "high":
+            return self.high
+        else:
+            raise ValueError(f"Invalid key: {key}")
 
     def __repr__(self):
         if self.coverage is not None:

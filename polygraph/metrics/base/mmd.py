@@ -48,17 +48,14 @@ import numpy as np
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
 from polygraph.utils.mmd_utils import mmd_from_gram
 from polygraph.metrics.base.interfaces import GenerationMetric, GenerationMetricInterval
+from polygraph.metrics.base.metric_interval import MetricInterval
 
 __all__ = [
     "DescriptorMMD2",
     "MaxDescriptorMMD2",
-    "MMDInterval",
     "DescriptorMMD2Interval",
     "MaxDescriptorMMD2Interval",
 ]
-
-
-MMDInterval = namedtuple("MMDInterval", ["mean", "std", "low", "high"])
 
 
 class DescriptorMMD2(GenerationMetric):
@@ -201,9 +198,9 @@ class _DescriptorMMD2Interval(ABC):
     def compute(
         *args, **kwargs
     ) -> Union[
-        MMDInterval,
+        MetricInterval,
         Dict[str, float],
-        Tuple[Union[MMDInterval, Dict[str, float]], np.ndarray],
+        Tuple[Union[MetricInterval, Dict[str, float]], np.ndarray],
     ]: ...
 
 
@@ -225,13 +222,7 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
         subsample_size: int,
         num_samples: int = 500,
         coverage: float = 0.95,
-        as_scalar_value_dict: bool = False,
-        return_samples: bool = False,
-    ) -> Union[
-        MMDInterval,
-        Dict[str, float],
-        Tuple[Union[MMDInterval, Dict[str, float]], np.ndarray],
-    ]:
+    ) -> MetricInterval:
         """Computes MMD² confidence intervals through subsampling.
 
         Args:
@@ -248,26 +239,8 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
             subsample_size=subsample_size,
             num_samples=num_samples,
         )
-        low, high = (
-            np.quantile(mmd_samples, (1 - coverage) / 2, axis=0),
-            np.quantile(mmd_samples, coverage + (1 - coverage) / 2, axis=0),
-        )
-        avg = np.mean(mmd_samples, axis=0)
-        std = np.std(mmd_samples, axis=0)
-        if as_scalar_value_dict:
-            return_result = {
-                "mean": avg,
-                "std": std,
-                "low": low,
-                "high": high,
-            }
-        else:
-            return_result = MMDInterval(mean=avg, std=std, low=low, high=high)
-
-        if return_samples:
-            return return_result, mmd_samples
-        else:
-            return return_result
+        assert mmd_samples.ndim == 1
+        return MetricInterval.from_samples(mmd_samples, coverage=coverage)
 
 
 class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
@@ -306,13 +279,7 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterva
         subsample_size: int,
         num_samples: int = 500,
         coverage: float = 0.95,
-        as_scalar_value_dict: bool = False,
-        return_samples: bool = False,
-    ) -> Union[
-        MMDInterval,
-        Dict[str, float],
-        Tuple[Union[MMDInterval, Dict[str, float]], np.ndarray],
-    ]:
+    ) -> MetricInterval:
         """Computes confidence intervals for maximum MMD² through subsampling.
 
         Args:
@@ -331,24 +298,6 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterva
         )
         assert mmd_samples.ndim == 2
         mmd_samples = np.max(mmd_samples, axis=1)
-        low, high = (
-            np.quantile(mmd_samples, (1 - coverage) / 2, axis=0),
-            np.quantile(mmd_samples, coverage + (1 - coverage) / 2, axis=0),
-        )
-        avg = np.mean(mmd_samples, axis=0)
-        std = np.std(mmd_samples, axis=0)
+        return MetricInterval.from_samples(mmd_samples, coverage=coverage)
 
-        if as_scalar_value_dict:
-            return_result = {
-                "mean": avg,
-                "std": std,
-                "low": low,
-                "high": high,
-            }
-        else:
-            return_result = MMDInterval(mean=avg, std=std, low=low, high=high)
 
-        if return_samples:
-            return return_result, mmd_samples
-        else:
-            return return_result

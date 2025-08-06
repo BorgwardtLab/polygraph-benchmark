@@ -16,7 +16,6 @@ from polygraph.metrics.base import (
     DescriptorMMD2Interval,
     MaxDescriptorMMD2,
     MaxDescriptorMMD2Interval,
-    MMDInterval,
 )
 from polygraph.metrics.gran import (
     GRANClusteringMMD2,
@@ -49,6 +48,8 @@ from polygraph.metrics.gran.linear_mmd import (
 from polygraph.utils.kernels import LinearKernel
 from polygraph.utils.graph_descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.mmd_utils import mmd_from_gram
+from polygraph.metrics.base.metric_interval import MetricInterval
+
 import grakel
 
 
@@ -191,7 +192,7 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     kernel = request.getfixturevalue(kernel)
     mmd = DescriptorMMD2Interval(sbm, kernel, variant=variant)
     result = mmd.compute(planar, subsample_size=subsample_size)
-    assert isinstance(result, MMDInterval)
+    assert isinstance(result, MetricInterval)
     assert result.std > 0
 
     rng = np.random.default_rng(42)
@@ -243,7 +244,7 @@ def test_concrete_uncertainty(
 
     interval_mmd = interval_cls(planar)
     interval = interval_mmd.compute(sbm, subsample_size=subsample_size)
-    assert isinstance(interval, MMDInterval)
+    assert isinstance(interval, MetricInterval)
 
     num_in_bounds = 0
     num_total = 10
@@ -258,6 +259,7 @@ def test_concrete_uncertainty(
 
         single_mmd = single_cls(planar_samples)
         single_estimate = single_mmd.compute(sbm_samples)
+        assert interval.low <= interval.high
         if interval.low <= single_estimate <= interval.high:
             num_in_bounds += 1
 
