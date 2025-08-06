@@ -197,11 +197,7 @@ class _DescriptorMMD2Interval(ABC):
     @abstractmethod
     def compute(
         *args, **kwargs
-    ) -> Union[
-        MetricInterval,
-        Dict[str, float],
-        Tuple[Union[MetricInterval, Dict[str, float]], np.ndarray],
-    ]: ...
+    ) -> MetricInterval: ...
 
 
 class DescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
