@@ -106,7 +106,7 @@ class _GraphSet:
     ) -> DefaultDict[str, List[int]]:
         hash_set = defaultdict(list)
         for idx, g in enumerate(nx_graphs):
-            hash_set[_GraphSet._graph_fingerprint(g)].append(idx)
+            hash_set[self._graph_fingerprint(g)].append(idx)
         return hash_set
 
 

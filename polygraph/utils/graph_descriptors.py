@@ -464,9 +464,14 @@ class WeisfeilerLehmanDescriptor(GraphDescriptor):
         if digest_size > 4:
             raise ValueError("Digest size must be at most 4 bytes")
 
+        if use_node_labels:
+            assert node_label_key is not None, "node_label_key must be provided if use_node_labels is True"
+            self._node_label_key: str = node_label_key
+        else:
+            self._node_label_key: str = "degree"
+
         self._iterations = iterations
         self._use_node_labels = use_node_labels
-        self._node_label_key = node_label_key if use_node_labels else "degree"
         self._digest_size = digest_size  # Number of bytes in the hash
         self._n_jobs = n_jobs
         self._n_graphs_per_job = n_graphs_per_job
