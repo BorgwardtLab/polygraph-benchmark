@@ -10,7 +10,7 @@ The metrics also compute confidence intervals for the proportions using binomial
 """
 
 from collections import defaultdict, namedtuple
-from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Optional
+from typing import Any, Callable, Collection, DefaultDict, Dict, Iterable, List, Optional, Union
 
 import networkx as nx
 from scipy.stats import binomtest
@@ -133,10 +133,10 @@ class VUN(GenerationMetric):
 
     def compute(
         self,
-        generated_graphs: Iterable[nx.Graph],
+        generated_graphs: Collection[nx.Graph],
         uncertainty: bool = True,
         confidence_level: float = 0.95,
-    ) -> Dict[str, BinomConfidenceInterval]:
+    ) -> Union[Dict[str, BinomConfidenceInterval], Dict[str, float]]:
         """Computes VUN metrics for a collection of generated graphs.
 
         Args:

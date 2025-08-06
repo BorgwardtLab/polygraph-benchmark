@@ -370,7 +370,7 @@ class OnlineGraphDataset(GraphDataset):
         ...
 
     @abstractmethod
-    def hash_for_split(self, split: str) -> str:
+    def hash_for_split(self, split: str) -> Optional[str]:
         """Gets the expected hash for a specific split's data.
 
         This hash is used to validate downloaded data.

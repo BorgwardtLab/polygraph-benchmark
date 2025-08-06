@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 import joblib
 import networkx as nx
@@ -37,7 +37,7 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
         memmap: bool = False,
         show_generation_progress: bool = False,
     ):
-        config_hash = joblib.hash(
+        config_hash: str = joblib.hash(
             (num_graphs, n_nodes, seed, split), hash_name="md5"
         )
         self._rng = np.random.default_rng(
@@ -132,5 +132,5 @@ class PlanarGraphDataset(OnlineGraphDataset):
         """
         return is_planar_graph(graph)
 
-    def hash_for_split(self, split: str) -> str:
+    def hash_for_split(self, split: str) -> Optional[str]:
         return self._HASH_FOR_SPLIT[split]

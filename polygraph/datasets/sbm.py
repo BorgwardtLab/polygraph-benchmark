@@ -1,4 +1,4 @@
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Optional
 
 import joblib
 import networkx as nx
@@ -220,7 +220,7 @@ class ProceduralSBMGraphDataset(ProceduralGraphDataset):
         memmap: bool = False,
         show_generation_progress: bool = False,
     ):
-        config_hash = joblib.hash(
+        config_hash: str = joblib.hash(
             (
                 num_graphs,
                 intra_p,
@@ -358,5 +358,5 @@ class SBMGraphDataset(OnlineGraphDataset):
     def is_valid_alt(graph: nx.Graph) -> bool:
         return is_sbm_graph_alt(graph)
 
-    def hash_for_split(self, split: str) -> str:
+    def hash_for_split(self, split: str) -> Optional[str]:
         return self._HASH_FOR_SPLIT[split]

@@ -39,8 +39,7 @@ Example:
 """
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
-from typing import Collection, Dict, Literal, Tuple, Union
+from typing import Any, Collection, Literal, Union
 
 import networkx as nx
 import numpy as np
@@ -66,6 +65,8 @@ class DescriptorMMD2(GenerationMetric):
         kernel: Kernel function for comparing graphs
         variant: Which MMD estimator to use ('biased', 'umve', or 'ustat')
     """
+
+    _variant: Literal["biased", "umve", "ustat"]
 
     def __init__(
         self,
@@ -136,12 +137,15 @@ class MaxDescriptorMMD2(DescriptorMMD2):
             Maximum MMD² value across kernel parameters
         """
         multi_kernel_result = super().compute(generated_graphs)
+        assert isinstance(multi_kernel_result, np.ndarray)
         idx = int(np.argmax(multi_kernel_result))
         return multi_kernel_result[idx]
 
 
 class _DescriptorMMD2Interval(ABC):
     """Base class for computing MMD² confidence intervals through subsampling."""
+
+    _variant: Literal["biased", "umve", "ustat"]
 
     def __init__(
         self,

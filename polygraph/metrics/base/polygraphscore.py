@@ -62,51 +62,26 @@ def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10):
     return np.sqrt(np.clip(divergence, 0, 1))
 
 
-def _scores_to_informedness_and_threshold(ref_scores: np.ndarray, gen_scores: np.ndarray):
+def _scores_to_informedness_and_threshold(ref_scores: np.ndarray, gen_scores: np.ndarray) -> Tuple[float, float]:
     ground_truth = np.concatenate(
         [np.ones(len(ref_scores)), np.zeros(len(gen_scores))]
     )
-    if ref_scores.ndim == 2:
-        assert (
-            gen_scores.ndim == 2 and ref_scores.shape[1] == gen_scores.shape[1]
-        )
-        all_rocs = [
-            roc_curve(
-                ground_truth,
-                np.concatenate([ref_scores[:, i], gen_scores[:, i]]),
-            )
-            for i in range(gen_scores.shape[1])
-        ]
-        all_j_statistics = [tpr - fpr for fpr, tpr, _ in all_rocs]
-        all_thresholds = [thresholds for _, _, thresholds in all_rocs]
-        optimal_idxs = [
-            np.argmax(j_statistic) for j_statistic in all_j_statistics
-        ]
-        assert len(all_thresholds) == len(optimal_idxs)
-        optimal_threshold = [
-            thresholds[idx]
-            for thresholds, idx in zip(all_thresholds, optimal_idxs)
-        ]
-        assert len(all_j_statistics) == len(optimal_threshold)
-        j_statistic = np.array(
-            [
-                j_statistic[idx]
-                for j_statistic, idx in zip(all_j_statistics, optimal_idxs)
-            ]
-        )
-    else:
-        assert ref_scores.ndim == 1 and gen_scores.ndim == 1
-        fpr, tpr, thresholds = roc_curve(
-            ground_truth, np.concatenate([ref_scores, gen_scores])
-        )
-        j_statistic = tpr - fpr
-        optimal_idx = np.argmax(j_statistic)
-        optimal_threshold = thresholds[optimal_idx]
-        j_statistic = j_statistic[optimal_idx]
+    if ref_scores.ndim != 1:
+        raise RuntimeError("ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report.")
+
+    assert ref_scores.ndim == 1 and gen_scores.ndim == 1
+    fpr, tpr, thresholds = roc_curve(
+        ground_truth, np.concatenate([ref_scores, gen_scores])
+    )
+    j_statistic = tpr - fpr
+    optimal_idx = np.argmax(j_statistic)
+    optimal_threshold = thresholds[optimal_idx]
+    j_statistic = j_statistic[optimal_idx]
     return j_statistic, optimal_threshold
 
 
-def _scores_and_threshold_to_informedness(ref_scores: np.ndarray, gen_scores: np.ndarray, threshold: float):
+def _scores_and_threshold_to_informedness(ref_scores: np.ndarray, gen_scores: np.ndarray, threshold: float) -> float:
+    assert ref_scores.ndim == 1 and gen_scores.ndim == 1
     ref_pred = (ref_scores >= threshold).astype(int)
     gen_pred = (gen_scores >= threshold).astype(int)
     tpr = np.mean(ref_pred, axis=0)
@@ -212,6 +187,7 @@ def _descriptions_to_classifier_metric(
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
+        assert isinstance(gen_descriptions, csr_array)
         # Convert to dense array
         num_features = (
             max(
@@ -262,9 +238,9 @@ def _descriptions_to_classifier_metric(
     train_gen_descriptions = scaler.transform(train_gen_descriptions)
 
     if classifier == "logistic":
-        classifier = LogisticRegression(penalty="l2", max_iter=1000)
+        clf = LogisticRegression(penalty="l2", max_iter=1000)
     elif classifier == "tabpfn":
-        classifier = TabPFNClassifier(
+        clf = TabPFNClassifier(
             device="cuda" if torch.cuda.is_available() else "cpu"
         )
     else:
@@ -272,7 +248,7 @@ def _descriptions_to_classifier_metric(
 
     # Use custom cross-validation function
     scores = _classifier_cross_validation(
-        classifier,
+        clf,
         train_ref_descriptions,
         train_gen_descriptions,
         variant,
@@ -299,8 +275,8 @@ def _descriptions_to_classifier_metric(
         )
         predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
     else:
-        classifier.fit(train_all_descriptions, train_labels)
-        predict_proba = classifier.predict_proba
+        clf.fit(train_all_descriptions, train_labels)
+        predict_proba = clf.predict_proba
 
     ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]
     gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]
@@ -331,6 +307,9 @@ class ClassifierMetric(GenerationMetric):
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
         classifier: Binary classifier to fit
     """
+    _variant: Literal["informedness", "jsd"]
+    _classifier: Literal["logistic", "tabpfn"]
+
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -366,6 +345,9 @@ class ClassifierMetric(GenerationMetric):
 
 
 class _ClassifierMetricSamples:
+    _variant: Literal["informedness", "jsd"]
+    _classifier: Literal["logistic", "tabpfn"]
+
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -420,6 +402,9 @@ class PolyGraphScore(GenerationMetric):
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
         classifier: Binary classifier to fit
     """
+    _variant: Literal["informedness", "jsd"]
+    _classifier: Literal["logistic", "tabpfn"]
+
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -463,10 +448,13 @@ class PolyGraphScore(GenerationMetric):
                 name: metric[1] for name, metric in all_metrics.items()
             },
         }
-        return result
+        return PolyGraphScoreResult(**result)
 
 
 class PolyGraphScoreInterval(GenerationMetricInterval):
+    _variant: Literal["informedness", "jsd"]
+    _classifier: Literal["logistic", "tabpfn"]
+
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -522,4 +510,4 @@ class PolyGraphScoreInterval(GenerationMetricInterval):
                 for key in self._sub_metrics.keys()
             },
         }
-        return result
+        return PolyGraphScoreIntervalResult(**result)

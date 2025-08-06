@@ -341,6 +341,8 @@ class AdaptiveRBFKernel(DescriptorKernel):
         variant: Method for computing adaptive scaling. Either 'mean' or 'median' of the reference-generated distance.
     """
 
+    _variant: Literal["mean", "median"]
+
     def __init__(
         self,
         descriptor_fn: GraphDescriptor,
@@ -386,7 +388,7 @@ class AdaptiveRBFKernel(DescriptorKernel):
         if isinstance(bw, np.ndarray):
             if bw.ndim != 1:
                 raise ValueError(
-                    f"The parameter `kernel_param` parameter must be a scalar or 1-dimensional. Got {self.bw.ndim} dimensions."
+                    f"The parameter `kernel_param` parameter must be a scalar or 1-dimensional. Got {bw.ndim} dimensions."
                 )
             ref_ref = np.expand_dims(ref_ref, -1)
             ref_gen = np.expand_dims(ref_gen, -1)

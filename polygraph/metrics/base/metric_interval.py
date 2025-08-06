@@ -47,7 +47,7 @@ class MetricInterval:
 
         return cls(mean=mean, std=std, low=low, high=high, coverage=coverage)
 
-    def __getitem__(self, key: str) -> float:
+    def __getitem__(self, key: str) -> Optional[float]:
         if key == "mean":
             return self.mean
         elif key == "std":

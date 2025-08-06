@@ -76,7 +76,7 @@ def sparse_histogram(
 
 
 def sparse_histograms_to_array(
-    sparse_histograms: List[Tuple[np.ndarray, np.ndarray, np.ndarray]],
+    sparse_histograms: List[Tuple[np.ndarray, np.ndarray]],
     num_bins: int,
 ) -> csr_array:
     index = np.concatenate(
@@ -182,7 +182,7 @@ class ClusteringHistogram(GraphDescriptor):
         self, graphs: Iterable[nx.Graph]
     ) -> Union[np.ndarray, csr_array]:
         all_clustering_coeffs = [
-            list(nx.clustering(graph).values()) for graph in graphs
+            list(nx.clustering(graph).values()) for graph in graphs     # pyright: ignore
         ]
         if self._sparse:
             sparse_histograms = [
@@ -213,6 +213,8 @@ class OrbitCounts(GraphDescriptor):
         Self-loops are automatically removed from input graphs.
     """
 
+    _mode: Literal["node", "edge"]
+
     def __init__(
         self, graphlet_size: int = 4, mode: Literal["node", "edge"] = "node"
     ):
@@ -238,6 +240,8 @@ class OrbitCounts(GraphDescriptor):
             counts = orbit_count.batched_edge_orbit_counts(
                 graphs, graphlet_size=self._graphlet_size
             )
+        else:
+            raise ValueError(f"Invalid mode: {self._mode}")
         counts = [count.mean(axis=0) for count in counts]
         return np.stack(counts, axis=0)
 
