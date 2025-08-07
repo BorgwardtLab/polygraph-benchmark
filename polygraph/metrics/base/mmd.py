@@ -27,8 +27,8 @@ Example:
     mmd_value = mmd.compute(generated_graphs)
     print(mmd_value)    # A single float value
 
-    mmd_w_uncertainty = DescriptorMMD2Interval(reference_graphs=reference_graphs, kernel=kernel)
-    mmd_interval = mmd_w_uncertainty.compute(generated_graphs, subsample_size=5, num_samples=100)
+    mmd_w_uncertainty = DescriptorMMD2Interval(reference_graphs=reference_graphs, kernel=kernel, subsample_size=5, num_samples=100, coverage=0.95)
+    mmd_interval = mmd_w_uncertainty.compute(generated_graphs)
     print(mmd_interval)    # Named tuple with mean, standard deviation, and confidence interval bounds
 
     multi_kernel = AdaptiveRBFKernel(descriptor_fn=SparseDegreeHistogram(), bw=np.array([0.1, 0.2]))
@@ -38,15 +38,14 @@ Example:
     ```
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Collection, Literal, Union
+from typing import Collection, Literal, Union, Optional
 
 import networkx as nx
 import numpy as np
 
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
 from polygraph.utils.mmd_utils import mmd_from_gram
-from polygraph.metrics.base.interfaces import GenerationMetric, GenerationMetricInterval
+from polygraph.metrics.base.interface import GenerationMetric
 from polygraph.metrics.base.metric_interval import MetricInterval
 
 __all__ = [
@@ -142,7 +141,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         return multi_kernel_result[idx]
 
 
-class _DescriptorMMD2Interval(ABC):
+class _MMD2SamplingMixin:
     """Base class for computing MMD² confidence intervals through subsampling."""
 
     _variant: Literal["biased", "umve", "ustat"]
@@ -151,17 +150,19 @@ class _DescriptorMMD2Interval(ABC):
         self,
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
+        subsample_size: int,
+        num_samples: int = 500,
         variant: Literal["biased", "umve", "ustat"] = "biased",
     ):
         self._kernel = kernel
         self._variant = variant
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
+        self._subsample_size = subsample_size
+        self._num_samples = num_samples
 
     def _generate_mmd_samples(
         self,
         generated_graphs: Collection[nx.Graph],
-        subsample_size: int,
-        num_samples: int = 500,
     ) -> np.ndarray:
         descriptions = self._kernel.featurize(
             generated_graphs,
@@ -173,12 +174,12 @@ class _DescriptorMMD2Interval(ABC):
             self._reference_descriptions, descriptions
         )
 
-        for _ in range(num_samples):
+        for _ in range(self._num_samples):
             ref_idxs = rng.choice(
-                len(ref_vs_ref), size=subsample_size, replace=False
+                len(ref_vs_ref), size=self._subsample_size, replace=False
             )
             gen_idxs = rng.choice(
-                len(gen_vs_gen), size=subsample_size, replace=False
+                len(gen_vs_gen), size=self._subsample_size, replace=False
             )
             sub_ref_vs_ref = ref_vs_ref[ref_idxs][:, ref_idxs]
             sub_gen_vs_gen = gen_vs_gen[gen_idxs][:, gen_idxs]
@@ -198,13 +199,8 @@ class _DescriptorMMD2Interval(ABC):
         mmd_samples = np.array(mmd_samples)
         return mmd_samples
 
-    @abstractmethod
-    def compute(
-        *args, **kwargs
-    ) -> MetricInterval: ...
 
-
-class DescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
+class DescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
     """Computes MMD² confidence intervals using subsampling.
 
     Estimates uncertainty in MMD² by repeatedly computing it on random subsamples
@@ -213,37 +209,47 @@ class DescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
     Args:
         reference_graphs: Collection of graphs to compare against
         kernel: Kernel function for comparing graphs
+        subsample_size: Number of graphs to use in each MMD² sample, should be consistent with the sample size in point estimates.
+        num_samples: Number of MMD² samples to generate
+        coverage: Confidence level to compute upper and lower bounds. If None, only the mean and standard deviation are returned.
         variant: Which MMD estimator to use ('biased', 'umve', or 'ustat')
     """
-
-    def compute(
+    def __init__(
         self,
-        generated_graphs: Collection[nx.Graph],
+        reference_graphs: Collection[nx.Graph],
+        kernel: DescriptorKernel,
         subsample_size: int,
         num_samples: int = 500,
-        coverage: float = 0.95,
-    ) -> MetricInterval:
+        coverage: Optional[float] = 0.95,
+        variant: Literal["biased", "umve", "ustat"] = "biased",
+    ):
+        _MMD2SamplingMixin.__init__(
+            self,
+            reference_graphs=reference_graphs,
+            kernel=kernel,
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            variant=variant,
+        )
+        self._coverage = coverage
+
+    def compute(self, generated_graphs: Collection[nx.Graph]) -> MetricInterval:
         """Computes MMD² confidence intervals through subsampling.
 
         Args:
             generated_graphs: Collection of graphs to evaluate
-            subsample_size: Number of graphs to use in each MMD² sample, should be consistent with the sample size in point estimates.
-            num_samples: Number of MMD² samples to generate
-            coverage: Confidence level to compute upper and lower bounds
 
         Returns:
             Named tuple with mean, standard deviation, and confidence interval bounds
         """
         mmd_samples = self._generate_mmd_samples(
             generated_graphs=generated_graphs,
-            subsample_size=subsample_size,
-            num_samples=num_samples,
         )
         assert mmd_samples.ndim == 1
-        return MetricInterval.from_samples(mmd_samples, coverage=coverage)
+        return MetricInterval.from_samples(mmd_samples, coverage=self._coverage)
 
 
-class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterval):
+class MaxDescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
     """Computes confidence intervals for maximum MMD² across kernel parameters.
 
     Similar to DescriptorMMD2Interval but takes the maximum across different kernel
@@ -253,6 +259,9 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterva
     Args:
         reference_graphs: Collection of graphs to compare against
         kernel: Kernel function with multiple parameters
+        subsample_size: Number of graphs to use in each MMD² sample, should be consistent with the sample size in point estimates.
+        num_samples: Number of MMD² samples to generate
+        coverage: Confidence level to compute upper and lower bounds. If None, only the mean and standard deviation are returned.
         variant: Which MMD estimator to use ('biased', 'umve', or 'ustat')
 
     Raises:
@@ -263,41 +272,39 @@ class MaxDescriptorMMD2Interval(_DescriptorMMD2Interval, GenerationMetricInterva
         self,
         reference_graphs: Collection[nx.Graph],
         kernel: DescriptorKernel,
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
         variant: Literal["biased", "umve", "ustat"] = "biased",
     ):
-        super().__init__(
-            reference_graphs=reference_graphs, kernel=kernel, variant=variant
+        _MMD2SamplingMixin.__init__(
+            self,
+            reference_graphs=reference_graphs,
+            kernel=kernel,
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            variant=variant,
         )
+        self._coverage = coverage
         if not self._kernel.num_kernels > 1:
             raise ValueError(
                 "Must provide several kernels, i.e. either a kernel with multiple parameters"
             )
 
-    def compute(
-        self,
-        generated_graphs: Collection[nx.Graph],
-        subsample_size: int,
-        num_samples: int = 500,
-        coverage: float = 0.95,
-    ) -> MetricInterval:
+    def compute(self, generated_graphs: Collection[nx.Graph]) -> MetricInterval:
         """Computes confidence intervals for maximum MMD² through subsampling.
 
         Args:
             generated_graphs: Collection of graphs to evaluate
-            subsample_size: Number of graphs to use in each subsample
-            num_samples: Number of subsamples to generate
-            coverage: Confidence level (e.g., 0.95 for 95% intervals)
 
         Returns:
             Named tuple with mean, standard deviation, and confidence interval bounds for the maximum MMD² across kernel parameters
         """
         mmd_samples = self._generate_mmd_samples(
             generated_graphs=generated_graphs,
-            subsample_size=subsample_size,
-            num_samples=num_samples,
         )
         assert mmd_samples.ndim == 2
         mmd_samples = np.max(mmd_samples, axis=1)
-        return MetricInterval.from_samples(mmd_samples, coverage=coverage)
+        return MetricInterval.from_samples(mmd_samples, coverage=self._coverage)
 
 

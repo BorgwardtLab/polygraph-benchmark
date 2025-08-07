@@ -28,7 +28,7 @@ import torch
 from tabpfn import TabPFNClassifier
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.utils.graph_descriptors import GraphDescriptor
-from polygraph.metrics.base.interfaces import GenerationMetric, GenerationMetricInterval
+from polygraph.metrics.base.interface import GenerationMetric
 
 
 __all__ = [
@@ -52,7 +52,7 @@ class PolyGraphScoreIntervalResult(TypedDict):
     polyscore_descriptor: Dict[str, float]
 
 
-def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10):
+def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
     """Estimate Jensen-Shannon distance based on classifier probabilities."""
     divergence = 0.5 * (
         np.log2(ref_scores + eps).mean()
@@ -183,7 +183,7 @@ def _descriptions_to_classifier_metric(
     ] = "jsd",
     classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     rng: Optional[np.random.Generator] = None,
-):
+) -> Tuple[float, float]:
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
@@ -202,7 +202,7 @@ def _descriptions_to_classifier_metric(
                 gen_descriptions.indices,
                 gen_descriptions.indptr,
             ),
-            shape=(gen_descriptions.shape[0], num_features),
+            shape=(gen_descriptions.shape[0], num_features),   # pyright: ignore
         ).toarray()
         ref_descriptions = csr_array(
             (
@@ -210,7 +210,7 @@ def _descriptions_to_classifier_metric(
                 ref_descriptions.indices,
                 ref_descriptions.indptr,
             ),
-            shape=(ref_descriptions.shape[0], num_features),
+            shape=(ref_descriptions.shape[0], num_features),   # pyright: ignore
         ).toarray()
 
     ref_train_idx = rng.choice(
@@ -236,6 +236,10 @@ def _descriptions_to_classifier_metric(
     test_gen_descriptions = scaler.transform(test_gen_descriptions)
     train_ref_descriptions = scaler.transform(train_ref_descriptions)
     train_gen_descriptions = scaler.transform(train_gen_descriptions)
+    assert isinstance(train_ref_descriptions, np.ndarray)
+    assert isinstance(train_gen_descriptions, np.ndarray)
+    assert isinstance(test_ref_descriptions, np.ndarray)
+    assert isinstance(test_gen_descriptions, np.ndarray)
 
     if classifier == "logistic":
         clf = LogisticRegression(penalty="l2", max_iter=1000)
@@ -294,7 +298,8 @@ def _descriptions_to_classifier_metric(
         test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
     else:
         raise ValueError(f"Invalid variant: {variant}")
-
+    
+    assert isinstance(train_metric, float)
     return train_metric, test_metric
 
 
@@ -451,7 +456,7 @@ class PolyGraphScore(GenerationMetric):
         return PolyGraphScoreResult(**result)
 
 
-class PolyGraphScoreInterval(GenerationMetricInterval):
+class PolyGraphScoreInterval(GenerationMetric):
     _variant: Literal["informedness", "jsd"]
     _classifier: Literal["logistic", "tabpfn"]
 
@@ -459,6 +464,8 @@ class PolyGraphScoreInterval(GenerationMetricInterval):
         self,
         reference_graphs: Collection[nx.Graph],
         descriptors: Dict[str, GraphDescriptor],
+        subsample_size: int,
+        num_samples: int = 10,
         variant: Literal[
             "informedness", "jsd"
         ] = "jsd",
@@ -470,15 +477,15 @@ class PolyGraphScoreInterval(GenerationMetricInterval):
             )
             for name in descriptors
         }
+        self._subsample_size = subsample_size
+        self._num_samples = num_samples
 
     def compute(
         self,
         generated_graphs: Collection[nx.Graph],
-        subsample_size: int,
-        num_samples: int = 100,
     ) -> PolyGraphScoreIntervalResult:
         all_sub_samples = {
-            name: metric.compute(generated_graphs, subsample_size, num_samples)
+            name: metric.compute(generated_graphs, self._subsample_size, self._num_samples)
             for name, metric in self._sub_metrics.items()
         }
         all_sub_intervals = {
@@ -490,7 +497,7 @@ class PolyGraphScoreInterval(GenerationMetricInterval):
             max(
                 self._sub_metrics.keys(), key=lambda x: all_sub_samples[x][i, 0]
             )
-            for i in range(num_samples)
+            for i in range(self._num_samples)
         ]
         aggregate_samples = np.array(
             [
@@ -503,10 +510,10 @@ class PolyGraphScoreInterval(GenerationMetricInterval):
         descriptor_counts = Counter(optimal_descriptors)
 
         result = {
-            "polyscore": aggregate_interval,
+            "polygraphscore": aggregate_interval,
             "subscores": all_sub_intervals,
-            "polyscore_descriptor": {
-                key: descriptor_counts[key] / num_samples
+            "polygraphscore_descriptor": {
+                key: descriptor_counts[key] / self._num_samples
                 for key in self._sub_metrics.keys()
             },
         }

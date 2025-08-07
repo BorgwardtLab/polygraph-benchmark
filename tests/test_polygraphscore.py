@@ -2,7 +2,8 @@ import pytest
 
 import networkx as nx
 from polygraph.utils.graph_descriptors import SparseDegreeHistogram, DegreeHistogram, ClusteringHistogram
-from polygraph.metrics.base import PolyGraphScore, ClassifierMetric
+from polygraph.metrics.base import PolyGraphScore, PolyGraphScoreInterval, ClassifierMetric
+from polygraph.metrics.base.metric_interval import MetricInterval
 
 
 @pytest.fixture
@@ -52,3 +53,21 @@ def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
 
     result = polygraphscore.compute(dense_graphs)
     assert result["polygraphscore"] <= 0.2, f"PolyGraphScore {result['polygraphscore']} is greater than 0.2"
+
+
+@pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
+@pytest.mark.parametrize("variant", ["jsd", "informedness"])
+def test_polygraphscore_interval(classifier, variant, dense_graphs, sparse_graphs):
+    descriptors = {
+        "degree": SparseDegreeHistogram(),
+        "clustering": ClusteringHistogram(100),
+    }
+    polygraphscore = PolyGraphScoreInterval(dense_graphs, descriptors, subsample_size=10, num_samples=4, variant=variant, classifier=classifier)
+    result = polygraphscore.compute(sparse_graphs)
+    assert isinstance(result, dict)
+    assert "polygraphscore" in result
+    assert "polygraphscore_descriptor" in result
+    assert "subscores" in result
+    assert len(result["subscores"]) == len(descriptors)
+    assert isinstance(result["polygraphscore"], MetricInterval)
+    assert isinstance(result["polygraphscore_descriptor"], dict)

@@ -185,6 +185,7 @@ class ClusteringHistogram(GraphDescriptor):
             list(nx.clustering(graph).values()) for graph in graphs     # pyright: ignore
         ]
         if self._sparse:
+            assert self._bins is not None
             sparse_histograms = [
                 sparse_histogram(
                     np.array(clustering_coeffs), self._bins, density=True
@@ -277,6 +278,7 @@ class EigenvalueHistogram(GraphDescriptor):
             all_eigs.append(eigs)
 
         if self._sparse:
+            assert self._bins is not None
             sparse_histograms = [
                 sparse_histogram(np.array(eigs), self._bins, density=True)
                 for eigs in all_eigs
@@ -423,7 +425,9 @@ class NormalizedDescriptor(GraphDescriptor):
 
     def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
         result = self._descriptor_fn(graphs)
-        return self._scaler.transform(result)
+        result = self._scaler.transform(result)
+        assert isinstance(result, np.ndarray)
+        return result
 
 
 class WeisfeilerLehmanDescriptor(GraphDescriptor):

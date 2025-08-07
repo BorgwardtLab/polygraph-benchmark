@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 import scipy
 
-from polygraph.metrics.base.interfaces import GenerationMetric
+from polygraph.metrics.base.interface import GenerationMetric
 
 
 __all__ = ["FittedFrechetDistance", "FrechetDistance"]

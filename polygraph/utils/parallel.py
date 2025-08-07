@@ -12,7 +12,6 @@ import joblib
 from joblib import Parallel, delayed
 from rich.progress import (
     BarColumn,
-    Console,
     MofNCompleteColumn,
     Progress,
     TaskID,
@@ -21,6 +20,7 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
+from rich.console import Console
 
 console = Console()
 
@@ -158,7 +158,7 @@ def retry(max_retries: int = 3, delay: float = 1.0):
 
 def batched_distribute_function(
     func: Callable,
-    X: Iterable,
+    X: List[Any],
     n_jobs: int,
     description: str = "",
     total: int = 1,

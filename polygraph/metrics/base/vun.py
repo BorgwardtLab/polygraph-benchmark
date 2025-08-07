@@ -15,7 +15,7 @@ from typing import Any, Callable, Collection, DefaultDict, Dict, Iterable, List,
 import networkx as nx
 from scipy.stats import binomtest
 
-from polygraph.metrics.base.interfaces import GenerationMetric
+from polygraph.metrics.base.interface import GenerationMetric
 
 __all__ = ["VUN"]
 
@@ -120,34 +120,35 @@ class VUN(GenerationMetric):
     Args:
         train_graphs: Collection of training graphs to check novelty against
         validity_fn: Optional function that takes a graph and returns True if valid
+            If `None`, only uniqueness and novelty are computed.
+        confidence_level: Confidence level for binomial proportion intervals. If `None`, only the point estimates are returned.
     """
 
     def __init__(
         self,
         train_graphs: Iterable[nx.Graph],
         validity_fn: Optional[Callable] = None,
+        confidence_level: Optional[float] = None,
     ):
         self._train_set = _GraphSet()
         self._train_set.add_from(train_graphs)
         self._validity_fn = validity_fn
+        self._confidence_level = confidence_level
+        self._compute_ci = self._confidence_level is not None
 
     def compute(
         self,
         generated_graphs: Collection[nx.Graph],
-        uncertainty: bool = True,
-        confidence_level: float = 0.95,
     ) -> Union[Dict[str, BinomConfidenceInterval], Dict[str, float]]:
         """Computes VUN metrics for a collection of generated graphs.
 
         Args:
             generated_graphs: Collection of graphs to evaluate
-            uncertainty: Whether to compute uncertainty intervals for the metrics
-            confidence_level: Confidence level for binomial proportion intervals
 
         Returns:
-            Dictionary containing metrics. If `uncertainty` is `True`, contains
-            confidence intervals as tuples (estimate, lower bound, upper
-            bound). Otherwise returns only the estimate.
+            Dictionary containing metrics. If `confidence_level` was provided, it contains
+            confidence intervals as tuples (estimate, lower bound, upper bound).
+            Otherwise returns only the point estimates.
         Raises:
             ValueError: If generated_samples is empty
         """
@@ -188,12 +189,13 @@ class VUN(GenerationMetric):
                 }
             )
 
-        if uncertainty:
+        if self._compute_ci:
+            assert self._confidence_level is not None
             result_w_ci = {}
             for key, val in result.items():
                 if "unique" not in key:
                     interval = binomtest(k=val, n=n_graphs).proportion_ci(
-                        confidence_level=confidence_level
+                        confidence_level=self._confidence_level
                     )
                     low, high = interval.low, interval.high
                 else:

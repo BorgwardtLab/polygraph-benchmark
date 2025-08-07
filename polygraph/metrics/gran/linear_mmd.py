@@ -1,4 +1,4 @@
-from typing import Collection
+from typing import Collection, Optional
 
 import networkx as nx
 
@@ -39,10 +39,13 @@ class LinearOrbitMMD2(DescriptorMMD2):
 
 
 class LinearOrbitMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=OrbitCounts()),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -57,10 +60,13 @@ class LinearClusteringMMD2(DescriptorMMD2):
 
 
 class LinearClusteringMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=ClusteringHistogram(bins=100)),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -75,10 +81,13 @@ class LinearDegreeMMD2(DescriptorMMD2):
 
 
 class LinearDegreeMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=SparseDegreeHistogram()),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -93,9 +102,12 @@ class LinearSpectralMMD2(DescriptorMMD2):
 
 
 class LinearSpectralMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=EigenvalueHistogram()),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
