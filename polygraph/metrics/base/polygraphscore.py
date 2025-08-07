@@ -40,6 +40,7 @@ __all__ = [
 
 class PolyGraphScoreResult(TypedDict):
     """Return type for PolyGraphScore.compute method."""
+
     polygraphscore: float
     polygraphscore_descriptor: str
     subscores: Dict[str, float]
@@ -47,6 +48,7 @@ class PolyGraphScoreResult(TypedDict):
 
 class PolyGraphScoreIntervalResult(TypedDict):
     """Return type for PolyGraphScoreInterval.compute method."""
+
     polyscore: MetricInterval
     subscores: Dict[str, MetricInterval]
     polyscore_descriptor: Dict[str, float]
@@ -62,12 +64,16 @@ def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
     return np.sqrt(np.clip(divergence, 0, 1))
 
 
-def _scores_to_informedness_and_threshold(ref_scores: np.ndarray, gen_scores: np.ndarray) -> Tuple[float, float]:
+def _scores_to_informedness_and_threshold(
+    ref_scores: np.ndarray, gen_scores: np.ndarray
+) -> Tuple[float, float]:
     ground_truth = np.concatenate(
         [np.ones(len(ref_scores)), np.zeros(len(gen_scores))]
     )
     if ref_scores.ndim != 1:
-        raise RuntimeError("ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report.")
+        raise RuntimeError(
+            "ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report."
+        )
 
     assert ref_scores.ndim == 1 and gen_scores.ndim == 1
     fpr, tpr, thresholds = roc_curve(
@@ -80,14 +86,15 @@ def _scores_to_informedness_and_threshold(ref_scores: np.ndarray, gen_scores: np
     return j_statistic, optimal_threshold
 
 
-def _scores_and_threshold_to_informedness(ref_scores: np.ndarray, gen_scores: np.ndarray, threshold: float) -> float:
+def _scores_and_threshold_to_informedness(
+    ref_scores: np.ndarray, gen_scores: np.ndarray, threshold: float
+) -> float:
     assert ref_scores.ndim == 1 and gen_scores.ndim == 1
     ref_pred = (ref_scores >= threshold).astype(int)
     gen_pred = (gen_scores >= threshold).astype(int)
     tpr = np.mean(ref_pred, axis=0)
     fpr = np.mean(gen_pred, axis=0)
     return tpr - fpr
-
 
 
 def _classifier_cross_validation(
@@ -178,9 +185,7 @@ def _classifier_cross_validation(
 def _descriptions_to_classifier_metric(
     ref_descriptions: Union[np.ndarray, csr_array],
     gen_descriptions: Union[np.ndarray, csr_array],
-    variant: Literal[
-        "informedness", "jsd"
-    ] = "jsd",
+    variant: Literal["informedness", "jsd"] = "jsd",
     classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     rng: Optional[np.random.Generator] = None,
 ) -> Tuple[float, float]:
@@ -202,7 +207,7 @@ def _descriptions_to_classifier_metric(
                 gen_descriptions.indices,
                 gen_descriptions.indptr,
             ),
-            shape=(gen_descriptions.shape[0], num_features),   # pyright: ignore
+            shape=(gen_descriptions.shape[0], num_features),  # pyright: ignore
         ).toarray()
         ref_descriptions = csr_array(
             (
@@ -210,7 +215,7 @@ def _descriptions_to_classifier_metric(
                 ref_descriptions.indices,
                 ref_descriptions.indptr,
             ),
-            shape=(ref_descriptions.shape[0], num_features),   # pyright: ignore
+            shape=(ref_descriptions.shape[0], num_features),  # pyright: ignore
         ).toarray()
 
     ref_train_idx = rng.choice(
@@ -298,7 +303,7 @@ def _descriptions_to_classifier_metric(
         test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
     else:
         raise ValueError(f"Invalid variant: {variant}")
-    
+
     assert isinstance(train_metric, float)
     return train_metric, test_metric
 
@@ -312,6 +317,7 @@ class ClassifierMetric(GenerationMetric):
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
         classifier: Binary classifier to fit
     """
+
     _variant: Literal["informedness", "jsd"]
     _classifier: Literal["logistic", "tabpfn"]
 
@@ -319,9 +325,7 @@ class ClassifierMetric(GenerationMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         descriptor: GraphDescriptor,
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._descriptor = descriptor
@@ -357,9 +361,7 @@ class _ClassifierMetricSamples:
         self,
         reference_graphs: Collection[nx.Graph],
         descriptor: GraphDescriptor,
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._descriptor = descriptor
@@ -378,12 +380,14 @@ class _ClassifierMetricSamples:
         samples = []
         for _ in range(num_samples):
             ref_idx = rng.choice(
-                self._reference_descriptions.shape[0],   # pyright: ignore
+                self._reference_descriptions.shape[0],  # pyright: ignore
                 size=subsample_size,
                 replace=False,
             )
             gen_idx = rng.choice(
-                descriptions.shape[0], size=subsample_size, replace=False   # pyright: ignore
+                descriptions.shape[0],
+                size=subsample_size,
+                replace=False,  # pyright: ignore
             )
             samples.append(
                 _descriptions_to_classifier_metric(
@@ -407,6 +411,7 @@ class PolyGraphScore(GenerationMetric):
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
         classifier: Binary classifier to fit
     """
+
     _variant: Literal["informedness", "jsd"]
     _classifier: Literal["logistic", "tabpfn"]
 
@@ -414,9 +419,7 @@ class PolyGraphScore(GenerationMetric):
         self,
         reference_graphs: Collection[nx.Graph],
         descriptors: Dict[str, GraphDescriptor],
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._sub_metrics = {
@@ -426,16 +429,18 @@ class PolyGraphScore(GenerationMetric):
             for name in descriptors
         }
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> PolyGraphScoreResult:
+    def compute(
+        self, generated_graphs: Collection[nx.Graph]
+    ) -> PolyGraphScoreResult:
         """Compute the PolyGraphScore.
 
         Args:
             generated_graphs: Generated graphs
 
         Returns:
-            Dictionary of scores. 
-                The key `"polygraphscore"` specifies the PolyGraphScore, giving the estimated tightest lower-bound on the probability metric. 
-                The key `"polygraphscore_descriptor"` specifies the descriptor that achieves this bound. 
+            Dictionary of scores.
+                The key `"polygraphscore"` specifies the PolyGraphScore, giving the estimated tightest lower-bound on the probability metric.
+                The key `"polygraphscore_descriptor"` specifies the descriptor that achieves this bound.
                 All descritor-wise scores are returned in the key `"subscores"`.
         """
         all_metrics = {
@@ -466,9 +471,7 @@ class PolyGraphScoreInterval(GenerationMetric):
         descriptors: Dict[str, GraphDescriptor],
         subsample_size: int,
         num_samples: int = 10,
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         self._sub_metrics = {
@@ -485,7 +488,9 @@ class PolyGraphScoreInterval(GenerationMetric):
         generated_graphs: Collection[nx.Graph],
     ) -> PolyGraphScoreIntervalResult:
         all_sub_samples = {
-            name: metric.compute(generated_graphs, self._subsample_size, self._num_samples)
+            name: metric.compute(
+                generated_graphs, self._subsample_size, self._num_samples
+            )
             for name, metric in self._sub_metrics.items()
         }
         all_sub_intervals = {

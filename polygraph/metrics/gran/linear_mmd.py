@@ -39,7 +39,13 @@ class LinearOrbitMMD2(DescriptorMMD2):
 
 
 class LinearOrbitMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=OrbitCounts()),
@@ -60,7 +66,13 @@ class LinearClusteringMMD2(DescriptorMMD2):
 
 
 class LinearClusteringMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=ClusteringHistogram(bins=100)),
@@ -81,7 +93,13 @@ class LinearDegreeMMD2(DescriptorMMD2):
 
 
 class LinearDegreeMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=SparseDegreeHistogram()),
@@ -102,7 +120,13 @@ class LinearSpectralMMD2(DescriptorMMD2):
 
 
 class LinearSpectralMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=LinearKernel(descriptor_fn=EigenvalueHistogram()),

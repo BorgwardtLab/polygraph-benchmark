@@ -47,7 +47,13 @@ class RBFOrbitMMD2(MaxDescriptorMMD2):
 
 
 class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -78,7 +84,13 @@ class RBFClusteringMMD2(MaxDescriptorMMD2):
 
 
 class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -109,7 +121,13 @@ class RBFDegreeMMD2(MaxDescriptorMMD2):
 
 
 class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -140,7 +158,13 @@ class RBFSpectralMMD2(MaxDescriptorMMD2):
 
 
 class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(

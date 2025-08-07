@@ -9,7 +9,7 @@
         heading_level: 2
         members: []
 
-We implement the following metrics: 
+We implement the following metrics:
 
 - [MMD](mmd.md) - Classical Maximum Mean Discrepancy
 - [PolyGraphScore](polygraphscore.md) - Lower bounds on probability metrics via classification

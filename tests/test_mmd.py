@@ -190,7 +190,9 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     kernel = request.getfixturevalue(kernel)
-    mmd = DescriptorMMD2Interval(sbm, kernel, variant=variant, subsample_size=subsample_size)
+    mmd = DescriptorMMD2Interval(
+        sbm, kernel, variant=variant, subsample_size=subsample_size
+    )
     result = mmd.compute(planar)
     assert isinstance(result, MetricInterval)
     assert result.std > 0

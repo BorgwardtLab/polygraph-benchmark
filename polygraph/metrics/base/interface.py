@@ -22,12 +22,14 @@ metrics = MetricCollection(
 print(metrics.compute(generated_graphs))
 ```
 """
+
 from typing import Protocol, Collection, Any, Dict
 import networkx as nx
 
 
 class GenerationMetric(Protocol):
     """Interface for metrics that provide a single estimate."""
+
     def compute(self, generated_graphs: Collection[nx.Graph]) -> Any:
         """Compute the metric on the generated graphs.
 
@@ -39,16 +41,20 @@ class GenerationMetric(Protocol):
 
 class MetricCollection(GenerationMetric):
     """Collection of metrics that provide a single estimate."""
+
     def __init__(self, metrics: Dict[str, GenerationMetric]):
         self._metrics = metrics
-    
+
     def compute(
-        self, 
-        generated_graphs: Collection[nx.Graph], 
+        self,
+        generated_graphs: Collection[nx.Graph],
     ) -> Dict[str, Any]:
         """Compute the metrics on the generated graphs.
 
         Args:
             generated_graphs: Collection of generated graphs.
         """
-        return {name: metric.compute(generated_graphs) for name, metric in self._metrics.items()}
+        return {
+            name: metric.compute(generated_graphs)
+            for name, metric in self._metrics.items()
+        }

@@ -21,7 +21,10 @@ ALL_PROCEDURAL_DATASETS = [
 def test_split_disjointness(ds_cls):
     train = ds_cls("train", num_graphs=20)
     val = ds_cls("val", num_graphs=20)
-    vun = VUN(train.to_nx(), validity_fn=train.is_valid,)
+    vun = VUN(
+        train.to_nx(),
+        validity_fn=train.is_valid,
+    )
     metrics = vun.compute(val.to_nx())
     assert metrics["novel"] == 1.0
     assert metrics["unique"] == 1.0

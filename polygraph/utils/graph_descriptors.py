@@ -8,7 +8,7 @@ They implement the [`GraphDescriptor`][polygraph.utils.graph_descriptors.GraphDe
 
 Descriptors may, for example, be implemented as follows:
 
-```python 
+```python
 from typing import Iterable
 import networkx as nx
 import numpy as np
@@ -38,7 +38,16 @@ import copy
 import warnings
 from collections import Counter
 from hashlib import blake2b
-from typing import Protocol, Callable, Iterable, List, Optional, Tuple, Union, Literal
+from typing import (
+    Protocol,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    Literal,
+)
 
 import networkx as nx
 import numpy as np
@@ -51,7 +60,6 @@ from torch_geometric.utils import degree, from_networkx
 
 from polygraph.utils.gin import GIN
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
-
 
 
 def sparse_histogram(
@@ -98,7 +106,9 @@ class GraphDescriptor(Protocol):
     A graph descriptor is a callable that takes an iterable of networkx graphs and returns a numpy array or a sparse matrix.
     """
 
-    def __call__(self, graphs: Iterable[nx.Graph]) -> Union[np.ndarray, csr_array]:
+    def __call__(
+        self, graphs: Iterable[nx.Graph]
+    ) -> Union[np.ndarray, csr_array]:
         """Compute features of graphs.
 
         Args:
@@ -182,7 +192,8 @@ class ClusteringHistogram(GraphDescriptor):
         self, graphs: Iterable[nx.Graph]
     ) -> Union[np.ndarray, csr_array]:
         all_clustering_coeffs = [
-            list(nx.clustering(graph).values()) for graph in graphs     # pyright: ignore
+            list(nx.clustering(graph).values())
+            for graph in graphs  # pyright: ignore
         ]
         if self._sparse:
             assert self._bins is not None
@@ -392,7 +403,7 @@ class RandomGIN(GraphDescriptor):
                 self._device
             )
 
-        batch = Batch.from_data_list(pyg_graphs).to(self._device)   # pyright: ignore
+        batch = Batch.from_data_list(pyg_graphs).to(self._device)  # pyright: ignore
 
         graph_embeds = self._feat_fn(
             feats, batch.edge_index, batch.batch, edge_attr=edge_attr
@@ -469,7 +480,9 @@ class WeisfeilerLehmanDescriptor(GraphDescriptor):
             raise ValueError("Digest size must be at most 4 bytes")
 
         if use_node_labels:
-            assert node_label_key is not None, "node_label_key must be provided if use_node_labels is True"
+            assert node_label_key is not None, (
+                "node_label_key must be provided if use_node_labels is True"
+            )
             self._node_label_key: str = node_label_key
         else:
             self._node_label_key: str = "degree"
@@ -579,4 +592,3 @@ class WeisfeilerLehmanDescriptor(GraphDescriptor):
             ),
             shape=(n_graphs, 2**31),
         )
-

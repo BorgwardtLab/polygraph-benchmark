@@ -10,7 +10,17 @@ The metrics also compute confidence intervals for the proportions using binomial
 """
 
 from collections import defaultdict, namedtuple
-from typing import Any, Callable, Collection, DefaultDict, Dict, Iterable, List, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Union,
+)
 
 import networkx as nx
 from scipy.stats import binomtest

@@ -39,7 +39,13 @@ class GRANOrbitMMD2(DescriptorMMD2):
 
 
 class GRANOrbitMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(descriptor_fn=OrbitCounts(), bw=30),
@@ -62,7 +68,13 @@ class GRANClusteringMMD2(DescriptorMMD2):
 
 
 class GRANClusteringMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(
@@ -85,7 +97,13 @@ class GRANDegreeMMD2(DescriptorMMD2):
 
 
 class GRANDegreeMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(descriptor_fn=SparseDegreeHistogram(), bw=1.0),
@@ -106,7 +124,13 @@ class GRANSpectralMMD2(DescriptorMMD2):
 
 
 class GRANSpectralMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph], subsample_size: int, num_samples: int = 500, coverage: Optional[float] = 0.95):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(descriptor_fn=EigenvalueHistogram(), bw=1.0),

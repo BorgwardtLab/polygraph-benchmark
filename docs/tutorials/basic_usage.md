@@ -18,7 +18,7 @@ print(planar[0])            # PyG object: Data(edge_index=[2, 354], num_nodes=64
 ```
 
 This will download the dataseets to your device and cache them. You may specify the download location by setting the environment variable `POLYGRAPH_CACHE_DIR`.
-All datasets in `polygraph` contain PyTorch-geometric objects. 
+All datasets in `polygraph` contain PyTorch-geometric objects.
 However, we may also access the graphs as NetworkX objects as follows:
 
 ```python
@@ -27,8 +27,8 @@ print(planar_nx[0])         # (Networkx) Graph with 64 nodes and 177 edges
 ```
 
 ## Comparing Distributions of Graphs
-When evaluating graph generative models, we want to compare a set of *generated* graphs to a set of *reference* graphs (typically the test set). 
-In `polygraph`, we provide various different metrics to quantify how close these two sets of graphs are. 
+When evaluating graph generative models, we want to compare a set of *generated* graphs to a set of *reference* graphs (typically the test set).
+In `polygraph`, we provide various different metrics to quantify how close these two sets of graphs are.
 We usually pass collections of NetworkX graphs to metrics.
 Below, we demonstrate how one such metric, [`GRANOrbitMMD2`][polygraph.metrics.gran.GRANOrbitMMD2] may be computed:
 

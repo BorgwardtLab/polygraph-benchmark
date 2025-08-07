@@ -214,6 +214,7 @@ class DescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
         coverage: Confidence level to compute upper and lower bounds. If None, only the mean and standard deviation are returned.
         variant: Which MMD estimator to use ('biased', 'umve', or 'ustat')
     """
+
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -306,5 +307,3 @@ class MaxDescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
         assert mmd_samples.ndim == 2
         mmd_samples = np.max(mmd_samples, axis=1)
         return MetricInterval.from_samples(mmd_samples, coverage=self._coverage)
-
-
