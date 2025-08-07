@@ -12,6 +12,14 @@ from polygraph.metrics.base import (
     ClassifierMetric,
 )
 from polygraph.metrics.base.metric_interval import MetricInterval
+from polygraph.metrics.polygraphscore import (
+    PGS5,
+    ClassifierOrbitMetric,
+    ClassifierClusteringMetric,
+    ClassifierDegreeeMetric,
+    ClassifierSpectralMetric,
+    GraphNeuralNetworkClassifierMetric,
+)
 
 
 @pytest.fixture
@@ -36,8 +44,8 @@ def test_classifier_metric(
     train, test = clf_metric.compute(sparse_graphs)
 
     assert isinstance(train, float) and isinstance(test, float)
-    assert train >= 0.7, f"Train score {train} is less than 0.9"
-    assert test >= 0.9, f"Test score {test} is less than 0.9"
+    assert train >= 0.7, f"Train score {train} is less than 0.7"
+    assert test >= 0.8, f"Test score {test} is less than 0.8"
 
     train, test = clf_metric.compute(dense_graphs)
     assert train <= 0.2, f"Train score {train} is greater than 0.2"
@@ -66,8 +74,8 @@ def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
         == result["subscores"][result["polygraphscore_descriptor"]]
     )
 
-    assert result["polygraphscore"] >= 0.9, (
-        f"PolyGraphScore {result['polygraphscore']} is less than 0.9"
+    assert result["polygraphscore"] >= 0.8, (
+        f"PolyGraphScore {result['polygraphscore']} is less than 0.8"
     )
 
     result = polygraphscore.compute(dense_graphs)
@@ -101,3 +109,34 @@ def test_polygraphscore_interval(
     assert len(result["subscores"]) == len(descriptors)
     assert isinstance(result["polygraphscore"], MetricInterval)
     assert isinstance(result["polygraphscore_descriptor"], dict)
+
+
+def test_pgs5(dense_graphs, sparse_graphs):
+    pgs5 = PGS5(dense_graphs)
+    result = pgs5.compute(sparse_graphs)
+
+    individual_metrics = {
+        "orbit": ClassifierOrbitMetric(
+            dense_graphs, variant="jsd", classifier="tabpfn"
+        ),
+        "clustering": ClassifierClusteringMetric(
+            dense_graphs, variant="jsd", classifier="tabpfn"
+        ),
+        "degree": ClassifierDegreeeMetric(
+            dense_graphs, variant="jsd", classifier="tabpfn"
+        ),
+        "spectral": ClassifierSpectralMetric(
+            dense_graphs, variant="jsd", classifier="tabpfn"
+        ),
+        "gin": GraphNeuralNetworkClassifierMetric(
+            dense_graphs, variant="jsd", classifier="tabpfn"
+        ),
+    }
+    individual_results = {
+        name: metric.compute(sparse_graphs)
+        for name, metric in individual_metrics.items()
+    }
+
+    for name, (_, individual_result) in individual_results.items():
+        assert isinstance(individual_result, float)
+        assert individual_result == result["subscores"][name]

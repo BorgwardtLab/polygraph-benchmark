@@ -192,8 +192,8 @@ class ClusteringHistogram(GraphDescriptor):
         self, graphs: Iterable[nx.Graph]
     ) -> Union[np.ndarray, csr_array]:
         all_clustering_coeffs = [
-            list(nx.clustering(graph).values())
-            for graph in graphs  # pyright: ignore
+            list(nx.clustering(graph).values())  # pyright: ignore
+            for graph in graphs
         ]
         if self._sparse:
             assert self._bins is not None

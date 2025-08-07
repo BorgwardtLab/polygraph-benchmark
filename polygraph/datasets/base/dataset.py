@@ -52,7 +52,7 @@ class AbstractDataset(ABC):
     def is_valid(graph: nx.Graph) -> bool:
         """Checks if a graph is structurally valid in the context of this dataset.
 
-        This method is optional and can be used in [`VUN`][polygraph.metrics.base.vun.VUN] metrics.
+        This method is optional and can be used in [`VUN`][polygraph.metrics.VUN] metrics.
 
         Args:
             graph: NetworkX graph to validate

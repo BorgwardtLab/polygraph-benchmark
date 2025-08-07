@@ -17,15 +17,17 @@ from polygraph.metrics.base import (
     MaxDescriptorMMD2,
     MaxDescriptorMMD2Interval,
 )
-from polygraph.metrics.gran import (
-    GRANClusteringMMD2,
-    GRANClusteringMMD2Interval,
-    GRANDegreeMMD2,
-    GRANDegreeMMD2Interval,
-    GRANOrbitMMD2,
-    GRANOrbitMMD2Interval,
-    GRANSpectralMMD2,
-    GRANSpectralMMD2Interval,
+from polygraph.metrics.gaussian_tv_mmd import (
+    GaussianTVClusteringMMD2,
+    GaussianTVClusteringMMD2Interval,
+    GaussianTVDegreeMMD2,
+    GaussianTVDegreeMMD2Interval,
+    GaussianTVOrbitMMD2,
+    GaussianTVOrbitMMD2Interval,
+    GaussianTVSpectralMMD2,
+    GaussianTVSpectralMMD2Interval,
+)
+from polygraph.metrics.rbf_mmd import (
     RBFClusteringMMD2,
     RBFClusteringMMD2Interval,
     RBFDegreeMMD2,
@@ -34,17 +36,13 @@ from polygraph.metrics.gran import (
     RBFOrbitMMD2Interval,
     RBFSpectralMMD2,
     RBFSpectralMMD2Interval,
+    RBFGraphNeuralNetworkMMD2,
 )
-from polygraph.metrics.gran.linear_mmd import (
-    LinearOrbitMMD2,
-    LinearClusteringMMD2,
-    LinearDegreeMMD2,
-    LinearSpectralMMD2,
-    LinearOrbitMMD2Interval,
-    LinearClusteringMMD2Interval,
-    LinearDegreeMMD2Interval,
-    LinearSpectralMMD2Interval,
+from polygraph.metrics import (
+    MMD2CollectionGaussianTV,
+    MMD2IntervalCollectionGaussianTV,
 )
+from polygraph.metrics import MMD2CollectionRBF, MMD2IntervalCollectionRBF
 from polygraph.utils.kernels import LinearKernel
 from polygraph.utils.graph_descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.mmd_utils import mmd_from_gram
@@ -88,10 +86,10 @@ def grakel_wl_mmd(
 @pytest.mark.parametrize(
     "mmd_cls,baseline_method",
     [
-        (GRANSpectralMMD2, spectral_stats),
-        (GRANOrbitMMD2, orbit_stats_all),
-        (GRANClusteringMMD2, clustering_stats),
-        (GRANDegreeMMD2, degree_stats),
+        (GaussianTVSpectralMMD2, spectral_stats),
+        (GaussianTVOrbitMMD2, orbit_stats_all),
+        (GaussianTVClusteringMMD2, clustering_stats),
+        (GaussianTVDegreeMMD2, degree_stats),
     ],
 )
 def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
@@ -143,30 +141,12 @@ def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
     assert np.isclose(our_eval.compute(sbm), list(baseline_results.values())[0])
 
 
-@pytest.mark.parametrize(
-    "mmd_cls",
-    [
-        LinearOrbitMMD2,
-        LinearClusteringMMD2,
-        LinearDegreeMMD2,
-        LinearSpectralMMD2,
-    ],
-)
-def test_linear_gran_mmd_smoke(datasets, mmd_cls):
-    planar, sbm = datasets
-    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
-
-    mmd = mmd_cls(planar)
-    result = mmd.compute(sbm)
-    assert isinstance(result, float)
-
-
 def test_warn_orbit_self_loops():
     g = nx.Graph()
     g.add_node(0)
     g.add_edge(0, 0)
     with pytest.warns(UserWarning):
-        mmd = GRANOrbitMMD2([g])
+        mmd = GaussianTVOrbitMMD2([g])
         mmd.compute([g])
 
 
@@ -212,18 +192,14 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
 @pytest.mark.parametrize(
     "single_cls,interval_cls",
     [
-        (GRANClusteringMMD2, GRANClusteringMMD2Interval),
-        (GRANDegreeMMD2, GRANDegreeMMD2Interval),
-        (GRANOrbitMMD2, GRANOrbitMMD2Interval),
-        (GRANSpectralMMD2, GRANSpectralMMD2Interval),
+        (GaussianTVClusteringMMD2, GaussianTVClusteringMMD2Interval),
+        (GaussianTVDegreeMMD2, GaussianTVDegreeMMD2Interval),
+        (GaussianTVOrbitMMD2, GaussianTVOrbitMMD2Interval),
+        (GaussianTVSpectralMMD2, GaussianTVSpectralMMD2Interval),
         (RBFClusteringMMD2, RBFClusteringMMD2Interval),
         (RBFDegreeMMD2, RBFDegreeMMD2Interval),
         (RBFOrbitMMD2, RBFOrbitMMD2Interval),
         (RBFSpectralMMD2, RBFSpectralMMD2Interval),
-        (LinearOrbitMMD2, LinearOrbitMMD2Interval),
-        (LinearClusteringMMD2, LinearClusteringMMD2Interval),
-        (LinearDegreeMMD2, LinearDegreeMMD2Interval),
-        (LinearSpectralMMD2, LinearSpectralMMD2Interval),
     ],
 )
 def test_concrete_uncertainty(
@@ -292,10 +268,10 @@ def test_max_mmd(request, datasets, kernel, variant):
 @pytest.mark.parametrize(
     "mmd_cls,baseline_method",
     [
-        (GRANSpectralMMD2, spectral_stats),
-        (GRANOrbitMMD2, orbit_stats_all),
-        (GRANClusteringMMD2, clustering_stats),
-        (GRANDegreeMMD2, degree_stats),
+        (GaussianTVSpectralMMD2, spectral_stats),
+        (GaussianTVOrbitMMD2, orbit_stats_all),
+        (GaussianTVClusteringMMD2, clustering_stats),
+        (GaussianTVDegreeMMD2, degree_stats),
         (WeisfeilerLehmanMMD2, grakel_wl_mmd),
     ],
 )
@@ -304,7 +280,7 @@ def test_measure_runtime(
     mmd_cls, baseline_method, orca_executable, runtime_stats, parallel_baseline
 ):
     if parallel_baseline and (
-        mmd_cls is GRANOrbitMMD2 or mmd_cls is WeisfeilerLehmanMMD2
+        mmd_cls is GaussianTVOrbitMMD2 or mmd_cls is WeisfeilerLehmanMMD2
     ):
         pytest.skip("Orbit and WL don't have parallel baselines")
 
@@ -341,3 +317,53 @@ def test_measure_runtime(
         ].append(t1 - t0)
 
         assert np.isclose(our_estimate, baseline_estimate)
+
+
+@pytest.mark.parametrize("variant", ["rbf", "gaussian_tv"])
+def test_mmd_collections(datasets, variant):
+    planar, sbm = datasets
+    planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
+
+    if variant == "rbf":
+        separate_metrics = {
+            "orbit": RBFOrbitMMD2(planar),
+            "clustering": RBFClusteringMMD2(planar),
+            "degree": RBFDegreeMMD2(planar),
+            "spectral": RBFSpectralMMD2(planar),
+            "gin": RBFGraphNeuralNetworkMMD2(planar),
+        }
+        benchmark = MMD2CollectionRBF(planar)
+    elif variant == "gaussian_tv":
+        separate_metrics = {
+            "orbit": GaussianTVOrbitMMD2(planar),
+            "clustering": GaussianTVClusteringMMD2(planar),
+            "degree": GaussianTVDegreeMMD2(planar),
+            "spectral": GaussianTVSpectralMMD2(planar),
+        }
+        benchmark = MMD2CollectionGaussianTV(planar)
+    else:
+        raise ValueError(f"Invalid variant: {variant}")
+
+    benchmark_result = benchmark.compute(sbm)
+    assert isinstance(benchmark_result, dict)
+    assert len(benchmark_result) == len(separate_metrics)
+    assert all(key in benchmark_result for key in separate_metrics.keys())
+    separate_results = {
+        key: metric.compute(sbm) for key, metric in separate_metrics.items()
+    }
+    assert all(
+        np.isclose(benchmark_result[key], separate_results[key])
+        for key in separate_metrics.keys()
+    )
+
+    if variant == "rbf":
+        metric = MMD2IntervalCollectionRBF(planar, subsample_size=16)
+    elif variant == "gaussian_tv":
+        metric = MMD2IntervalCollectionGaussianTV(planar, subsample_size=16)
+    else:
+        raise ValueError(f"Invalid variant: {variant}")
+
+    result = metric.compute(sbm)
+    assert isinstance(result, dict)
+    assert len(result) == len(separate_metrics)
+    assert all(key in result for key in separate_metrics.keys())

@@ -13,7 +13,6 @@ from polygraph.metrics.base.polygraphscore import (
     ClassifierMetric,
     PolyGraphScoreInterval,
 )
-from polygraph.metrics.base.vun import VUN
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.metrics.base.interface import (
     GenerationMetric,
@@ -28,7 +27,6 @@ __all__ = [
     "DescriptorMMD2Interval",
     "MaxDescriptorMMD2",
     "MaxDescriptorMMD2Interval",
-    "VUN",
     "ClassifierMetric",
     "PolyGraphScore",
     "PolyGraphScoreInterval",

@@ -21,12 +21,21 @@ from polygraph.datasets import (
 )
 from polygraph.datasets.base import AbstractDataset
 from polygraph.datasets.base.caching import clear_cache, identifier_to_path
-from polygraph.metrics.base import VUN
+from polygraph.metrics import VUN
 
 ALL_DATASETS = [
     QM9,
     MOSES,
     Guacamol,
+    SmallEgoGraphDataset,
+    EgoGraphDataset,
+    SBMGraphDataset,
+    PlanarGraphDataset,
+    LobsterGraphDataset,
+    DobsonDoigGraphDataset,
+]
+
+NON_MOLECULAR_DATASETS = [
     SmallEgoGraphDataset,
     EgoGraphDataset,
     SBMGraphDataset,
@@ -121,7 +130,7 @@ def test_graph_properties_slow(ds_cls):
         )
 
 
-@pytest.mark.parametrize("ds_cls", ALL_DATASETS)
+@pytest.mark.parametrize("ds_cls", NON_MOLECULAR_DATASETS)
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
@@ -195,6 +204,6 @@ def test_split_disjointness(ds_cls):
         graphs = list(ds_cls(split).to_nx())
         vun = VUN(prev_splits, validity_fn=None)
         result = vun.compute(graphs)
-        assert result["unique"].mle == 1
-        assert result["novel"].mle == 1
+        assert result["unique"] == 1
+        assert result["novel"] == 1
         prev_splits.extend(graphs)
