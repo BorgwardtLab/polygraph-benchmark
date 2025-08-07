@@ -9,7 +9,7 @@ For convenience, `polygraph` allows metrics that follow this interface to be bun
 
 ```python
 from polygraph.metrics import MetricCollection
-from polygraph.metrics.gran import RBFOrbitMMD2, ClassifierOrbitMetric
+from polygraph.metrics import MMD2CollectionRBF, MMD2CollectionGaussianTV
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
 
 reference_graphs = PlanarGraphDataset("val").to_nx()
@@ -17,8 +17,8 @@ generated_graphs = SBMGraphDataset("val").to_nx()
 
 metrics = MetricCollection(
     metrics={
-        "rbf_orbit": RBFOrbitMMD2(reference_graphs=reference_graphs),
-        "classifier_orbit": ClassifierOrbitMetric(reference_graphs=reference_graphs),
+        "rbf_mmd": MMD2CollectionRBF(reference_graphs),
+        "tv_mmd": MMD2CollectionGaussianTV(reference_graphs),
     }
 )
 print(metrics.compute(generated_graphs))        # Dictionary of metrics
@@ -28,19 +28,31 @@ We now proceed to give a high-level overview over the different types of metrics
 
 ## Maximum Mean Discrepancy
 
-[Maximum Mean Discrepancy (MMD)](../api_reference/metrics/mmd.md) is the most commonly used approach for comparing graph distributions.
+[Maximum Mean Discrepancy (MMD)](../api_reference/metrics/mmd.md) is the predominant method for comparing graph distributions.
 The two distributions are embedded in a reproducing kernel Hilbert space (RKHS) and their distance is then computed in this space.
 
-To construct an MMD metric, one must choose two components:
+In `polygraph`, we bundle the most commonly used MMD metrics in two benchmark classes: [`MMD2CollectionGaussianTV`][polygraph.metrics.MMD2CollectionGaussianTV] and [`MMD2CollectionRBF`][polygraph.metrics.MMD2CollectionRBF]. These benchmarks may be evaluated in the following fashion:
+
+```python
+from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
+from polygraph.metrics import MMD2CollectionGaussianTV, MMD2IntervalCollectionGaussianTV
+
+reference = PlanarGraphDataset("val").to_nx()
+generated = SBMGraphDataset("val").to_nx()
+
+# Evaluate the benchmark with point estimates
+benchmark = MMD2CollectionGaussianTV(reference)
+print(benchmark.compute(generated))     # {'orbit': 1.067700488335175, 'clustering': 0.32549637224264394, 'degree': 0.3375409762261701, 'spectral': 0.0830197437100697}
+```
+
+For more details on these collections we refer to the documentation on the [Gaussian TV metrics](../metrics/gaussian_tv_mmd.md) and [RBF metrics](../metrics/rbf_mmd.md).
+
+Polygraph also allows you to construct custom MMD metrics. To construct an MMD metric, one must choose two components:
 
 - [Descriptor](../api_reference/utils/graph_descriptors.md) - A function that transforms graphs into vectorial descriptions
-- [Kernel](../api_reference/utils/graph_kernels.md) - A kernel function operating on these vectors produced by the descriptor
+- [Kernel](../api_reference/utils/graph_kernels.md) - A kernel function operating on the vectors produced by the descriptor
 
 We implement a large number of different descriptors and kernels in `polygraph`.
-For convenience, we provide commonly used combinations of kernels, descriptors, and estimators, based on [classical descriptors](../metrics/gran.md) or [gnn features](../metrics/gin.md).
-We recommend using these standardized implementations to ensure fair and comparable evaluations.
-
-However, you may also construct custom MMD metrics, combining kernels and descriptors as you like.
 An MMD metric operating on orbit counts with a linear kernel may thus be constructed in the following fashion:
 
 ```python
@@ -58,7 +70,7 @@ metric = DescriptorMMD2(
 
 The MMD may be computed via a biased estimator (`"biased"`) or via an unbiased one (`"umve"`).
 In the large sample size limit, the two should converge to the same value. However, at low sample sizes the differences may be substantial.
-In practice the biased estimator is oftentimes used.
+In practice the biased estimator is oftentimes used. We refer to the documentation of the [base MMD classes](../api_reference/metrics/mmd.md).
 
 
 !!! warning
@@ -66,12 +78,25 @@ In practice the biased estimator is oftentimes used.
 
 ## PolyGraphScore
 
-The [PolyGraphScore metric](../api_reference/metrics/polygraphscore.md) operates in a similar fashion as MMD metrics. However, it aims to make metrics comparable across graph descriptors and produces interpretable values between 0 and 1.
-The PolyGraphScore is typically computed for several graph descriptors and produces a summary metric for these descriptors.
+The [PolyGraphScore metric](../api_reference/metrics/polygraphscore.md) compares two graph distributions by determining how well they can be distinguished by a binary classifier.
+It aims to make metrics comparable across graph descriptors and produces interpretable values between 0 and 1.
+The PolyGraphScore is computed for several graph descriptors and produces a summary metric for these descriptors.
 This summary metric is an estimated lower bound on a probability metric that is intrinsic to the graph distributions and independent of the descriptors
+
+We provide [`PGS5`][polygraph.metrics.PGS5], a standardized version of the PolyGraphScore that combines 5 different graph descriptors:
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
+from polygraph.metrics import PGS5
+
+metric = PGS5(reference_graphs=PlanarGraphDataset("test").to_nx())
+metric.compute(SBMGraphDataset("test").to_nx()) # {'polygraphscore': 0.999301797449604, 'polygraphscore_descriptor': 'degree', 'subscores': {'orbit': 0.9986018004713674, 'clustering': 0.9933180272388359, 'degree': 0.999301797449604, 'spectral': 0.9690467491487502, 'gin': 0.9984711185804029}}
+```
+
+As with MMD metrics, you may also construct custom PolyGraphScore variants using other graph descriptors, evaluation metrics, or binary classification approaches.
+E.g., you may construct the following metric
+
+```python
 from polygraph.utils.graph_descriptors import OrbitCounts, SparseDegreeHistogram
 from polygraph.metrics.base import PolyGraphScore
 
@@ -81,12 +106,13 @@ metric = PolyGraphScore(
         "orbit": OrbitCounts(),
         "degree": SparseDegreeHistogram(),
     },
-    classifier="tabpfn",
-    variant="jsd"
+    classifier="logistic",
+    variant="informedness",
 )
-metric.compute(SBMGraphDataset("test").to_nx())
+metric.compute(SBMGraphDataset("test").to_nx())         # {'polygraphscore': 0.9, 'polygraphscore_descriptor': 'orbit', 'subscores': {'orbit': 0.9, 'degree': 0.9}}
 ```
 
+We refer to the [API reference](../api_reference/metrics/polygraphscore.md) for further details.
 
 ## Validity, Uniqueness, Novelty
 
@@ -100,7 +126,6 @@ To determine novelty, this metric must be passed the training set on which the g
 
 ```python
 from polygraph.metrics import VUN
-from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
 
 train = PlanarGraphDataset("train").to_nx()
 generated = SBMGraphDataset("val").to_nx()
@@ -109,11 +134,8 @@ metric = VUN(
     train_graphs=train,         # Pass the training set to determine novelty
     validity_fn=PlanarGraphDataset.is_valid
 )
-print(metric.compute(generated))        # Dictionary containing fraction of unique/novel/valid graphs (all combinations)
+print(metric.compute(generated))        # {'unique': 1.0, 'novel': 1.0, 'unique_novel': 1.0, 'valid': 0.0, 'valid_unique_novel': 0.0, 'valid_novel': 0.0, 'valid_unique': 0.0}
 ```
 
 All synthetic datasets in the `polygraph` package provide a static `is_valid` function.
 If no validity function is available for your dataset, `validity_fn` may be set to `None`. In this case, only the fraction of unique and novel graphs is computed.
-
-
-## Uncertaingy Quantification

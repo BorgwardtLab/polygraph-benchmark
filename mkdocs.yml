@@ -11,7 +11,7 @@ nav:
   - Tutorials:
     - Basic Usage: tutorials/basic_usage.md
     - Metrics Overview: tutorials/metrics_overview.md
-    - Evaluating Models: tutorials/evaluating_models.md
+    - Uncertainty Quantification: tutorials/uncertainty_quantification.md
     - Defining Custom Metrics: tutorials/custom_metrics.md
   - Base API Reference:
     - polygraph.metrics:
