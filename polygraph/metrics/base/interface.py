@@ -7,7 +7,8 @@ Metrics that implement this interface may be evaluated jointly using the [`Metri
 
 ```python
 from polygraph.metrics import MetricCollection
-from polygraph.metrics.gran import RBFOrbitMMD2, ClassifierOrbitMetric
+from polygraph.metrics.rbf_mmd import RBFOrbitMMD2
+from polygraph.metrics.polygraphscore import PGS5
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
 
 reference_graphs = PlanarGraphDataset("val").to_nx()
@@ -16,7 +17,7 @@ generated_graphs = SBMGraphDataset("test").to_nx()
 metrics = MetricCollection(
     metrics={
         "rbf_orbit": RBFOrbitMMD2(reference_graphs=reference_graphs),
-        "classifier_orbit": ClassifierOrbitMetric(reference_graphs=reference_graphs),
+        "pgs5": PGS5(reference_graphs=reference_graphs),
     }
 )
 print(metrics.compute(generated_graphs))

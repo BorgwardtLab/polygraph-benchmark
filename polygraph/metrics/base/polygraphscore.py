@@ -385,9 +385,9 @@ class _ClassifierMetricSamples:
                 replace=False,
             )
             gen_idx = rng.choice(
-                descriptions.shape[0],
+                descriptions.shape[0],  # pyright: ignore
                 size=subsample_size,
-                replace=False,  # pyright: ignore
+                replace=False,
             )
             samples.append(
                 _descriptions_to_classifier_metric(

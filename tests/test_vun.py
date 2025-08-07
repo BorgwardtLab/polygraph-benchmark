@@ -4,7 +4,7 @@ import networkx as nx
 import pytest
 
 from polygraph.datasets import PlanarGraphDataset
-from polygraph.metrics.base import VUN
+from polygraph.metrics import VUN
 
 
 def create_test_graphs() -> List[nx.Graph]:

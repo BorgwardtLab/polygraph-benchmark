@@ -1,10 +1,12 @@
 import numpy as np
 
-from polygraph.metrics.gin.frechet_distance import (
+from polygraph.metrics.frechet_distance import (
     GraphNeuralNetworkFrechetDistance,
 )
-from polygraph.metrics.gin.mmd import (
+from polygraph.metrics.rbf_mmd import (
     RBFGraphNeuralNetworkMMD2,
+)
+from polygraph.metrics.linear_mmd import (
     LinearGraphNeuralNetworkMMD2,
 )
 import networkx as nx

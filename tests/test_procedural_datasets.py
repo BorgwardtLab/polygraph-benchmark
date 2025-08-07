@@ -2,7 +2,7 @@ import os
 import pytest
 import networkx as nx
 
-from polygraph.metrics.base import VUN
+from polygraph.metrics import VUN
 from polygraph.datasets import (
     ProceduralLobsterGraphDataset,
     ProceduralPlanarGraphDataset,

@@ -34,6 +34,11 @@ from polygraph.utils.kernels import (
 )
 from polygraph.datasets.molecules import QM9
 
+from collect_doc_snippets import gather_docstring_snippets
+
+# Cache the snippets to avoid calling gather_docstring_snippets multiple times
+_cached_snippets = None
+
 NO_SKIP_OPTION = "--no-skip"
 SAMPLE_SIZE_OPTION = "--sample-size"
 LOG_LEVEL_OPTION = "--test-log-level"
@@ -226,3 +231,21 @@ def sample_features():
 def sample_molecules():
     molecules = QM9("test").sample(5, as_nx=True)
     return molecules
+
+
+def pytest_generate_tests(metafunc):
+    if "code_snippet" in metafunc.fixturenames:
+        global _cached_snippets
+        if _cached_snippets is None:
+            print(
+                "pytest_generate_tests: Gathering docstring snippets with debug output..."
+            )
+            _cached_snippets = gather_docstring_snippets()
+            print(
+                f"pytest_generate_tests: Found {len(_cached_snippets)} snippets"
+            )
+        metafunc.parametrize(
+            "code_snippet",
+            _cached_snippets,
+            ids=[snippet[0] for snippet in _cached_snippets],
+        )

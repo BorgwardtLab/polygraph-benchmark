@@ -13,12 +13,11 @@ nav:
     - Metrics Overview: tutorials/metrics_overview.md
     - Evaluating Models: tutorials/evaluating_models.md
     - Defining Custom Metrics: tutorials/custom_metrics.md
-  - API Reference:
+  - Base API Reference:
     - polygraph.metrics:
       - Interface: api_reference/metrics/interface.md
       - MMD: api_reference/metrics/mmd.md
       - PolyGraphScore: api_reference/metrics/polygraphscore.md
-      - VUN: api_reference/metrics/vun.md
       - Frechet: api_reference/metrics/frechet.md
     - polygraph.datasets:
       - Dataset Base Classes: api_reference/datasets/dataset_base_classes.md
@@ -27,9 +26,10 @@ nav:
     - polygraph.utils:
       - Graph Descriptors: api_reference/utils/graph_descriptors.md
       - Graph Kernels: api_reference/utils/graph_kernels.md
-  - Metrics:
-    - GRAN: metrics/gran.md
-    - GIN: metrics/gin.md
+  - Standardized Metrics:
+    - Gaussian TV MMD: metrics/gaussian_tv_mmd.md
+    - RBF MMD: metrics/rbf_mmd.md
+    - VUN: metrics/vun.md
   - Datasets:
     - Small Synthetic Datasets: datasets/small_synthetic.md
     - Procedural Datasets: datasets/procedural.md

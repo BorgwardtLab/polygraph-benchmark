@@ -1,6 +1,6 @@
 # Validity, Uniqueness, Novelty
 
-::: polygraph.metrics.base.VUN
+::: polygraph.metrics.VUN
     options:
         show_root_heading: true
         show_source: false
