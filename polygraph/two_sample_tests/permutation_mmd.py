@@ -119,7 +119,9 @@ class BootStrapMaxMMDTest(_BootStrapTestBase):
         realized_mmd, mmd_samples = self._get_realized_and_samples(
             generated_graphs, num_samples
         )
-        assert isinstance(realized_mmd, np.ndarray) and isinstance(mmd_samples, np.ndarray)
+        assert isinstance(realized_mmd, np.ndarray) and isinstance(
+            mmd_samples, np.ndarray
+        )
         assert realized_mmd.ndim == 1 and mmd_samples.ndim == 2
         realized_mmd = np.max(realized_mmd)
         mmd_samples = np.max(mmd_samples, axis=1)

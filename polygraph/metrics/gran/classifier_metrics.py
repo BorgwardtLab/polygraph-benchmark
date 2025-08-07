@@ -24,9 +24,7 @@ class ClassifierOrbitMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
@@ -41,9 +39,7 @@ class ClassifierClusteringMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
@@ -58,9 +54,7 @@ class ClassifierDegreeeMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(
@@ -71,14 +65,11 @@ class ClassifierDegreeeMetric(ClassifierMetric):
         )
 
 
-
 class ClassifierSpectralMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
         super().__init__(

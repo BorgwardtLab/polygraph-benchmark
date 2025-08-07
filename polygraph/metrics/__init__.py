@@ -1,3 +1,3 @@
-from .base import VUN, MetricCollection, MetricIntervalCollection
+from .base import VUN, MetricCollection
 
-__all__ = ["VUN", "MetricCollection", "MetricIntervalCollection"]
+__all__ = ["VUN", "MetricCollection"]

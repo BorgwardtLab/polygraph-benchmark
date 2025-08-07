@@ -4,6 +4,7 @@ import numpy as np
 
 class MetricInterval:
     """Class for representing uncertainty quantifications of a metric."""
+
     def __init__(
         self,
         mean: float,

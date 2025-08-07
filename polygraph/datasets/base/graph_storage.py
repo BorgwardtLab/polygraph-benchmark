@@ -147,8 +147,8 @@ class GraphStorage(BaseModel):
             graph_attrs: List of graph-level attributes to include, must be present in the `Batch` object.
         """
         result = GraphStorage(
-            batch=batch.batch,                  # pyright: ignore
-            edge_index=batch.edge_index,        # pyright: ignore
+            batch=batch.batch,  # pyright: ignore
+            edge_index=batch.edge_index,  # pyright: ignore
             edge_attr={key: getattr(batch, key) for key in edge_attrs}
             if edge_attrs is not None
             else {},

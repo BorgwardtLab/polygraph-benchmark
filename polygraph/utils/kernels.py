@@ -208,7 +208,7 @@ class LaplaceKernel(DescriptorKernel):
             comparison = np.expand_dims(comparison, -1)
 
         comparison = np.exp(-self.lbd * comparison)
-        assert comparison.shape[:2] == (x.shape[0], y.shape[0])     # pyright: ignore
+        assert comparison.shape[:2] == (x.shape[0], y.shape[0])  # pyright: ignore
         return comparison
 
 
@@ -264,7 +264,7 @@ class GaussianTV(DescriptorKernel):
             comparison = np.expand_dims(comparison, -1)
 
         comparison = np.exp(-((comparison / 2) ** 2) / (2 * self.bw**2))
-        assert comparison.shape[:2] == (x.shape[0], y.shape[0])     # pyright: ignore
+        assert comparison.shape[:2] == (x.shape[0], y.shape[0])  # pyright: ignore
         return comparison
 
 
@@ -318,7 +318,7 @@ class RBFKernel(DescriptorKernel):
             comparison = np.expand_dims(comparison, -1)
 
         comparison = np.exp(-comparison / (2 * self.bw**2))
-        assert comparison.shape[:2] == (x.shape[0], y.shape[0])     # pyright: ignore
+        assert comparison.shape[:2] == (x.shape[0], y.shape[0])  # pyright: ignore
         return comparison
 
 

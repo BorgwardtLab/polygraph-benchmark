@@ -16,15 +16,15 @@ def is_lobster_graph(graph: nx.Graph) -> bool:
     """Based on https://github.com/lrjconan/GRAN/blob/fc9c04a3f002c55acf892f864c03c6040947bc6b/utils/eval_helper.py#L426C3-L446C17"""
     graph = deepcopy(graph)
     if nx.is_tree(graph):
-        leaves = [n for n, d in graph.degree() if d == 1]   # pyright: ignore
+        leaves = [n for n, d in graph.degree() if d == 1]  # pyright: ignore
         graph.remove_nodes_from(leaves)
 
-        leaves = [n for n, d in graph.degree() if d == 1]   # pyright: ignore
+        leaves = [n for n, d in graph.degree() if d == 1]  # pyright: ignore
         graph.remove_nodes_from(leaves)
 
-        num_nodes = len(graph.nodes())   # pyright: ignore
-        num_degree_one = [d for n, d in graph.degree() if d == 1]   # pyright: ignore
-        num_degree_two = [d for n, d in graph.degree() if d == 2]   # pyright: ignore
+        num_nodes = len(graph.nodes())  # pyright: ignore
+        num_degree_one = [d for n, d in graph.degree() if d == 1]  # pyright: ignore
+        num_degree_two = [d for n, d in graph.degree() if d == 2]  # pyright: ignore
 
         if sum(num_degree_one) == 2 and sum(num_degree_two) == 2 * (
             num_nodes - 2

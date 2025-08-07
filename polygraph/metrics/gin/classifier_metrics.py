@@ -23,9 +23,7 @@ class GraphNeuralNetworkClassifierMetric(ClassifierMetric):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        variant: Literal[
-            "informedness", "jsd"
-        ] = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
         node_feat_loc: Optional[List[str]] = None,
         node_feat_dim: int = 1,

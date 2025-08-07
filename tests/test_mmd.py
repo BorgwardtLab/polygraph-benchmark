@@ -190,8 +190,10 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
 
     kernel = request.getfixturevalue(kernel)
-    mmd = DescriptorMMD2Interval(sbm, kernel, variant=variant)
-    result = mmd.compute(planar, subsample_size=subsample_size)
+    mmd = DescriptorMMD2Interval(
+        sbm, kernel, variant=variant, subsample_size=subsample_size
+    )
+    result = mmd.compute(planar)
     assert isinstance(result, MetricInterval)
     assert result.std > 0
 
@@ -242,8 +244,8 @@ def test_concrete_uncertainty(
         and issubclass(interval_cls, MaxDescriptorMMD2Interval)
     )
 
-    interval_mmd = interval_cls(planar)
-    interval = interval_mmd.compute(sbm, subsample_size=subsample_size)
+    interval_mmd = interval_cls(planar, subsample_size=subsample_size)
+    interval = interval_mmd.compute(sbm)
     assert isinstance(interval, MetricInterval)
 
     num_in_bounds = 0

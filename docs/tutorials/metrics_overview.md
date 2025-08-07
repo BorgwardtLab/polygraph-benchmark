@@ -1,8 +1,8 @@
 # Overview of Metrics
 
 As noted in the previous tutorial, most metrics provided in this package follow a similar interface:
-First, an instance of the metric is initialized by fitting it on the reference set. 
-Then, it is evaluated against a generated set by calling `.compute(generated)`. 
+First, an instance of the metric is initialized by fitting it on the reference set.
+Then, it is evaluated against a generated set by calling `.compute(generated)`.
 For a technical documentation of this interface, we refer to the [API reference](../api_reference/metrics/interface.md).
 
 For convenience, `polygraph` allows metrics that follow this interface to be bundled and evaluated jointly by using the [`MetricCollection`][polygraph.metrics.MetricCollection] class.
@@ -36,7 +36,7 @@ To construct an MMD metric, one must choose two components:
 - [Descriptor](../api_reference/utils/graph_descriptors.md) - A function that transforms graphs into vectorial descriptions
 - [Kernel](../api_reference/utils/graph_kernels.md) - A kernel function operating on these vectors produced by the descriptor
 
-We implement a large number of different descriptors and kernels in `polygraph`. 
+We implement a large number of different descriptors and kernels in `polygraph`.
 For convenience, we provide commonly used combinations of kernels, descriptors, and estimators, based on [classical descriptors](../metrics/gran.md) or [gnn features](../metrics/gin.md).
 We recommend using these standardized implementations to ensure fair and comparable evaluations.
 
@@ -56,7 +56,7 @@ metric = DescriptorMMD2(
 )
 ```
 
-The MMD may be computed via a biased estimator (`"biased"`) or via an unbiased one (`"umve"`). 
+The MMD may be computed via a biased estimator (`"biased"`) or via an unbiased one (`"umve"`).
 In the large sample size limit, the two should converge to the same value. However, at low sample sizes the differences may be substantial.
 In practice the biased estimator is oftentimes used.
 
@@ -67,7 +67,7 @@ In practice the biased estimator is oftentimes used.
 ## PolyGraphScore
 
 The [PolyGraphScore metric](../api_reference/metrics/polygraphscore.md) operates in a similar fashion as MMD metrics. However, it aims to make metrics comparable across graph descriptors and produces interpretable values between 0 and 1.
-The PolyGraphScore is typically computed for several graph descriptors and produces a summary metric for these descriptors. 
+The PolyGraphScore is typically computed for several graph descriptors and produces a summary metric for these descriptors.
 This summary metric is an estimated lower bound on a probability metric that is intrinsic to the graph distributions and independent of the descriptors
 
 ```python
@@ -90,12 +90,12 @@ metric.compute(SBMGraphDataset("test").to_nx())
 
 ## Validity, Uniqueness, Novelty
 
-Synthetic datasets oftentimes satisfy structural constraints (e.g. that they contain tree graphs) and thereby have a notion of *validity* of graphs. 
+Synthetic datasets oftentimes satisfy structural constraints (e.g. that they contain tree graphs) and thereby have a notion of *validity* of graphs.
 Consequently, generative models may be evaluated by the fraction of generated graphs that fulfill these constraints and are thereby valid.
 Moreover, one may compute the fraction of graphs that are *unique* within the generated set and the fraction of graphs that are *novel* in the sense
 that they do not occur in the training set. The fraction of graphs that satisfy all three properties (validity, uniqueness, and novelty) is referred to as VUN.
 
-We implement these metrics in the [`VUN`][polygraph.metrics.VUN] class. 
+We implement these metrics in the [`VUN`][polygraph.metrics.VUN] class.
 To determine novelty, this metric must be passed the training set on which the generative model was optimized. The test set, on the other hand, must not be passed to this class:
 
 ```python

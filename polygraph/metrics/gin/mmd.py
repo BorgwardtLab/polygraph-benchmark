@@ -65,6 +65,9 @@ class RBFGraphNeuralNetworkMMD2Interval(MaxDescriptorMMD2Interval):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
         node_feat_loc: Optional[List[str]] = None,
         node_feat_dim: int = 1,
         edge_feat_loc: Optional[List[str]] = None,
@@ -88,6 +91,9 @@ class RBFGraphNeuralNetworkMMD2Interval(MaxDescriptorMMD2Interval):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -124,6 +130,9 @@ class LinearGraphNeuralNetworkMMD2Interval(DescriptorMMD2Interval):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
         node_feat_loc: Optional[List[str]] = None,
         node_feat_dim: int = 1,
         edge_feat_loc: Optional[List[str]] = None,
@@ -144,5 +153,8 @@ class LinearGraphNeuralNetworkMMD2Interval(DescriptorMMD2Interval):
                     reference_graphs,
                 ),
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )

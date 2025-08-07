@@ -1,4 +1,4 @@
-from typing import Collection
+from typing import Collection, Optional
 
 import networkx as nx
 
@@ -39,10 +39,19 @@ class GRANOrbitMMD2(DescriptorMMD2):
 
 
 class GRANOrbitMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(descriptor_fn=OrbitCounts(), bw=30),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -59,12 +68,21 @@ class GRANClusteringMMD2(DescriptorMMD2):
 
 
 class GRANClusteringMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(
                 descriptor_fn=ClusteringHistogram(bins=100), bw=1.0 / 10
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -79,10 +97,19 @@ class GRANDegreeMMD2(DescriptorMMD2):
 
 
 class GRANDegreeMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(descriptor_fn=SparseDegreeHistogram(), bw=1.0),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -97,9 +124,18 @@ class GRANSpectralMMD2(DescriptorMMD2):
 
 
 class GRANSpectralMMD2Interval(DescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=GaussianTV(descriptor_fn=EigenvalueHistogram(), bw=1.0),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )

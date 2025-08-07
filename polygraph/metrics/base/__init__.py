@@ -15,11 +15,9 @@ from polygraph.metrics.base.polygraphscore import (
 )
 from polygraph.metrics.base.vun import VUN
 from polygraph.metrics.base.metric_interval import MetricInterval
-from polygraph.metrics.base.interfaces import (
+from polygraph.metrics.base.interface import (
     GenerationMetric,
-    GenerationMetricInterval,
     MetricCollection,
-    MetricIntervalCollection,
 )
 
 __all__ = [
@@ -35,7 +33,5 @@ __all__ = [
     "PolyGraphScore",
     "PolyGraphScoreInterval",
     "GenerationMetric",
-    "GenerationMetricInterval",
     "MetricCollection",
-    "MetricIntervalCollection",
 ]

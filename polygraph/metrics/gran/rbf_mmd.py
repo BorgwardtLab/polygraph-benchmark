@@ -1,6 +1,6 @@
 """Concrete definitions of graph MMDs used in the literature."""
 
-from typing import Collection
+from typing import Collection, Optional
 
 import networkx as nx
 import numpy as np
@@ -47,7 +47,13 @@ class RBFOrbitMMD2(MaxDescriptorMMD2):
 
 
 class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -56,6 +62,9 @@ class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -75,7 +84,13 @@ class RBFClusteringMMD2(MaxDescriptorMMD2):
 
 
 class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -84,6 +99,9 @@ class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -103,7 +121,13 @@ class RBFDegreeMMD2(MaxDescriptorMMD2):
 
 
 class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -112,6 +136,9 @@ class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )
 
@@ -131,7 +158,13 @@ class RBFSpectralMMD2(MaxDescriptorMMD2):
 
 
 class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval):
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        subsample_size: int,
+        num_samples: int = 500,
+        coverage: Optional[float] = 0.95,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
@@ -140,5 +173,8 @@ class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval):
                     [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
                 ),
             ),
+            subsample_size=subsample_size,
+            num_samples=num_samples,
+            coverage=coverage,
             variant="biased",
         )

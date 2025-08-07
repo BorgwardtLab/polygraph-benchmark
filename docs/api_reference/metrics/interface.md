@@ -1,6 +1,6 @@
 # Metrics API
 
-::: polygraph.metrics.base.interfaces
+::: polygraph.metrics.base.interface
     options:
         show_root_heading: false
         show_root_toc_entry: false
@@ -9,7 +9,7 @@
         heading_level: 2
         members: []
 
-We implement the following metrics: 
+We implement the following metrics:
 
 - [MMD](mmd.md) - Classical Maximum Mean Discrepancy
 - [PolyGraphScore](polygraphscore.md) - Lower bounds on probability metrics via classification
@@ -25,23 +25,10 @@ We implement the following metrics:
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.base.GenerationMetricInterval
-    options:
-        show_root_heading: true
-        show_full_path: true
-        show_source: false
-        heading_level: 3
 
 ## Metric Collections
 
 ::: polygraph.metrics.base.MetricCollection
-    options:
-        show_root_heading: true
-        show_full_path: true
-        show_source: false
-        heading_level: 3
-
-::: polygraph.metrics.base.MetricIntervalCollection
     options:
         show_root_heading: true
         show_full_path: true
