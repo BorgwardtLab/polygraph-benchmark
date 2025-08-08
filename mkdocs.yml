@@ -27,6 +27,7 @@ nav:
       - Graph Descriptors: api_reference/utils/graph_descriptors.md
       - Graph Kernels: api_reference/utils/graph_kernels.md
   - Standardized Metrics:
+    - PGS5: metrics/pgs5.md
     - Gaussian TV MMD: metrics/gaussian_tv_mmd.md
     - RBF MMD: metrics/rbf_mmd.md
     - VUN: metrics/vun.md
@@ -34,7 +35,6 @@ nav:
     - Small Synthetic Datasets: datasets/small_synthetic.md
     - Procedural Datasets: datasets/procedural.md
     - Real-World Datasets: datasets/real_world_topologies.md
-    - Molecule Datasets: datasets/molecules.md
   - Utils:
     - Graph Descriptors: utils/descriptors.md
     - Graph Kernels: utils/kernels.md

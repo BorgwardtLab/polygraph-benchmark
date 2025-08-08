@@ -4,6 +4,7 @@ from typing import Iterable, Dict, List
 from tabulate import tabulate
 from polygraph.datasets import *  # noqa
 import logging
+import traceback
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -38,9 +39,9 @@ class JinjaDocstringExtension(griffe.Extension):
                 # Update the docstring value
                 obj.docstring.value = rendered_docstring
 
-            except Exception as e:
+            except Exception:
                 logger.warning(
-                    f"Failed to render Jinja template in docstring for {obj.path}: {str(e)}"
+                    f"Failed to render Jinja template in docstring for {obj.path}:\n{traceback.format_exc()}"
                 )
 
 

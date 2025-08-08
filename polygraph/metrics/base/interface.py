@@ -1,7 +1,7 @@
 """
 PolyGraph implements metrics that provide either a single estimate or an interval to quantify uncertainty.
-While the arguments to these metrics and their return types vary, we provide a minimal common interface here
-as the protocol [`GenerationMetric`][polygraph.metrics.base.GenerationMetric].
+We provide a minimal common interface for metrics as the protocol [`GenerationMetric`][polygraph.metrics.base.GenerationMetric].
+The only requirement to satisfy this interface is to implement a `compute` method that accepts a collection of NetworkX graphs.
 
 Metrics that implement this interface may be evaluated jointly using the [`MetricCollection`][polygraph.metrics.base.MetricCollection] class.
 

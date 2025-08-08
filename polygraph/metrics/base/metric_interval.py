@@ -3,7 +3,15 @@ import numpy as np
 
 
 class MetricInterval:
-    """Class for representing uncertainty quantifications of a metric."""
+    """Class for representing uncertainty quantifications of a metric.
+
+    Attributes:
+        mean: Mean of the metric samples.
+        std: Standard deviation of the metric samples.
+        low: Lower bound of the metric interval, if `coverage` is provided.
+        high: Upper bound of the metric interval, if `coverage` is provided.
+        coverage: Coverage of the metric interval. If `None`, no bounds are computed, only the mean and standard deviation are set.
+    """
 
     def __init__(
         self,
@@ -32,6 +40,12 @@ class MetricInterval:
     def from_samples(
         cls, samples: np.ndarray, coverage: Optional[float] = None
     ):
+        """Create a `MetricInterval` from a collection of samples.
+
+        Args:
+            samples: 1D array of samples.
+            coverage: Coverage of the interval. If `None`, no bounds are computed, only the mean and standard deviation are set.
+        """
         if samples.ndim != 1:
             raise ValueError("Samples must be a 1D array")
 

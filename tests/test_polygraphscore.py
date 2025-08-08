@@ -14,9 +14,10 @@ from polygraph.metrics.base import (
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.metrics.polygraphscore import (
     PGS5,
+    PGS5Interval,
     ClassifierOrbitMetric,
     ClassifierClusteringMetric,
-    ClassifierDegreeeMetric,
+    ClassifierDegreeMetric,
     ClassifierSpectralMetric,
     GraphNeuralNetworkClassifierMetric,
 )
@@ -122,7 +123,7 @@ def test_pgs5(dense_graphs, sparse_graphs):
         "clustering": ClassifierClusteringMetric(
             dense_graphs, variant="jsd", classifier="tabpfn"
         ),
-        "degree": ClassifierDegreeeMetric(
+        "degree": ClassifierDegreeMetric(
             dense_graphs, variant="jsd", classifier="tabpfn"
         ),
         "spectral": ClassifierSpectralMetric(
@@ -140,3 +141,13 @@ def test_pgs5(dense_graphs, sparse_graphs):
     for name, (_, individual_result) in individual_results.items():
         assert isinstance(individual_result, float)
         assert individual_result == result["subscores"][name]
+
+    pgs5_interval = PGS5Interval(dense_graphs, subsample_size=10, num_samples=4)
+    result = pgs5_interval.compute(sparse_graphs)
+    assert isinstance(result, dict)
+    assert "polygraphscore" in result
+    assert "polygraphscore_descriptor" in result
+    assert "subscores" in result
+    assert len(result["subscores"]) == len(individual_metrics)
+    assert isinstance(result["polygraphscore"], MetricInterval)
+    assert isinstance(result["polygraphscore_descriptor"], dict)

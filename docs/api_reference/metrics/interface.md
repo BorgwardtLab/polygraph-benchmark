@@ -16,7 +16,10 @@ We implement the following metrics:
 - [VUN](../../metrics/vun.md) - Validity, Uniqueness, Novelty
 - [Fréchet Distance](frechet.md) - Optimal transport distance between fitted Gaussians
 
-## Interface Protocols
+Metrics that perform uncertainty quantification may return a [`MetricInterval`][polygraph.metrics.base.MetricInterval] object.
+
+
+## Metric Interface
 
 ::: polygraph.metrics.base.GenerationMetric
     options:
@@ -29,6 +32,15 @@ We implement the following metrics:
 ## Metric Collections
 
 ::: polygraph.metrics.base.MetricCollection
+    options:
+        show_root_heading: true
+        show_full_path: true
+        show_source: false
+        heading_level: 3
+
+## Uncertainty Quantification
+
+::: polygraph.metrics.base.MetricInterval
     options:
         show_root_heading: true
         show_full_path: true

@@ -1,12 +1,30 @@
-"""Metrics for measuring graph uniqueness and novelty.
+"""Metrics mainly used for evaluating graph generative models on synthetic data.
 
-This module provides classes for computing the Valid-Unique-Novel (VUN) metrics, which
+This module provides [`VUN`][polygraph.metrics.VUN], a class for computing the Valid-Unique-Novel (VUN) metrics, which
 measure what fraction of generated graphs are:
+
 - Valid: Satisfy domain-specific constraints
 - Unique: Not isomorphic to other generated graphs
 - Novel: Not isomorphic to training graphs
 
-The metrics also compute confidence intervals for the proportions using binomial tests.
+By passing `confidence_level` to the constructor, you may also compute Binomial confidence intervals for the proportions.
+
+Example:
+    ```python
+    from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
+    from polygraph.metrics import VUN
+
+    train = PlanarGraphDataset("val").to_nx()
+    generated = SBMGraphDataset("val").to_nx()
+
+    # Without uncertainty quantification
+    vun = VUN(train, validity_fn=PlanarGraphDataset.is_valid)
+    print(vun.compute(generated))           # {'unique': 1.0, 'novel': 1.0, 'unique_novel': 1.0, 'valid': 0.0, 'valid_unique_novel': 0.0, 'valid_novel': 0.0, 'valid_unique': 0.0}
+
+    # With uncertainty quantification
+    vun = VUN(train, validity_fn=PlanarGraphDataset.is_valid, confidence_level=0.95)
+    print(vun.compute(generated))           # {'unique': ConfidenceInterval(mle=1.0, low=None, high=None), 'novel': ConfidenceInterval(mle=1.0, low=0.8911188393205571, high=1.0), 'unique_novel': ConfidenceInterval(mle=1.0, low=None, high=None), 'valid': ConfidenceInterval(mle=0.0, low=0.0, high=0.10888116067944287), 'valid_unique_novel': ConfidenceInterval(mle=0.0, low=None, high=None), 'valid_novel': ConfidenceInterval(mle=0.0, low=0.0, high=0.10888116067944287), 'valid_unique': ConfidenceInterval(mle=0.0, low=None, high=None
+    ```
 """
 
 from collections import defaultdict, namedtuple
@@ -123,13 +141,13 @@ class _GraphSet:
 class VUN(GenerationMetric):
     """Computes Valid-Unique-Novel metrics for generated graphs.
 
-    Measures what fraction of generated graphs are valid (optional), unique
+    Measures the fraction of generated graphs that are valid (optional), unique
     (not isomorphic to other generated graphs), and novel (not isomorphic to
     training graphs). Also computes confidence intervals for these proportions.
 
     Args:
         train_graphs: Collection of training graphs to check novelty against
-        validity_fn: Optional function that takes a graph and returns True if valid
+        validity_fn: Optional function that takes a graph and returns `True` if the given graph is valid.
             If `None`, only uniqueness and novelty are computed.
         confidence_level: Confidence level for binomial proportion intervals. If `None`, only the point estimates are returned.
     """
@@ -157,8 +175,8 @@ class VUN(GenerationMetric):
 
         Returns:
             Dictionary containing metrics. If `confidence_level` was provided, it contains
-            confidence intervals as tuples (estimate, lower bound, upper bound).
-            Otherwise returns only the point estimates.
+                confidence intervals as tuples (estimate, lower bound, upper bound).
+                Otherwise returns only the point estimates.
         Raises:
             ValueError: If generated_samples is empty
         """

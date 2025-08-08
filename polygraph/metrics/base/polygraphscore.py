@@ -1,8 +1,41 @@
-"""PolyGraphScores to compare graph distributions.
-
+"""
 PolyGraphScores compare generated graphs to reference graphs by fitting a binary classifier to discriminate between the two.
 Performance metrics of this classifier lower-bound intrinsic probability metrics.
 Multiple graph descriptors may be combined within PolyGraphScores to yield a theoretically grounded summary metric.
+
+Either logistic regression or TabPFN may be used for classification.
+The classifiers may be then be evaluated by:
+
+- Data log-likelihood - Provides a lower bound on the Jensen-Shannon distance, or
+- Informedness - Provides a lower bound on the total variation distance.
+
+The [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore] class combines metrics across multiple graph descriptors,
+providing the tightest lower-bound on the probability metrics.
+The [`ClassifierMetric`][polygraph.metrics.base.polygraphscore.ClassifierMetric] class, on the other hand, computes a lower bound
+for a single graph descriptor.
+
+The [`PolyGraphScoreInterval`][polygraph.metrics.base.polygraphscore.PolyGraphScoreInterval] class implements a variant of the PolyGraphScore
+with uncertainty quantification.
+
+Example:
+    ```python
+    from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
+    from polygraph.metrics.base import PolyGraphScore
+    from polygraph.utils.graph_descriptors import OrbitCounts, SparseDegreeHistogram
+
+    reference = PlanarGraphDataset("val").to_nx()
+    generated = SBMGraphDataset("val").to_nx()
+
+    benchmark = PolyGraphScore(
+        reference,
+        descriptors={
+            "orbit": OrbitCounts(),
+            "degree": SparseDegreeHistogram(),
+        },
+    )
+    print(benchmark.compute(generated))         # {'polygraphscore': 0.9975117559449073, 'polygraphscore_descriptor': 'degree', 'subscores': {'orbit': 0.9962500491652303, 'degree': 0.9975117559449073}}
+    ```
+
 """
 
 from typing import (
@@ -403,7 +436,7 @@ class _ClassifierMetricSamples:
 
 
 class PolyGraphScore(GenerationMetric):
-    """PolyGraphScore to compare graph distributions.
+    """PolyGraphScore to compare graph distributions, combining multiple graph descriptors.
 
     Args:
         reference_graphs: Reference graphs
@@ -438,7 +471,7 @@ class PolyGraphScore(GenerationMetric):
             generated_graphs: Generated graphs
 
         Returns:
-            Dictionary of scores.
+            Typed dictionary of scores.
                 The key `"polygraphscore"` specifies the PolyGraphScore, giving the estimated tightest lower-bound on the probability metric.
                 The key `"polygraphscore_descriptor"` specifies the descriptor that achieves this bound.
                 All descritor-wise scores are returned in the key `"subscores"`.
@@ -462,6 +495,17 @@ class PolyGraphScore(GenerationMetric):
 
 
 class PolyGraphScoreInterval(GenerationMetric):
+    """Uncertainty quantification for [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore].
+
+    Args:
+        reference_graphs: Reference graphs. Must provide at least `2 * subsample_size` graphs.
+        descriptors: Dictionary of descriptor names and descriptor functions
+        subsample_size: Size of each subsample, should be consistent with the number
+            of reference and generated graphs passed to [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore]
+            for point estimates.
+        num_samples: Number of samples to draw for uncertainty quantification.
+    """
+
     _variant: Literal["informedness", "jsd"]
     _classifier: Literal["logistic", "tabpfn"]
 
@@ -474,6 +518,11 @@ class PolyGraphScoreInterval(GenerationMetric):
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Literal["logistic", "tabpfn"] = "tabpfn",
     ):
+        if len(reference_graphs) < 2 * subsample_size:
+            raise ValueError(
+                "Number of reference graphs must be at least 2 * subsample_size"
+            )
+
         self._sub_metrics = {
             name: _ClassifierMetricSamples(
                 reference_graphs, descriptors[name], variant, classifier
@@ -487,6 +536,21 @@ class PolyGraphScoreInterval(GenerationMetric):
         self,
         generated_graphs: Collection[nx.Graph],
     ) -> PolyGraphScoreIntervalResult:
+        """Compute the PolyGraphScoreInterval.
+
+        Args:
+            generated_graphs: Generated graphs. Must provide at least `2 * subsample_size` graphs.
+
+        Returns:
+            Typed dictionary of scores.
+                The key `"polygraphscore"` specifies the PolyGraphScore, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
+                The key `"polygraphscore_descriptor"` describes which descriptors achieve this score. This is a dictionary mapping descriptor names to the ratio of samples in which the descriptor was chosen.
+                All descritor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
+        """
+        if len(generated_graphs) < 2 * self._subsample_size:
+            raise ValueError(
+                "Number of generated graphs must be at least 2 * subsample_size"
+            )
         all_sub_samples = {
             name: metric.compute(
                 generated_graphs, self._subsample_size, self._num_samples

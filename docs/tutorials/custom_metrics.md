@@ -2,6 +2,6 @@
 
 ## Custom Graph Descriptors
 
-## Custom Graph Kernels
+## Building MMD Metrics
 
-## Building Benchmarks
+## Building PolyGraphScore Metrics
