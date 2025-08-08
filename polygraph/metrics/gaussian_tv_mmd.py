@@ -17,23 +17,23 @@ Warning:
 
 
 Below, we demonstrate how to evaluate all metrics in the benchmark with point estimates and with uncertainty quantification.
-Note that the parameter `subsample_size` in [`MMD2IntervalCollectionGaussianTV`][polygraph.metrics.MMD2IntervalCollectionGaussianTV]
-should match the number of generated and reference graphs in [`MMD2CollectionGaussianTV`][polygraph.metrics.MMD2CollectionGaussianTV]
+Note that the parameter `subsample_size` in [`GaussianTVMMD2BenchmarkInterval`][polygraph.metrics.GaussianTVMMD2BenchmarkInterval]
+should match the number of generated and reference graphs in [`GaussianTVMMD2Benchmark`][polygraph.metrics.GaussianTVMMD2Benchmark]
 to obtain comparable results:
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
-from polygraph.metrics import MMD2CollectionGaussianTV, MMD2IntervalCollectionGaussianTV
+from polygraph.metrics import GaussianTVMMD2Benchmark, GaussianTVMMD2BenchmarkInterval
 
 reference = list(PlanarGraphDataset("val").to_nx())
 generated = list(SBMGraphDataset("val").to_nx())
 
 # Evaluate the benchmark with point estimates
-benchmark = MMD2CollectionGaussianTV(reference[:20])
+benchmark = GaussianTVMMD2Benchmark(reference[:20])
 print(benchmark.compute(generated[:20]))
 
 # Evaluate the benchmark with uncertainty quantification
-benchmark_with_uncertainty = MMD2IntervalCollectionGaussianTV(
+benchmark_with_uncertainty = GaussianTVMMD2BenchmarkInterval(
     reference,
     subsample_size=20,
     num_samples=100,
@@ -71,8 +71,8 @@ from polygraph.utils.kernels import GaussianTV
 
 
 __all__ = [
-    "MMD2CollectionGaussianTV",
-    "MMD2IntervalCollectionGaussianTV",
+    "GaussianTVMMD2Benchmark",
+    "GaussianTVMMD2BenchmarkInterval",
     "GaussianTVOrbitMMD2",
     "GaussianTVOrbitMMD2Interval",
     "GaussianTVClusteringMMD2",
@@ -84,7 +84,7 @@ __all__ = [
 ]
 
 
-class MMD2CollectionGaussianTV(MetricCollection):
+class GaussianTVMMD2Benchmark(MetricCollection):
     """Collection of MMD2 metrics using the Gaussian TV kernel.
 
     This graphs combines the following graph descriptors into one benchmark:
@@ -109,10 +109,10 @@ class MMD2CollectionGaussianTV(MetricCollection):
         )
 
 
-class MMD2IntervalCollectionGaussianTV(MetricCollection):
+class GaussianTVMMD2BenchmarkInterval(MetricCollection):
     """Collection of MMD2 metrics using the Gaussian TV kernel with uncertainty quantification.
 
-    This class provides the same metrics as [`MMD2CollectionGaussianTV`][polygraph.metrics.MMD2CollectionGaussianTV] but with uncertainty quantification.
+    This class provides the same metrics as [`GaussianTVMMD2Benchmark`][polygraph.metrics.GaussianTVMMD2Benchmark] but with uncertainty quantification.
 
     Args:
         reference_graphs: Collection of reference graphs to fit the metric to.

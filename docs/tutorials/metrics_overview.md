@@ -9,7 +9,7 @@ For convenience, `polygraph` allows metrics that follow this interface to be bun
 
 ```python
 from polygraph.metrics import MetricCollection
-from polygraph.metrics import MMD2CollectionRBF, MMD2CollectionGaussianTV
+from polygraph.metrics import RBFMMD2Benchmark, GaussianTVMMD2Benchmark
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
 
 reference_graphs = PlanarGraphDataset("val").to_nx()
@@ -17,8 +17,8 @@ generated_graphs = SBMGraphDataset("val").to_nx()
 
 metrics = MetricCollection(
     metrics={
-        "rbf_mmd": MMD2CollectionRBF(reference_graphs),
-        "tv_mmd": MMD2CollectionGaussianTV(reference_graphs),
+        "rbf_mmd": RBFMMD2Benchmark(reference_graphs),
+        "tv_mmd": GaussianTVMMD2Benchmark(reference_graphs),
     }
 )
 print(metrics.compute(generated_graphs))        # Dictionary of metrics
@@ -31,17 +31,17 @@ We now proceed to give a high-level overview over the different types of metrics
 [Maximum Mean Discrepancy (MMD)](../api_reference/metrics/mmd.md) is the predominant method for comparing graph distributions.
 The two distributions are embedded in a reproducing kernel Hilbert space (RKHS) and their distance is then computed in this space.
 
-In `polygraph`, we bundle the most commonly used MMD metrics in two benchmark classes: [`MMD2CollectionGaussianTV`][polygraph.metrics.MMD2CollectionGaussianTV] and [`MMD2CollectionRBF`][polygraph.metrics.MMD2CollectionRBF]. These benchmarks may be evaluated in the following fashion:
+In `polygraph`, we bundle the most commonly used MMD metrics in two benchmark classes: [`GaussianTVMMD2Benchmark`][polygraph.metrics.GaussianTVMMD2Benchmark] and [`RBFMMD2Benchmark`][polygraph.metrics.RBFMMD2Benchmark]. These benchmarks may be evaluated in the following fashion:
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
-from polygraph.metrics import MMD2CollectionGaussianTV, MMD2IntervalCollectionGaussianTV
+from polygraph.metrics import GaussianTVMMD2Benchmark, GaussianTVMMD2BenchmarkInterval
 
 reference = PlanarGraphDataset("val").to_nx()
 generated = SBMGraphDataset("val").to_nx()
 
 # Evaluate the benchmark with point estimates
-benchmark = MMD2CollectionGaussianTV(reference)
+benchmark = GaussianTVMMD2Benchmark(reference)
 print(benchmark.compute(generated))     # {'orbit': 1.067700488335175, 'clustering': 0.32549637224264394, 'degree': 0.3375409762261701, 'spectral': 0.0830197437100697}
 ```
 

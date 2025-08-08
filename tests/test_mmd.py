@@ -39,10 +39,10 @@ from polygraph.metrics.rbf_mmd import (
     RBFGraphNeuralNetworkMMD2,
 )
 from polygraph.metrics import (
-    MMD2CollectionGaussianTV,
-    MMD2IntervalCollectionGaussianTV,
+    GaussianTVMMD2Benchmark,
+    GaussianTVMMD2BenchmarkInterval,
 )
-from polygraph.metrics import MMD2CollectionRBF, MMD2IntervalCollectionRBF
+from polygraph.metrics import RBFMMD2Benchmark, RBFMMD2BenchmarkInterval
 from polygraph.utils.kernels import LinearKernel
 from polygraph.utils.graph_descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.mmd_utils import mmd_from_gram
@@ -332,7 +332,7 @@ def test_mmd_collections(datasets, variant):
             "spectral": RBFSpectralMMD2(planar),
             "gin": RBFGraphNeuralNetworkMMD2(planar),
         }
-        benchmark = MMD2CollectionRBF(planar)
+        benchmark = RBFMMD2Benchmark(planar)
     elif variant == "gaussian_tv":
         separate_metrics = {
             "orbit": GaussianTVOrbitMMD2(planar),
@@ -340,7 +340,7 @@ def test_mmd_collections(datasets, variant):
             "degree": GaussianTVDegreeMMD2(planar),
             "spectral": GaussianTVSpectralMMD2(planar),
         }
-        benchmark = MMD2CollectionGaussianTV(planar)
+        benchmark = GaussianTVMMD2Benchmark(planar)
     else:
         raise ValueError(f"Invalid variant: {variant}")
 
@@ -357,9 +357,9 @@ def test_mmd_collections(datasets, variant):
     )
 
     if variant == "rbf":
-        metric = MMD2IntervalCollectionRBF(planar, subsample_size=16)
+        metric = RBFMMD2BenchmarkInterval(planar, subsample_size=16)
     elif variant == "gaussian_tv":
-        metric = MMD2IntervalCollectionGaussianTV(planar, subsample_size=16)
+        metric = GaussianTVMMD2BenchmarkInterval(planar, subsample_size=16)
     else:
         raise ValueError(f"Invalid variant: {variant}")
 

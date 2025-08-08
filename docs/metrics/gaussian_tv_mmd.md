@@ -11,14 +11,14 @@
 
 ## Summary Benchmark
 
-::: polygraph.metrics.MMD2CollectionGaussianTV
+::: polygraph.metrics.GaussianTVMMD2Benchmark
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.MMD2IntervalCollectionGaussianTV
+::: polygraph.metrics.GaussianTVMMD2BenchmarkInterval
     options:
         show_root_heading: true
         show_full_path: true

@@ -1,10 +1,10 @@
 from .base import MetricCollection
 from .polygraphscore import PGS5, PGS5Interval
 from .gaussian_tv_mmd import (
-    MMD2CollectionGaussianTV,
-    MMD2IntervalCollectionGaussianTV,
+    GaussianTVMMD2Benchmark,
+    GaussianTVMMD2BenchmarkInterval,
 )
-from .rbf_mmd import MMD2CollectionRBF, MMD2IntervalCollectionRBF
+from .rbf_mmd import RBFMMD2Benchmark, RBFMMD2BenchmarkInterval
 from .vun import VUN
 
 __all__ = [
@@ -12,8 +12,8 @@ __all__ = [
     "MetricCollection",
     "PGS5",
     "PGS5Interval",
-    "MMD2CollectionGaussianTV",
-    "MMD2IntervalCollectionGaussianTV",
-    "MMD2CollectionRBF",
-    "MMD2IntervalCollectionRBF",
+    "GaussianTVMMD2Benchmark",
+    "GaussianTVMMD2BenchmarkInterval",
+    "RBFMMD2Benchmark",
+    "RBFMMD2BenchmarkInterval",
 ]

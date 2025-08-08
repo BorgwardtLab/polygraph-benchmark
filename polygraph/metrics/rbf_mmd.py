@@ -13,17 +13,17 @@ Below, we demonstrate how to evaluate all metrics in the benchmark with point es
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
-from polygraph.metrics import MMD2CollectionRBF, MMD2IntervalCollectionRBF
+from polygraph.metrics import RBFMMD2Benchmark, RBFMMD2BenchmarkInterval
 
 reference = list(PlanarGraphDataset("val").to_nx())
 generated = list(SBMGraphDataset("val").to_nx())
 
 # Evaluate the benchmark with point estimates
-benchmark = MMD2CollectionRBF(reference[:20])
+benchmark = RBFMMD2Benchmark(reference[:20])
 print(benchmark.compute(generated[:20]))
 
 # Evaluate the benchmark with uncertainty quantification
-benchmark_with_uncertainty = MMD2IntervalCollectionRBF(
+benchmark_with_uncertainty = RBFMMD2BenchmarkInterval(
     reference,
     subsample_size=20,
     num_samples=100,
@@ -58,8 +58,8 @@ from polygraph.utils.kernels import AdaptiveRBFKernel
 from polygraph.metrics.base import MetricCollection
 
 __all__ = [
-    "MMD2CollectionRBF",
-    "MMD2IntervalCollectionRBF",
+    "RBFMMD2Benchmark",
+    "RBFMMD2BenchmarkInterval",
     "RBFOrbitMMD2",
     "RBFOrbitMMD2Interval",
     "RBFClusteringMMD2",
@@ -73,7 +73,7 @@ __all__ = [
 ]
 
 
-class MMD2CollectionRBF(MetricCollection):
+class RBFMMD2Benchmark(MetricCollection):
     """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths."""
 
     def __init__(self, reference_graphs: Collection[nx.Graph]):
@@ -88,7 +88,7 @@ class MMD2CollectionRBF(MetricCollection):
         )
 
 
-class MMD2IntervalCollectionRBF(MetricCollection):
+class RBFMMD2BenchmarkInterval(MetricCollection):
     """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths and uncertainty quantification."""
 
     def __init__(

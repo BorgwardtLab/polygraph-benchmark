@@ -30,15 +30,15 @@ print(planar_nx[0])         # (Networkx) Graph with 64 nodes and 177 edges
 When evaluating graph generative models, we want to compare a set of *generated* graphs to a set of *reference* graphs (typically the test set).
 In `polygraph`, we provide various different metrics to quantify how similar these two sets of graphs are.
 We usually pass collections of NetworkX graphs to metrics.
-Below, we demonstrate how a set of these metrics, combined in the [`MMD2CollectionGaussianTV`][polygraph.metrics.MMD2CollectionGaussianTV] benchmark may be computed:
+Below, we demonstrate how a set of these metrics, combined in the [`GaussianTVMMD2Benchmark`][polygraph.metrics.GaussianTVMMD2Benchmark] benchmark may be computed:
 
 ```python
-from polygraph.metrics import MMD2CollectionGaussianTV
+from polygraph.metrics import GaussianTVMMD2Benchmark
 
 reference = planar.to_nx()
 generated = sbm.to_nx()
 
-benchmark = MMD2CollectionGaussianTV(reference)
+benchmark = GaussianTVMMD2Benchmark(reference)
 print(benchmark.compute(generated))          # Dictionary of different metrics
 ```
 
@@ -46,6 +46,6 @@ We discuss available metrics [in the next tutorial](metrics_overview.md).
 
 All metrics are evaluated in a similar fashion, as defined by the common [interface](../api_reference/metrics/interface.md):
 
-- We first initialize a metric object via `benchmark = MMD2CollectionGaussianTV(reference)`. This fits the metric to the `reference` set, caching data that is required in later computations
+- We first initialize a metric object via `benchmark = GaussianTVMMD2Benchmark(reference)`. This fits the metric to the `reference` set, caching data that is required in later computations
 - We then compute the metric against the generated set via `benchmark.compute(generated)`
 - We may call `benchmark.compute` repeatedly with different generated sets, e.g. over the course of training

@@ -11,14 +11,14 @@
 
 ## Summary Benchmark
 
-::: polygraph.metrics.MMD2CollectionRBF
+::: polygraph.metrics.RBFMMD2Benchmark
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.MMD2IntervalCollectionRBF
+::: polygraph.metrics.RBFMMD2BenchmarkInterval
     options:
         show_root_heading: true
         show_full_path: true
