@@ -29,12 +29,6 @@ def extract_code_blocks_from_docstring(docstring):
     return fixed_blocks
 
 
-def run_code_snippet(code, context=None):
-    """Run a snippet of code and catch any exceptions."""
-    context = context or {}
-    exec(code, context)
-
-
 def extract_all_docstrings_from_module(module):
     """Get all docstrings from a module, its classes, and functions."""
     docstrings = []

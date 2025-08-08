@@ -35,9 +35,11 @@ from polygraph.utils.kernels import (
 from polygraph.datasets.molecules import QM9
 
 from collect_doc_snippets import gather_docstring_snippets
+from collect_markdown_snippets import gather_markdown_snippets
 
 # Cache the snippets to avoid calling gather_docstring_snippets multiple times
-_cached_snippets = None
+_cached_doc_snippets = None
+_cached_md_snippets = None
 
 NO_SKIP_OPTION = "--no-skip"
 SAMPLE_SIZE_OPTION = "--sample-size"
@@ -234,18 +236,33 @@ def sample_molecules():
 
 
 def pytest_generate_tests(metafunc):
-    if "code_snippet" in metafunc.fixturenames:
-        global _cached_snippets
-        if _cached_snippets is None:
+    if "doc_snippet" in metafunc.fixturenames:
+        global _cached_doc_snippets
+        if _cached_doc_snippets is None:
             print(
                 "pytest_generate_tests: Gathering docstring snippets with debug output..."
             )
-            _cached_snippets = gather_docstring_snippets()
+            _cached_doc_snippets = gather_docstring_snippets()
             print(
-                f"pytest_generate_tests: Found {len(_cached_snippets)} snippets"
+                f"pytest_generate_tests: Found {len(_cached_doc_snippets)} snippets"
             )
         metafunc.parametrize(
-            "code_snippet",
-            _cached_snippets,
-            ids=[snippet[0] for snippet in _cached_snippets],
+            "doc_snippet",
+            _cached_doc_snippets,
+            ids=[snippet[0] for snippet in _cached_doc_snippets],
+        )
+    if "md_snippet" in metafunc.fixturenames:
+        global _cached_md_snippets
+        if _cached_md_snippets is None:
+            print(
+                "pytest_generate_tests: Gathering markdown snippets with debug output..."
+            )
+            _cached_md_snippets = gather_markdown_snippets()
+            print(
+                f"pytest_generate_tests: Found {len(_cached_md_snippets)} snippets"
+            )
+        metafunc.parametrize(
+            "md_snippet",
+            _cached_md_snippets,
+            ids=[snippet[0] for snippet in _cached_md_snippets],
         )
