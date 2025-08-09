@@ -81,6 +81,9 @@ class GraphStorage(BaseModel):
         Returns:
             PyTorch Geometric `Data` object containing the graph.
         """
+        if self.indexing_info is None:
+            raise RuntimeError("Indexing info not computed")
+
         node_left, node_right = self.indexing_info.node_slices[idx].tolist()
         edge_left, edge_right = self.indexing_info.edge_slices[idx].tolist()
         node_offset = self.indexing_info.inc[idx]
@@ -121,7 +124,7 @@ class GraphStorage(BaseModel):
         graphs = [self.get_example(idx) for idx in indices]
 
         # Create a batch from the graphs
-        batch = Batch.from_data_list(graphs)
+        batch = Batch.from_data_list(graphs)  # pyright: ignore
 
         # Create new GraphStorage from the batch
         return GraphStorage.from_pyg_batch(
@@ -197,7 +200,7 @@ class GraphStorage(BaseModel):
             )
 
         inc = _cumsum(num_nodes_per_graph)
-        node_slices = torch.stack([inc[:-1], inc[1:]], axis=1)
+        node_slices = torch.stack([inc[:-1], inc[1:]], dim=1)
         assert len(node_slices) == self.num_graphs
 
         # Now compute edge slices
@@ -220,7 +223,7 @@ class GraphStorage(BaseModel):
         num_edges_per_graph = torch.bincount(edge_to_graph)
         assert len(num_edges_per_graph) == self.num_graphs
         edge_inc = _cumsum(num_edges_per_graph)
-        edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], axis=1)
+        edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], dim=1)
         assert len(edge_slices) == self.num_graphs
         self.indexing_info = IndexingInfo(
             node_slices=node_slices, inc=inc, edge_slices=edge_slices

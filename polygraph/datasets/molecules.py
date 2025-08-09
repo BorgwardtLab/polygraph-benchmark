@@ -29,12 +29,11 @@ class MoleculeDataset(OnlineGraphDataset):
     def hash_for_split(self, split: str) -> str:
         return self._HASH_FOR_SPLIT[split]
 
-    @staticmethod
-    def is_valid(data: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         """Convert PyG graph back to RDKit molecule and validate it."""
         from polygraph.datasets.base.molecules import graph2molecule
 
-        graph = from_networkx(data)
+        graph = from_networkx(graph)
         # Convert nx Graph to PyG Batch
         mol = graph2molecule(
             node_labels=graph.atom_labels,

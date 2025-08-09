@@ -63,8 +63,7 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
         ]
         return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
 
-    @staticmethod
-    def is_valid(graph: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         """Check if a graph is valid (connected and planar)."""
         return is_planar_graph(graph)
 
@@ -120,8 +119,7 @@ class PlanarGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    @staticmethod
-    def is_valid(graph: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         """Check whether graph is connnected and planar.
 
         Args:

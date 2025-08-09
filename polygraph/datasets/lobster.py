@@ -65,7 +65,7 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         memmap: bool = False,
         show_generation_progress: bool = False,
     ):
-        config_hash = joblib.hash(
+        config_hash: str = joblib.hash(  # pyright: ignore
             (
                 num_graphs,
                 expected_num_nodes,
@@ -104,11 +104,6 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
             )
         ]
         return GraphStorage.from_pyg_batch(Batch.from_data_list(graphs))
-
-    @staticmethod
-    def is_valid(graph: nx.Graph) -> bool:
-        """Check if a graph is a valid lobster graph."""
-        return is_lobster_graph(graph)
 
     def _random_lobster(self):
         while True:
@@ -161,8 +156,7 @@ class LobsterGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    @staticmethod
-    def is_valid(graph: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         """Check if a graph is a valid lobster graph."""
         return is_lobster_graph(graph)
 

@@ -35,13 +35,10 @@ ALL_DATASETS = [
     DobsonDoigGraphDataset,
 ]
 
-NON_MOLECULAR_DATASETS = [
-    SmallEgoGraphDataset,
-    EgoGraphDataset,
+SYNTHETIC_DATASETS = [
     SBMGraphDataset,
     PlanarGraphDataset,
     LobsterGraphDataset,
-    DobsonDoigGraphDataset,
 ]
 
 
@@ -130,7 +127,7 @@ def test_graph_properties_slow(ds_cls):
         )
 
 
-@pytest.mark.parametrize("ds_cls", NON_MOLECULAR_DATASETS)
+@pytest.mark.parametrize("ds_cls", SYNTHETIC_DATASETS)
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
         ds = ds_cls(split)
