@@ -4,7 +4,7 @@ and can be indexed efficiently to retrieve PyTorch Geometric `Data` objects.
 """
 
 from importlib.metadata import version
-from typing import Any, Collection, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import torch
 import numpy as np
@@ -39,7 +39,7 @@ def _cumsum(x: torch.Tensor, dim: int = 0) -> torch.Tensor:
     return out
 
 
-def _get_node_attr_dim(graphs: Collection[nx.Graph], attr: str) -> int:
+def _get_node_attr_dim(graphs: Sequence[nx.Graph], attr: str) -> int:
     if len(graphs) == 0:
         raise ValueError(
             "Cannot get node attribute dimension from empty collection of graphs"
@@ -59,7 +59,7 @@ def _get_node_attr_dim(graphs: Collection[nx.Graph], attr: str) -> int:
     return dim
 
 
-def _get_edge_attr_dim(graphs: Collection[nx.Graph], attr: str) -> int:
+def _get_edge_attr_dim(graphs: Sequence[nx.Graph], attr: str) -> int:
     if len(graphs) == 0:
         raise ValueError(
             "Cannot get edge attribute dimension from empty collection of graphs"
@@ -185,17 +185,17 @@ class GraphStorage(BaseModel):
 
     @staticmethod
     def from_nx_graphs(
-        graphs: Collection[nx.Graph],
+        graphs: Sequence[nx.Graph],
         edge_attrs: Optional[List[str]] = None,
         node_attrs: Optional[List[str]] = None,
         graph_attrs: Optional[List[str]] = None,
     ) -> "GraphStorage":
-        """Construct a `GraphStorage` object from a collection of NetworkX graphs.
+        """Construct a `GraphStorage` object from a sequence of NetworkX graphs.
 
         The specified attributes must be numpy arrays and must have consistent dimensions across all graphs and nodes/edges.
 
         Args:
-            graphs: Collection of NetworkX graphs.
+            graphs: List or tuple of NetworkX graphs.
             edge_attrs: List of edge-level attributes to include, must be present in each networkx graph.
             node_attrs: List of node-level attributes to include, must be present in each networkx graph.
             graph_attrs: List of graph-level attributes to include, must be present in each networkx graph.
@@ -205,10 +205,6 @@ class GraphStorage(BaseModel):
                 "Cannot create GraphStorage from empty collection of graphs"
             )
 
-        edge_attrs = edge_attrs or []
-        node_attrs = node_attrs or []
-        graph_attrs = graph_attrs or []
-
         batch = Batch.from_data_list(
             [
                 from_networkx(
@@ -217,30 +213,34 @@ class GraphStorage(BaseModel):
                 for g in graphs
             ]
         )
-        node_attr_dim = {
-            key: _get_node_attr_dim(graphs, key) for key in node_attrs
-        }
-        edge_attr_dim = {
-            key: _get_edge_attr_dim(graphs, key) for key in edge_attrs
-        }
 
-        begin = 0
-        for key in node_attrs:
-            end = begin + node_attr_dim[key]
-            setattr(batch, key, batch.x[:, begin:end])
-            begin = end
+        if node_attrs is not None:
+            node_attr_dim = {
+                key: _get_node_attr_dim(graphs, key) for key in node_attrs
+            }
+            begin = 0
+            for key in node_attrs:
+                end = begin + node_attr_dim[key]
+                setattr(batch, key, batch.x[:, begin:end])  # pyright: ignore
+                begin = end
 
-        begin = 0
-        for key in edge_attrs:
-            end = begin + edge_attr_dim[key]
-            setattr(batch, key, batch.edge_attr[:, begin:end])
+        if edge_attrs is not None:
+            edge_attr_dim = {
+                key: _get_edge_attr_dim(graphs, key) for key in edge_attrs
+            }
+            begin = 0
+            for key in edge_attrs:
+                end = begin + edge_attr_dim[key]
+                setattr(batch, key, batch.edge_attr[:, begin:end])  # pyright: ignore
+                begin = end
 
-        for key in graph_attrs:
-            setattr(
-                batch,
-                key,
-                torch.from_numpy(np.array([g.graph[key] for g in graphs])),
-            )
+        if graph_attrs is not None:
+            for key in graph_attrs:
+                setattr(
+                    batch,
+                    key,
+                    torch.from_numpy(np.array([g.graph[key] for g in graphs])),
+                )
 
         return GraphStorage.from_pyg_batch(
             batch,

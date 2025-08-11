@@ -50,7 +50,8 @@ def test_compute_indexing_info():
     assert gs.indexing_info is not None
 
 
-def test_from_nx_graphs():
+@pytest.mark.parametrize("use_attrs", [True, False])
+def test_from_nx_graphs(use_attrs):
     g1 = nx.Graph()
     g1.add_node(0, feat=np.ones(3), feat2=-1 * np.ones(3))
     g1.add_node(1, feat=2 * np.ones(3), feat2=-2 * np.ones(3))
@@ -64,36 +65,48 @@ def test_from_nx_graphs():
     g2.add_edge(0, 1, e=6 * np.ones(2))
     g2.graph["g"] = 8
 
-    gs = GraphStorage.from_nx_graphs(
-        [g1, g2],
-        node_attrs=["feat", "feat2"],
-        edge_attrs=["e"],
-        graph_attrs=["g"],
-    )
+    if not use_attrs:
+        gs = GraphStorage.from_nx_graphs([g1, g2])
+        assert len(gs) == 2
+        ex0 = gs.get_example(0)
+        ex1 = gs.get_example(1)
+        assert ex0.edge_index.shape == (2, 2)
+        assert ex1.edge_index.shape == (2, 2)
+    else:
+        gs = GraphStorage.from_nx_graphs(
+            [g1, g2],
+            node_attrs=["feat", "feat2"],
+            edge_attrs=["e"],
+            graph_attrs=["g"],
+        )
+        assert len(gs) == 2
 
-    ex0 = gs.get_example(0)
-    ex1 = gs.get_example(1)
+        ex0 = gs.get_example(0)
+        ex1 = gs.get_example(1)
 
-    assert ex0.g.item() == 7 and ex1.g.item() == 8
+        assert ex0.g.item() == 7 and ex1.g.item() == 8
 
-    assert ex0.edge_index.shape == (2, 2)
-    assert ex1.edge_index.shape == (2, 2)
+        assert ex0.edge_index.shape == (2, 2)
+        assert ex1.edge_index.shape == (2, 2)
 
-    # Remove backward edges for assertions
-    ex0e = ex0.e[ex0.edge_index[0] < ex0.edge_index[1]]
-    ex1e = ex1.e[ex1.edge_index[0] < ex1.edge_index[1]]
+        # Remove backward edges for assertions
+        ex0e = ex0.e[ex0.edge_index[0] < ex0.edge_index[1]]
+        ex1e = ex1.e[ex1.edge_index[0] < ex1.edge_index[1]]
 
-    assert tuple(ex0.feat.shape) == (2, 3)
-    assert tuple(ex0.feat2.shape) == (2, 3)
-    assert tuple(ex0e.shape) == (1, 2)
-    assert tuple(ex1.feat2.shape) == (3, 3)
-    assert tuple(ex1e.shape) == (1, 2)
-    assert gs.num_graphs == 2
-    assert (ex0.feat == torch.tensor([[1, 1, 1], [2, 2, 2]])).all()
-    assert (ex0.feat2 == torch.tensor([[-1, -1, -1], [-2, -2, -2]])).all()
-    assert (ex0e == torch.tensor([[3, 3]])).all()
-    assert (ex1.feat == torch.tensor([[4, 4, 4], [5, 5, 5], [9, 9, 9]])).all()
-    assert (
-        ex1.feat2 == torch.tensor([[-4, -4, -4], [-5, -5, -5], [-9, -9, -9]])
-    ).all()
-    assert (ex1e == torch.tensor([[6, 6]])).all()
+        assert tuple(ex0.feat.shape) == (2, 3)
+        assert tuple(ex0.feat2.shape) == (2, 3)
+        assert tuple(ex0e.shape) == (1, 2)
+        assert tuple(ex1.feat2.shape) == (3, 3)
+        assert tuple(ex1e.shape) == (1, 2)
+        assert gs.num_graphs == 2
+        assert (ex0.feat == torch.tensor([[1, 1, 1], [2, 2, 2]])).all()
+        assert (ex0.feat2 == torch.tensor([[-1, -1, -1], [-2, -2, -2]])).all()
+        assert (ex0e == torch.tensor([[3, 3]])).all()
+        assert (
+            ex1.feat == torch.tensor([[4, 4, 4], [5, 5, 5], [9, 9, 9]])
+        ).all()
+        assert (
+            ex1.feat2
+            == torch.tensor([[-4, -4, -4], [-5, -5, -5], [-9, -9, -9]])
+        ).all()
+        assert (ex1e == torch.tensor([[6, 6]])).all()
