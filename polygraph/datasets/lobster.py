@@ -8,7 +8,7 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 from tqdm.rich import tqdm
 
-from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
+from polygraph.datasets.base import SplitGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
 
 
@@ -127,7 +127,7 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
         return is_lobster_graph(graph)
 
 
-class LobsterGraphDataset(OnlineGraphDataset):
+class LobsterGraphDataset(SplitGraphDataset):
     """Dataset of lobster graphs proposed by Liao et al. [1].
 
     A lobster graph is a tree which has a backbone path such that each node in the tree is at most two hops away from this backbone.

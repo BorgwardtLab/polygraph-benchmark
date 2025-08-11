@@ -1,9 +1,9 @@
 from typing import Optional
 
-from polygraph.datasets.base import OnlineGraphDataset
+from polygraph.datasets.base import SplitGraphDataset
 
 
-class DobsonDoigGraphDataset(OnlineGraphDataset):
+class DobsonDoigGraphDataset(SplitGraphDataset):
     """Dataset of protein graphs originally introduced by Dobson and Doig [1].
 
     This dataset was later adopted by You et al. [2] in the area of graph generation. The splits we provide are disjoint, unlike in [2].

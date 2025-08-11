@@ -1,9 +1,9 @@
 from typing import Optional
 
-from polygraph.datasets.base import OnlineGraphDataset
+from polygraph.datasets.base import SplitGraphDataset
 
 
-class PointCloudGraphDataset(OnlineGraphDataset):
+class PointCloudGraphDataset(SplitGraphDataset):
     """Dataset of KNN-graphs of point clouds, proposed by Neumann et al. [1].
 
     {{ plot_first_k_graphs("PointCloudGraphDataset", "train", 3, node_size=20) }}

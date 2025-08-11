@@ -21,7 +21,14 @@
         show_source: false
         heading_level: 2
 
-::: polygraph.datasets.base.OnlineGraphDataset
+::: polygraph.datasets.base.URLGraphDataset
+    options:
+        show_root_heading: true
+        show_source: false
+        heading_level: 2
+        members: [url_for_split, hash_for_split]
+
+::: polygraph.datasets.base.SplitGraphDataset
     options:
         show_root_heading: true
         show_source: false

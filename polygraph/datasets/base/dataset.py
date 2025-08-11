@@ -5,11 +5,13 @@ These provide abstractions for loading, caching and accessing collections of gra
 Available classes:
     - [`AbstractDataset`][polygraph.datasets.base.dataset.AbstractDataset]: Abstract base class defining the dataset interface.
     - [`GraphDataset`][polygraph.datasets.base.dataset.GraphDataset]: A dataset that is initialized with a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] holding graphs.
-    - [`OnlineGraphDataset`][polygraph.datasets.base.dataset.OnlineGraphDataset]: Abstract base class for downloading a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] from a URL and caching it on disk.
+    - [`URLGraphDataset`][polygraph.datasets.base.dataset.URLGraphDataset]: A dataset for downloading a collection of graphs as a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] object from a URL and caching it on disk.
+    - [`SplitGraphDataset`][polygraph.datasets.base.dataset.SplitGraphDataset]: An abstract base class for downloading several dataset splits in the form of [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] objects from a URL and caching them on disk. We provide several concrete implementations of this class, e.g. [`PlanarGraphDataset`][polygraph.datasets.planar.PlanarGraphDataset].
     - [`ProceduralGraphDataset`][polygraph.datasets.base.dataset.ProceduralGraphDataset]: Abstract base class for generating a [`GraphStorage`][polygraph.datasets.base.graph_storage.GraphStorage] procedurally.
 """
 
 import hashlib
+import re
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
@@ -313,7 +315,7 @@ class GraphDataset(AbstractDataset):
         console = Console()
         console.print()
 
-        if isinstance(self, OnlineGraphDataset):
+        if isinstance(self, SplitGraphDataset):
             assert hasattr(self, "_split")
             table = Table(
                 title=f"Graph Dataset Statistics for {self.__class__.__name__} ({self._split} set)"
@@ -339,8 +341,52 @@ class GraphDataset(AbstractDataset):
         console.print(table)
 
 
-class OnlineGraphDataset(GraphDataset):
-    """Abstract base class for downloading and caching graph data.
+class URLGraphDataset(GraphDataset):
+    """Dataset that downloads a single split from a URL.
+
+    This class handles downloading graph data from a URL and caching it locally.
+
+    Args:
+        url: URL to download the data from
+        memmap: Whether to memory-map the cached data. Useful for large datasets that do not fit into memory.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        hash: Optional[str] = None,
+        memmap: bool = False,
+    ):
+        self._url = url
+        self._hash = hash
+        with CacheLock(self.identifier):
+            try:
+                data_store = load_from_cache(
+                    self.identifier,
+                    mmap=memmap,
+                    data_hash=hash,
+                )
+            except FileNotFoundError:
+                download_to_cache(url, self.identifier)
+                data_store = load_from_cache(
+                    self.identifier,
+                    mmap=memmap,
+                    data_hash=hash,
+                )
+        super().__init__(data_store)
+
+    @staticmethod
+    def _url_to_folder_name(url: str) -> str:
+        return re.sub(r'[<>:"/\\|?*]', "_", url)
+
+    @property
+    def identifier(self) -> str:
+        url_hash = hashlib.md5(self._url.encode()).hexdigest()
+        return f"{self._url_to_folder_name(self._url)}.{url_hash}"
+
+
+class SplitGraphDataset(GraphDataset):
+    """Abstract base class for downloading and caching graph data with multiple splits.
 
     This class handles downloading graph data from a URL and caching it locally.
     Subclasses must implement methods to specify the data source.

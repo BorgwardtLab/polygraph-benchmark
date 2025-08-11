@@ -9,10 +9,10 @@ from __future__ import annotations
 import networkx as nx
 from torch_geometric.utils import from_networkx
 
-from polygraph.datasets.base.dataset import OnlineGraphDataset
+from polygraph.datasets.base.dataset import SplitGraphDataset
 
 
-class MoleculeDataset(OnlineGraphDataset):
+class MoleculeDataset(SplitGraphDataset):
     """QM9 dataset.
     The backbone of this implementation is adapted from the PyG implementation of
     the QM9 dataset and the implementation from the DiGress paper
