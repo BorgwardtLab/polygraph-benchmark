@@ -40,7 +40,7 @@ provide BSD-licensed implementations of the SBM graph validity checking
 functions in `is_valid_alt`.
 
 <details>
-<summary> **🛠️ Development Installation** </summary>
+<summary><strong>🛠️ Development Installation</strong></summary>
 
 We recommend to install the full gamut of dependencies including optional
 development dependencies for development purposes to ensure all tests can be

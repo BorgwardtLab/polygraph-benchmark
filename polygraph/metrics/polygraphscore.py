@@ -9,7 +9,7 @@
 By default, we use TabPFN for binary classification and evaluate it by data log-likelihood, obtaining a PolyGraphScore that provides an estimated lower bound on the Jensen-Shannon
 distance between the generated and true graph distribution.
 
-This metric is implmented in the [`PGS5`][polygraph.metrics.PGS5] class and can be used as follows:
+This metric is implemented in the [`PGS5`][polygraph.metrics.PGS5] class and can be used as follows:
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset

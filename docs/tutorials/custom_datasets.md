@@ -55,7 +55,7 @@ from polygraph.datasets import URLGraphDataset
 
 ds = URLGraphDataset(
     url="https://sandbox.zenodo.org/records/309573/files/planar_train.pt?download=1",
-    hash="edc2630954a23b1cf6a549d43a95e359"
+    file_hash="edc2630954a23b1cf6a549d43a95e359"
 )
 ```
 If no md5 hash of the file is available, it may be set to `None`.

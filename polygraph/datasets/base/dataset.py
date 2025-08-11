@@ -395,24 +395,24 @@ class URLGraphDataset(GraphDataset):
     def __init__(
         self,
         url: str,
-        hash: Optional[str] = None,
+        file_hash: Optional[str] = None,
         memmap: bool = False,
     ):
         self._url = url
-        self._hash = hash
+        self._hash = file_hash
         with CacheLock(self.identifier):
             try:
                 data_store = load_from_cache(
                     self.identifier,
                     mmap=memmap,
-                    data_hash=hash,
+                    data_hash=file_hash,
                 )
             except FileNotFoundError:
                 download_to_cache(url, self.identifier)
                 data_store = load_from_cache(
                     self.identifier,
                     mmap=memmap,
-                    data_hash=hash,
+                    data_hash=file_hash,
                 )
         super().__init__(data_store)
 
