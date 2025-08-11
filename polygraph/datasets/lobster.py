@@ -122,6 +122,10 @@ class ProceduralLobsterGraphDataset(ProceduralGraphDataset):
             ):
                 return g
 
+    def is_valid(self, graph: nx.Graph) -> bool:
+        """Check if a graph is a valid lobster graph."""
+        return is_lobster_graph(graph)
+
 
 class LobsterGraphDataset(OnlineGraphDataset):
     """Dataset of lobster graphs proposed by Liao et al. [1].
