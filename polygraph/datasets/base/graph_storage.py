@@ -49,6 +49,8 @@ def _get_node_attr_dim(graphs: Sequence[nx.Graph], attr: str) -> int:
         raise ValueError(f"Attribute {attr} not found in any node")
     if not isinstance(prototype_node[attr], np.ndarray):
         raise ValueError(f"Attribute {attr} is not an array")
+    if prototype_node[attr].ndim != 1:
+        raise ValueError(f"Attribute {attr} is not a 1D array")
     dim = prototype_node[attr].shape[0]
     if not all(
         graph.nodes[node][attr].shape[0] == dim
@@ -69,6 +71,8 @@ def _get_edge_attr_dim(graphs: Sequence[nx.Graph], attr: str) -> int:
         raise ValueError(f"Attribute {attr} not found in any edge")
     if not isinstance(prototype_edge[attr], np.ndarray):
         raise ValueError(f"Attribute {attr} is not an array")
+    if prototype_edge[attr].ndim != 1:
+        raise ValueError(f"Attribute {attr} is not a 1D array")
     dim = prototype_edge[attr].shape[0]
     if not all(
         graph.edges[edge][attr].shape[0] == dim
