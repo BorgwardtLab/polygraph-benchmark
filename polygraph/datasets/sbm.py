@@ -22,7 +22,7 @@ def is_sbm_graph(
     min_n_nodes_per_community: int = 20,
     max_n_nodes_per_community: int = 40,
 ) -> bool:
-    import graph_tool.all as gt
+    import graph_tool.all as gt  # pyright: ignore
     from scipy.stats import chi2
 
     adj = nx.adjacency_matrix(graph).toarray()
