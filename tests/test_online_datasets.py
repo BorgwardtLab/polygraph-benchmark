@@ -135,7 +135,7 @@ def test_graph_properties_fast(ds_cls, sample_size):
         sampled_graphs = ds.sample(sample_size)
         valid = []
         for g in tqdm(sampled_graphs, desc=f"Validating {ds_cls.__name__}"):
-            valid.append(ds_cls.is_valid(g))
+            valid.append(ds.is_valid(g))
         if ds_cls.__name__ == "SBMGraphDataset":
             # Check that most graphs are valid, since the validity check is not
             # perfect

@@ -156,7 +156,7 @@ def pytest_addoption(parser):
     parser.addoption(
         SAMPLE_SIZE_OPTION,
         action="store",
-        default=5,
+        default=10,
         type=int,
         help="number of samples to use in tests",
     )

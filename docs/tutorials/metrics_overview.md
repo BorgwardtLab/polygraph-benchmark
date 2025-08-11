@@ -127,14 +127,14 @@ To determine novelty, this metric must be passed the training set on which the g
 ```python
 from polygraph.metrics import VUN
 
-train = PlanarGraphDataset("train").to_nx()
-generated = SBMGraphDataset("val").to_nx()
+train = PlanarGraphDataset("train")
+generated = SBMGraphDataset("val")
 
 metric = VUN(
-    train_graphs=train,         # Pass the training set to determine novelty
-    validity_fn=PlanarGraphDataset.is_valid
+    train_graphs=train.to_nx(),         # Pass the training set to determine novelty
+    validity_fn=train.is_valid
 )
-print(metric.compute(generated))        # {'unique': 1.0, 'novel': 1.0, 'unique_novel': 1.0, 'valid': 0.0, 'valid_unique_novel': 0.0, 'valid_novel': 0.0, 'valid_unique': 0.0}
+print(metric.compute(generated.to_nx()))        # {'unique': 1.0, 'novel': 1.0, 'unique_novel': 1.0, 'valid': 0.0, 'valid_unique_novel': 0.0, 'valid_novel': 0.0, 'valid_unique': 0.0}
 ```
 
 All synthetic datasets in the `polygraph` package provide a static `is_valid` function.
