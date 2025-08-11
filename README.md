@@ -1,68 +1,25 @@
-# polygraph
-# Installation
-For now, you can install the package in editable mode
+# PolyGraph
+
+PolyGraph is a Python library for evaluating graph generative models.
+
+## Installation
+
 ```bash
-mamba create -n polygraph python=3.12
-pip install -e ".[dev]"
-mamba activate polygraph
+pip install polygraph-benchmark
 ```
 
-This will also install orca and (unpinned) dependencies.
+No manual compilation of ORCA is required. For details on interaction with `graph_tool`, see the more detailed installation instructions in the docs.
 
-# Loading Datasets
-Currently, we can load planar and SBM graphs. Data is stored in your `.cache` folder.
-```python
-from polygraph.datasets.spectre import PlanarGraphDataset, SBMGraphDataset
-
-
-ds_planar = PlanarGraphDataset("train")        # Indexable and iterable, gives PyG graphs
-ds_sbm = SBMGraphDataset("train")
-nx_view = ds.to_nx()                    # Indexable and iterable, gives networkx graphs
-```
-
-
-# Computing MMDs
-The standard MMDs can be computed like this:
+## Quickstart
 
 ```python
-from polygraph.metrics.mmd.mmd import OrbitMM2
+import networkx as nx
+from polygraph.datasets import PlanarGraphDataset
+from polygraph.metrics import GaussianTVMMD2Benchmark
 
-mmd = OrbitMM2(ds_planar)
-print(mmd.compute(ds_sbm.to_nx()))
-```
+reference = PlanarGraphDataset("test").to_nx()
+benchmark = GaussianTVMMD2Benchmark(reference)
 
-Note that we provide the reference graphs (`ds_planar`) as a dataset while we provide the samples of the generative model as an iterable of nx graphs (we might want to change that but not sure).
-
-We can compute arbitrary MMDs on graph descriptors via the `DescriptorMMD2` class:
-
-```python
-from polygraph.metrics.mmd.mmd import DescriptorMMD2
-from polygraph.metrics.graph_descriptors import orbit_descriptor
-from polygraph.metrics.mmd.kernels import LaplaceKernel
-
-mmd = DescriptorMMD2(ds_planar, descriptor_fn=orbit_descriptor, kernel=LaplaceKernel(lbd=0.2), variant="umve")
-print(mmd.compute(ds_sbm.to_nx()))
-```
-
-You may also compute the MMD for different kernel hyper-parameter choices in a vectorized fashion by passing an array of hyperparameters to `LaplaceKernel`:
-
-```python
-import numpy as np
-mmd = DescriptorMMD2(ds_planar, descriptor_fn=orbit_descriptor, kernel=LaplaceKernel(lbd=np.linspace(0.1, 5, 10)), variant="umve")
-print(mmd.compute(ds_sbm.to_nx()))     # Gives a numpy array
-```
-
-
-## Computing p-Values
-
-```python
-from polygraph.metrics.mmd.tests import OptimizedPValue
-from polygraph.metrics.graph_descriptors import clustering_descriptor
-from functools import partial
-
-planar_val = PlanarGraphDataset("val")
-sbm_val = SBMGraphDataset("val")
-
-tst = OptimizedPValue(ds_planar, planar_val, descriptor_fn=partial(clustering_descriptor, bins=100), kernel=LaplaceKernel(lbd=np.linspace(0.05, 5, 100)))
-print(tst.compute(ds_sbm.to_nx(), sbm_val.to_nx()))
+generated = [nx.erdos_renyi_graph(64, 0.1) for _ in range(40)]
+print(benchmark.compute(generated))  # {'orbit': ..., 'clustering': ..., 'degree': ..., 'spectral': ...}
 ```
