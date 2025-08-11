@@ -15,4 +15,4 @@
         show_root_toc_entry: false
         show_source: false
         heading_level: 2
-        members: [get_example, __len__]
+        members: [from_nx_graphs, from_pyg_batch, get_example, __len__]

@@ -1,5 +1,4 @@
 from typing import Optional
-import networkx as nx
 
 from polygraph.datasets.base import OnlineGraphDataset
 
@@ -39,10 +38,6 @@ class PointCloudGraphDataset(OnlineGraphDataset):
 
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
-
-    @staticmethod
-    def is_valid(graph: nx.Graph):
-        return graph.number_of_nodes() > 0 and graph.number_of_edges() > 0
 
     def hash_for_split(self, split: str) -> Optional[str]:
         return self._HASH_FOR_SPLIT[split]

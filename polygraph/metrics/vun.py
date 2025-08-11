@@ -14,16 +14,16 @@ Example:
     from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
     from polygraph.metrics import VUN
 
-    train = PlanarGraphDataset("val").to_nx()
-    generated = SBMGraphDataset("val").to_nx()
+    train = PlanarGraphDataset("val")
+    generated = SBMGraphDataset("val")
 
     # Without uncertainty quantification
-    vun = VUN(train, validity_fn=PlanarGraphDataset.is_valid)
-    print(vun.compute(generated))           # {'unique': 1.0, 'novel': 1.0, 'unique_novel': 1.0, 'valid': 0.0, 'valid_unique_novel': 0.0, 'valid_novel': 0.0, 'valid_unique': 0.0}
+    vun = VUN(train.to_nx(), validity_fn=train.is_valid)
+    print(vun.compute(generated.to_nx()))           # {'unique': 1.0, 'novel': 1.0, 'unique_novel': 1.0, 'valid': 0.0, 'valid_unique_novel': 0.0, 'valid_novel': 0.0, 'valid_unique': 0.0}
 
     # With uncertainty quantification
-    vun = VUN(train, validity_fn=PlanarGraphDataset.is_valid, confidence_level=0.95)
-    print(vun.compute(generated))           # {'unique': ConfidenceInterval(mle=1.0, low=None, high=None), 'novel': ConfidenceInterval(mle=1.0, low=0.8911188393205571, high=1.0), 'unique_novel': ConfidenceInterval(mle=1.0, low=None, high=None), 'valid': ConfidenceInterval(mle=0.0, low=0.0, high=0.10888116067944287), 'valid_unique_novel': ConfidenceInterval(mle=0.0, low=None, high=None), 'valid_novel': ConfidenceInterval(mle=0.0, low=0.0, high=0.10888116067944287), 'valid_unique': ConfidenceInterval(mle=0.0, low=None, high=None
+    vun = VUN(train.to_nx(), validity_fn=train.is_valid, confidence_level=0.95)
+    print(vun.compute(generated.to_nx()))           # {'unique': ConfidenceInterval(mle=1.0, low=None, high=None), 'novel': ConfidenceInterval(mle=1.0, low=0.8911188393205571, high=1.0), 'unique_novel': ConfidenceInterval(mle=1.0, low=None, high=None), 'valid': ConfidenceInterval(mle=0.0, low=0.0, high=0.10888116067944287), 'valid_unique_novel': ConfidenceInterval(mle=0.0, low=None, high=None), 'valid_novel': ConfidenceInterval(mle=0.0, low=0.0, high=0.10888116067944287), 'valid_unique': ConfidenceInterval(mle=0.0, low=None, high=None
     ```
 """
 

@@ -47,9 +47,7 @@ class AbstractDataset(ABC):
         """
         return NetworkXView(self)
 
-    @staticmethod
-    @abstractmethod
-    def is_valid(graph: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         """Checks if a graph is structurally valid in the context of this dataset.
 
         This method is optional and can be used in [`VUN`][polygraph.metrics.VUN] metrics.
@@ -60,10 +58,14 @@ class AbstractDataset(ABC):
         Returns:
             True if the graph is valid for this dataset, False otherwise
         """
-        ...
+        raise NotImplementedError(
+            "This method must be implemented by subclasses."
+        )
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Data:
+    def __getitem__(
+        self, idx: Union[int, List[int], slice]
+    ) -> Union[Data, List[Data]]:
         """Gets a graph from the dataset by index.
 
         Args:
@@ -82,6 +84,18 @@ class AbstractDataset(ABC):
             Number of graphs
         """
         ...
+
+    @property
+    @abstractmethod
+    def node_attrs(self) -> List[str]: ...
+
+    @property
+    @abstractmethod
+    def edge_attrs(self) -> List[str]: ...
+
+    @property
+    @abstractmethod
+    def graph_attrs(self) -> List[str]: ...
 
 
 class NetworkXView:
@@ -113,9 +127,9 @@ class NetworkXView:
         pyg_graph = self._base_dataset[idx]
         return to_networkx(
             pyg_graph,
-            node_attrs=list(self._base_dataset._data_store.node_attr.keys()),
-            edge_attrs=list(self._base_dataset._data_store.edge_attr.keys()),
-            graph_attrs=list(self._base_dataset._data_store.graph_attr.keys()),
+            node_attrs=self._base_dataset.node_attrs,
+            edge_attrs=self._base_dataset.edge_attrs,
+            graph_attrs=self._base_dataset.graph_attrs,
             to_undirected=True,
         )
 
@@ -139,18 +153,29 @@ class GraphDataset(AbstractDataset):
 
     def __getitem__(
         self, idx: Union[int, List[int], slice]
-    ) -> Union[Data, List[Data], "GraphDataset"]:
+    ) -> Union[Data, List[Data]]:
+        if isinstance(idx, slice):
+            idx = list(range(*idx.indices(len(self))))
+
         if isinstance(idx, int):
             return self._data_store.get_example(idx)
-        elif isinstance(idx, slice):
-            indices = list(range(*idx.indices(len(self))))
-            self._data_store = self._data_store.subset(indices)
-            return self
         else:
             return [self._data_store.get_example(i) for i in idx]
 
     def __len__(self):
         return len(self._data_store)
+
+    @property
+    def node_attrs(self) -> List[str]:
+        return list(self._data_store.node_attr.keys())
+
+    @property
+    def edge_attrs(self) -> List[str]:
+        return list(self._data_store.edge_attr.keys())
+
+    @property
+    def graph_attrs(self) -> List[str]:
+        return list(self._data_store.graph_attr.keys())
 
     def sample_graph_size(self, n_samples: Optional[int] = None) -> List[int]:
         """From the empirical distribution of this dataset, draw a random sample of graph sizes.
@@ -164,6 +189,7 @@ class GraphDataset(AbstractDataset):
             List of graph sizes, drawn from the empirical distribution with replacement.
         """
         samples = []
+        assert self._data_store.indexing_info is not None
         for _ in range(n_samples if n_samples is not None else 1):
             idx = np.random.randint(len(self))
             node_left, node_right = self._data_store.indexing_info.node_slices[
@@ -178,9 +204,12 @@ class GraphDataset(AbstractDataset):
         n_samples: int,
         replace: bool = False,
         as_nx: bool = True,
-    ) -> list[nx.Graph]:
-        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
+    ) -> Union[List[nx.Graph], List[Data]]:
+        idx_to_sample = np.random.choice(
+            len(self), n_samples, replace=replace
+        ).tolist()
         data_list = self[idx_to_sample]
+        assert isinstance(data_list, list)
         if as_nx:
             to_nx = partial(
                 to_networkx,
@@ -189,9 +218,7 @@ class GraphDataset(AbstractDataset):
                 graph_attrs=list(self._data_store.graph_attr.keys()),
                 to_undirected=True,
             )
-            if isinstance(data_list, list):
-                return [to_nx(g) for g in data_list]
-            return to_nx(data_list)
+            return [to_nx(g) for g in data_list]
         return data_list
 
     @property
@@ -230,6 +257,7 @@ class GraphDataset(AbstractDataset):
     @property
     def min_edges(self) -> int:
         """Minimum number of edges in a graph in the dataset."""
+        assert self._data_store.indexing_info is not None
         min_edges = (
             (
                 self._data_store.indexing_info.edge_slices[:, 1]
@@ -239,12 +267,13 @@ class GraphDataset(AbstractDataset):
             .item()
         )
         if self.is_undirected:
-            return min_edges // 2
-        return min_edges
+            return int(min_edges // 2)
+        return int(min_edges)
 
     @property
     def max_edges(self) -> int:
         """Maximum number of edges in a graph in the dataset."""
+        assert self._data_store.indexing_info is not None
         max_edges = (
             (
                 self._data_store.indexing_info.edge_slices[:, 1]
@@ -254,12 +283,13 @@ class GraphDataset(AbstractDataset):
             .item()
         )
         if self.is_undirected:
-            return max_edges // 2
-        return max_edges
+            return int(max_edges // 2)
+        return int(max_edges)
 
     @property
     def avg_edges(self) -> float:
         """Average number of edges in a graph in the dataset."""
+        assert self._data_store.indexing_info is not None
         avg_edges = (
             (
                 self._data_store.indexing_info.edge_slices[:, 1]
@@ -283,7 +313,8 @@ class GraphDataset(AbstractDataset):
         console = Console()
         console.print()
 
-        if hasattr(self, "_split"):
+        if isinstance(self, OnlineGraphDataset):
+            assert hasattr(self, "_split")
             table = Table(
                 title=f"Graph Dataset Statistics for {self.__class__.__name__} ({self._split} set)"
             )

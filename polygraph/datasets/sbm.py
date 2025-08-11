@@ -22,7 +22,7 @@ def is_sbm_graph(
     min_n_nodes_per_community: int = 20,
     max_n_nodes_per_community: int = 40,
 ) -> bool:
-    import graph_tool.all as gt
+    import graph_tool.all as gt  # pyright: ignore
     from scipy.stats import chi2
 
     adj = nx.adjacency_matrix(graph).toarray()
@@ -44,7 +44,7 @@ def is_sbm_graph(
     e = state.get_matrix()
     n_blocks = state.get_nonempty_B()
     node_counts = state.get_nr().get_array()[:n_blocks]
-    edge_counts = e.todense()[:n_blocks, :n_blocks]
+    edge_counts = e.todense()[:n_blocks, :n_blocks]  # pyright: ignore
     if (
         (node_counts > max_n_nodes_per_community).sum() > 0
         or (node_counts < min_n_nodes_per_community).sum() > 0
@@ -220,7 +220,7 @@ class ProceduralSBMGraphDataset(ProceduralGraphDataset):
         memmap: bool = False,
         show_generation_progress: bool = False,
     ):
-        config_hash: str = joblib.hash(
+        config_hash: str = joblib.hash(  # pyright: ignore
             (
                 num_graphs,
                 intra_p,
@@ -349,13 +349,11 @@ class SBMGraphDataset(OnlineGraphDataset):
     def url_for_split(self, split: str):
         return self._URL_FOR_SPLIT[split]
 
-    @staticmethod
-    def is_valid(graph: nx.Graph) -> bool:
+    def is_valid(self, graph: nx.Graph) -> bool:
         """Check if a graph is a valid SBM graph."""
         return is_sbm_graph(graph)
 
-    @staticmethod
-    def is_valid_alt(graph: nx.Graph) -> bool:
+    def is_valid_alt(self, graph: nx.Graph) -> bool:
         return is_sbm_graph_alt(graph)
 
     def hash_for_split(self, split: str) -> Optional[str]:

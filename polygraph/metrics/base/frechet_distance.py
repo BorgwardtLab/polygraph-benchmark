@@ -46,7 +46,7 @@ def compute_wasserstein_distance(
     covmean, _ = scipy.linalg.sqrtm(
         gaussian_a.covariance @ gaussian_b.covariance, disp=False
     )
-    is_real = np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3)
+    is_real = np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3)  # pyright: ignore
 
     if not np.isfinite(covmean).all() or not is_real:
         offset = np.eye(gaussian_a.covariance.shape[0]) * eps
@@ -57,8 +57,8 @@ def compute_wasserstein_distance(
     assert isinstance(covmean, np.ndarray)
     # numerical error might give slight imaginary component
     if np.iscomplexobj(covmean):
-        if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
-            m = np.max(np.abs(covmean.imag))
+        if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):  # pyright: ignore
+            m = np.max(np.abs(covmean.imag))  # pyright: ignore
             raise ValueError(
                 f"Imaginary component {m} for gaussians {gaussian_a}, {gaussian_b}"
             )

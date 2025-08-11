@@ -4,11 +4,14 @@ and can be indexed efficiently to retrieve PyTorch Geometric `Data` objects.
 """
 
 from importlib.metadata import version
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import torch
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 from torch_geometric.data import Batch, Data
+from torch_geometric.utils import from_networkx
+import networkx as nx
 
 
 def _cumsum(x: torch.Tensor, dim: int = 0) -> torch.Tensor:
@@ -34,6 +37,50 @@ def _cumsum(x: torch.Tensor, dim: int = 0) -> torch.Tensor:
     torch.cumsum(x, dim=dim, out=out.narrow(dim, 1, x.size(dim)))
 
     return out
+
+
+def _get_node_attr_dim(graphs: Sequence[nx.Graph], attr: str) -> int:
+    if len(graphs) == 0:
+        raise ValueError(
+            "Cannot get node attribute dimension from empty collection of graphs"
+        )
+    prototype_node = graphs[0].nodes[next(iter(graphs[0].nodes()))]
+    if attr not in prototype_node:
+        raise ValueError(f"Attribute {attr} not found in any node")
+    if not isinstance(prototype_node[attr], np.ndarray):
+        raise ValueError(f"Attribute {attr} is not an array")
+    if prototype_node[attr].ndim != 1:
+        raise ValueError(f"Attribute {attr} is not a 1D array")
+    dim = prototype_node[attr].shape[0]
+    if not all(
+        graph.nodes[node][attr].shape[0] == dim
+        for graph in graphs
+        for node in graph.nodes()
+    ):
+        raise ValueError(f"Attribute {attr} has inconsistent dimensions")
+    return dim
+
+
+def _get_edge_attr_dim(graphs: Sequence[nx.Graph], attr: str) -> int:
+    if len(graphs) == 0:
+        raise ValueError(
+            "Cannot get edge attribute dimension from empty collection of graphs"
+        )
+    prototype_edge = graphs[0].edges[next(iter(graphs[0].edges()))]
+    if attr not in prototype_edge:
+        raise ValueError(f"Attribute {attr} not found in any edge")
+    if not isinstance(prototype_edge[attr], np.ndarray):
+        raise ValueError(f"Attribute {attr} is not an array")
+    if prototype_edge[attr].ndim != 1:
+        raise ValueError(f"Attribute {attr} is not a 1D array")
+    dim = prototype_edge[attr].shape[0]
+    if not all(
+        graph.edges[edge][attr].shape[0] == dim
+        for graph in graphs
+        for edge in graph.edges()
+    ):
+        raise ValueError(f"Attribute {attr} has inconsistent dimensions")
+    return dim
 
 
 class IndexingInfo(BaseModel):
@@ -81,6 +128,9 @@ class GraphStorage(BaseModel):
         Returns:
             PyTorch Geometric `Data` object containing the graph.
         """
+        if self.indexing_info is None:
+            raise RuntimeError("Indexing info not computed")
+
         node_left, node_right = self.indexing_info.node_slices[idx].tolist()
         edge_left, edge_right = self.indexing_info.edge_slices[idx].tolist()
         node_offset = self.indexing_info.inc[idx]
@@ -105,31 +155,6 @@ class GraphStorage(BaseModel):
     def __len__(self):
         """Number of graphs in the collection."""
         return self.num_graphs
-
-    def subset(self, indices: List[int]) -> "GraphStorage":
-        """Create a new GraphStorage with only the graphs at the specified indices.
-
-        Args:
-            indices: List of graph indices to include in the subset
-
-        Returns:
-            New GraphStorage containing only the specified graphs
-        """
-        from torch_geometric.data import Batch
-
-        # Extract the individual graphs at the specified indices
-        graphs = [self.get_example(idx) for idx in indices]
-
-        # Create a batch from the graphs
-        batch = Batch.from_data_list(graphs)
-
-        # Create new GraphStorage from the batch
-        return GraphStorage.from_pyg_batch(
-            batch,
-            edge_attrs=list(self.edge_attr.keys()),
-            node_attrs=list(self.node_attr.keys()),
-            graph_attrs=list(self.graph_attr.keys()),
-        )
 
     @staticmethod
     def from_pyg_batch(
@@ -161,6 +186,72 @@ class GraphStorage(BaseModel):
             else {},
         )
         return result
+
+    @staticmethod
+    def from_nx_graphs(
+        graphs: Sequence[nx.Graph],
+        edge_attrs: Optional[List[str]] = None,
+        node_attrs: Optional[List[str]] = None,
+        graph_attrs: Optional[List[str]] = None,
+    ) -> "GraphStorage":
+        """Construct a `GraphStorage` object from a sequence of NetworkX graphs.
+
+        The specified attributes must be numpy arrays and must have consistent dimensions across all graphs and nodes/edges.
+
+        Args:
+            graphs: List or tuple of NetworkX graphs.
+            edge_attrs: List of edge-level attributes to include, must be present in each networkx graph.
+            node_attrs: List of node-level attributes to include, must be present in each networkx graph.
+            graph_attrs: List of graph-level attributes to include, must be present in each networkx graph.
+        """
+        if len(graphs) == 0:
+            raise ValueError(
+                "Cannot create GraphStorage from empty collection of graphs"
+            )
+
+        batch = Batch.from_data_list(
+            [
+                from_networkx(
+                    g, group_node_attrs=node_attrs, group_edge_attrs=edge_attrs
+                )
+                for g in graphs
+            ]
+        )
+
+        if node_attrs is not None:
+            node_attr_dim = {
+                key: _get_node_attr_dim(graphs, key) for key in node_attrs
+            }
+            begin = 0
+            for key in node_attrs:
+                end = begin + node_attr_dim[key]
+                setattr(batch, key, batch.x[:, begin:end])  # pyright: ignore
+                begin = end
+
+        if edge_attrs is not None:
+            edge_attr_dim = {
+                key: _get_edge_attr_dim(graphs, key) for key in edge_attrs
+            }
+            begin = 0
+            for key in edge_attrs:
+                end = begin + edge_attr_dim[key]
+                setattr(batch, key, batch.edge_attr[:, begin:end])  # pyright: ignore
+                begin = end
+
+        if graph_attrs is not None:
+            for key in graph_attrs:
+                setattr(
+                    batch,
+                    key,
+                    torch.from_numpy(np.array([g.graph[key] for g in graphs])),
+                )
+
+        return GraphStorage.from_pyg_batch(
+            batch,
+            edge_attrs=edge_attrs,
+            node_attrs=node_attrs,
+            graph_attrs=graph_attrs,
+        )
 
     @staticmethod
     def _contiguously_increasing(tensor: torch.Tensor) -> bool:
@@ -197,7 +288,7 @@ class GraphStorage(BaseModel):
             )
 
         inc = _cumsum(num_nodes_per_graph)
-        node_slices = torch.stack([inc[:-1], inc[1:]], axis=1)
+        node_slices = torch.stack([inc[:-1], inc[1:]], dim=1)
         assert len(node_slices) == self.num_graphs
 
         # Now compute edge slices
@@ -220,7 +311,7 @@ class GraphStorage(BaseModel):
         num_edges_per_graph = torch.bincount(edge_to_graph)
         assert len(num_edges_per_graph) == self.num_graphs
         edge_inc = _cumsum(num_edges_per_graph)
-        edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], axis=1)
+        edge_slices = torch.stack([edge_inc[:-1], edge_inc[1:]], dim=1)
         assert len(edge_slices) == self.num_graphs
         self.indexing_info = IndexingInfo(
             node_slices=node_slices, inc=inc, edge_slices=edge_slices
