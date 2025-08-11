@@ -1,9 +1,9 @@
 from typing import Optional
 
-from polygraph.datasets.base import OnlineGraphDataset
+from polygraph.datasets.base import SplitGraphDataset
 
 
-class ModelNet10GraphDataset(OnlineGraphDataset):
+class ModelNet10GraphDataset(SplitGraphDataset):
     """Dataset of kNN-graphs sampled from objects in ModelNet10 by Wu et al. [1].
 
     The graphs are constructed by sampling a random number of points on the object's surface and computing a 4-NN graph.

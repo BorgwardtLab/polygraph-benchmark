@@ -1,9 +1,9 @@
 from typing import Optional
 
-from polygraph.datasets.base import OnlineGraphDataset
+from polygraph.datasets.base import SplitGraphDataset
 
 
-class EgoGraphDataset(OnlineGraphDataset):
+class EgoGraphDataset(SplitGraphDataset):
     """Dataset of ego networks extracted from Citeseer [1], introduced by You et al. [2].
 
     The graphs are 3-hop ego networks with 50 to 399 nodes.
@@ -42,7 +42,7 @@ class EgoGraphDataset(OnlineGraphDataset):
         return self._HASH_FOR_SPLIT[split]
 
 
-class SmallEgoGraphDataset(OnlineGraphDataset):
+class SmallEgoGraphDataset(SplitGraphDataset):
     """Dataset of smaller ego networks extracted from Citeseer.
 
     The graphs of this dataset have at most 18 nodes.

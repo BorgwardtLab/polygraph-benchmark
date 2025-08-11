@@ -7,7 +7,7 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 from tqdm.rich import tqdm
 
-from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
+from polygraph.datasets.base import SplitGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
 
 
@@ -85,7 +85,7 @@ class ProceduralPlanarGraphDataset(ProceduralGraphDataset):
         return graph
 
 
-class PlanarGraphDataset(OnlineGraphDataset):
+class PlanarGraphDataset(SplitGraphDataset):
     """Planar graph dataset proposed by Martinkus et al. [1].
 
     Each graph consists of 64 nodes and is connected and planar.

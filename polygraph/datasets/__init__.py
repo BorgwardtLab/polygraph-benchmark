@@ -1,4 +1,9 @@
-from .base.dataset import AbstractDataset, GraphDataset, OnlineGraphDataset
+from .base.dataset import (
+    AbstractDataset,
+    GraphDataset,
+    SplitGraphDataset,
+    URLGraphDataset,
+)
 from .ego import EgoGraphDataset, SmallEgoGraphDataset
 from .lobster import LobsterGraphDataset, ProceduralLobsterGraphDataset
 from .molecules import MOSES, QM9, Guacamol
@@ -11,7 +16,8 @@ from .modelnet import ModelNet10GraphDataset
 __all__ = [
     "AbstractDataset",
     "GraphDataset",
-    "OnlineGraphDataset",
+    "URLGraphDataset",
+    "SplitGraphDataset",
     "QM9",
     "MOSES",
     "Guacamol",

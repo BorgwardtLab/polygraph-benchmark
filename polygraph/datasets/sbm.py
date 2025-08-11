@@ -9,7 +9,7 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 from tqdm.rich import tqdm
 
-from polygraph.datasets.base import OnlineGraphDataset, ProceduralGraphDataset
+from polygraph.datasets.base import SplitGraphDataset, ProceduralGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
 
 
@@ -310,7 +310,7 @@ class ProceduralSBMGraphDataset(ProceduralGraphDataset):
         return g
 
 
-class SBMGraphDataset(OnlineGraphDataset):
+class SBMGraphDataset(SplitGraphDataset):
     """SBM graph dataset proposed by Martinkus et al. [1].
 
     The graphs are sampled from stochastic block models with random parameters.

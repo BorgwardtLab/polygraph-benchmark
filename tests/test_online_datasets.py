@@ -9,6 +9,7 @@ from torch_geometric.data import Data
 from tqdm.rich import tqdm
 
 from polygraph.datasets import (
+    URLGraphDataset,
     MOSES,
     QM9,
     DobsonDoigGraphDataset,
@@ -204,3 +205,14 @@ def test_split_disjointness(ds_cls):
         assert result["unique"] == 1
         assert result["novel"] == 1
         prev_splits.extend(graphs)
+
+
+@pytest.mark.parametrize("memmap", [True, False])
+def test_url_dataset(memmap):
+    ds = URLGraphDataset(
+        "https://datashare.biochem.mpg.de/s/f3kXPP4LICWKbBx/download",
+        memmap=memmap,
+    )
+    assert len(ds) == 128
+    assert isinstance(ds[0], Data)
+    assert ds.to_nx()[0].number_of_nodes() == 64
