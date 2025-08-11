@@ -63,7 +63,9 @@ class AbstractDataset(ABC):
         )
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Data:
+    def __getitem__(
+        self, idx: Union[int, List[int], slice]
+    ) -> Union[Data, List[Data]]:
         """Gets a graph from the dataset by index.
 
         Args:
@@ -151,13 +153,12 @@ class GraphDataset(AbstractDataset):
 
     def __getitem__(
         self, idx: Union[int, List[int], slice]
-    ) -> Union[Data, List[Data], "GraphDataset"]:
+    ) -> Union[Data, List[Data]]:
+        if isinstance(idx, slice):
+            idx = list(range(*idx.indices(len(self))))
+
         if isinstance(idx, int):
             return self._data_store.get_example(idx)
-        elif isinstance(idx, slice):
-            indices = list(range(*idx.indices(len(self))))
-            self._data_store = self._data_store.subset(indices)
-            return self
         else:
             return [self._data_store.get_example(i) for i in idx]
 
@@ -204,7 +205,9 @@ class GraphDataset(AbstractDataset):
         replace: bool = False,
         as_nx: bool = True,
     ) -> Union[List[nx.Graph], List[Data]]:
-        idx_to_sample = np.random.choice(len(self), n_samples, replace=replace)
+        idx_to_sample = np.random.choice(
+            len(self), n_samples, replace=replace
+        ).tolist()
         data_list = self[idx_to_sample]
         assert isinstance(data_list, list)
         if as_nx:
