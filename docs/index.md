@@ -22,7 +22,7 @@ You may install this package via:
 ```
 pip install polygraph-benchmark
 ```
-No manual compilation of [Orca](https://github.com/thocevar/orca) is required.
+No manual compilation of [ORCA](https://github.com/thocevar/orca) is required.
 For details on the interaction with the `graph_tool` package, see the more detailed [installation instructions](installation.md).
 
 ## Usage
