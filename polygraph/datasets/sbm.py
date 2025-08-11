@@ -335,15 +335,15 @@ class SBMGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/INpX2k7JHjdfWaa/download",
-        "val": "https://datashare.biochem.mpg.de/s/SwuNNa1RvCIJAg8/download",
-        "test": "https://datashare.biochem.mpg.de/s/DwEdatPuPZ60Bpd/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/sbm_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/sbm_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/sbm_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "48c9461fda3bde4a960e96b5ea21a6b4",
+        "val": "24f1687b11bcbe456e96173672704636",
+        "test": "00318495cebb55d96a84f59428c2df9e",
     }
 
     def url_for_split(self, split: str):

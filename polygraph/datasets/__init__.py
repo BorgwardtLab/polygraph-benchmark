@@ -4,6 +4,7 @@ from .base.dataset import (
     SplitGraphDataset,
     URLGraphDataset,
 )
+from .base.graph_storage import GraphStorage
 from .ego import EgoGraphDataset, SmallEgoGraphDataset
 from .lobster import LobsterGraphDataset, ProceduralLobsterGraphDataset
 from .molecules import MOSES, QM9, Guacamol
@@ -18,6 +19,7 @@ __all__ = [
     "GraphDataset",
     "URLGraphDataset",
     "SplitGraphDataset",
+    "GraphStorage",
     "QM9",
     "MOSES",
     "Guacamol",

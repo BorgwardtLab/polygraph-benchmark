@@ -11,6 +11,7 @@ nav:
   - Tutorials:
     - Basic Usage: tutorials/basic_usage.md
     - Metrics Overview: tutorials/metrics_overview.md
+    - Custom Datasets: tutorials/custom_datasets.md
   - Base API Reference:
     - polygraph.metrics:
       - Interface: api_reference/metrics/interface.md

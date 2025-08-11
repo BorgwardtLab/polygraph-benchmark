@@ -20,6 +20,7 @@
         show_root_heading: true
         show_source: false
         heading_level: 2
+        members: [dump_data, load_data, sample_graph_size, summary]
 
 ::: polygraph.datasets.base.URLGraphDataset
     options:

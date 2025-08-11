@@ -105,15 +105,15 @@ class PlanarGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/f3kXPP4LICWKbBx/download",
-        "val": "https://datashare.biochem.mpg.de/s/CN2zeY8EvIlUxN6/download",
-        "test": "https://datashare.biochem.mpg.de/s/DNwtgo3mlOErxHX/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/planar_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/planar_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/planar_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "edc2630954a23b1cf6a549d43a95e359",
+        "val": "56a6d569407e47a93f6febe56ec07843",
+        "test": "6135c071784a5efe48ad5a0a30a0028c",
     }
 
     def url_for_split(self, split: str):

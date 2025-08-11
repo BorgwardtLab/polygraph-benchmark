@@ -37,15 +37,15 @@ class DobsonDoigGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/IUzyKrF6T1wjqqG/download",
-        "val": "https://datashare.biochem.mpg.de/s/NhaictDUDb7UTpr/download",
-        "test": "https://datashare.biochem.mpg.de/s/ecJCDZVTNOpbvy4/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/dobson_doig_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/dobson_doig_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/dobson_doig_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "417af7f6d0b66a3a5247c217e1db4b35",
+        "val": "64140c8f2e2e022eb7286f53bf51472c",
+        "test": "1b68e61383048549c5d69f918d70272e",
     }
 
     def url_for_split(self, split: str):

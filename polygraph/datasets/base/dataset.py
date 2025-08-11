@@ -167,6 +167,42 @@ class GraphDataset(AbstractDataset):
     def __len__(self):
         return len(self._data_store)
 
+    def dump_data(self, path: str) -> None:
+        """Dumps the data store to a file.
+
+        This file may be used to load the data store later on.
+        In particular, a link to the file may be used in a [`URLGraphDataset`][polygraph.datasets.base.dataset.URLGraphDataset].
+
+        Example:
+            ```python
+            from polygraph.datasets import GraphDataset, GraphStorage
+            import networkx as nx
+
+            ds = GraphDataset(GraphStorage.from_nx_graphs([nx.erdos_renyi_graph(64, 0.1) for _ in range(100)]))
+            ds.dump_data("/tmp/my_dataset.pt")
+
+            ds2 = GraphDataset.load_data("/tmp/my_dataset.pt", memmap=True)
+            assert len(ds2) == 100
+            assert ds2.to_nx()[0].number_of_nodes() == 64
+            ```
+
+        Args:
+            path: Path to dump the data store to, preferably with a .pt extension.
+        """
+        torch.save(self._data_store.model_dump(), path)
+
+    @staticmethod
+    def load_data(path: str, memmap: bool = False) -> "GraphDataset":
+        """Loads a data store from a file.
+
+        Args:
+            path: Path to load the data store from
+            memmap: Whether to memory-map the cached data. Useful for large datasets that do not fit into memory.
+        """
+        return GraphDataset(
+            GraphStorage(**torch.load(path, weights_only=True, mmap=memmap))
+        )
+
     @property
     def node_attrs(self) -> List[str]:
         return list(self._data_store.node_attr.keys())
@@ -310,7 +346,12 @@ class GraphDataset(AbstractDataset):
         """Average number of edges per node in the dataset."""
         return self.avg_edges / self.avg_nodes
 
-    def summary(self, precision: int = 2):
+    def summary(self, precision: int = 2) -> None:
+        """Prints a summary of the dataset statistics.
+
+        Args:
+            precision: Number of decimal places to display
+        """
         # Make sure we have a blank line before the table
         console = Console()
         console.print()

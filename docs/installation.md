@@ -5,7 +5,7 @@
 You can install polygraph using pip:
 
 ```bash
-pip install polygraph-eval
+pip install polygraph-benchmark
 ```
 
 Check that it's installed correctly by running:

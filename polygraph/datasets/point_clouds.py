@@ -25,15 +25,15 @@ class PointCloudGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/ccnBfchstXblFCl/download",
-        "val": "https://datashare.biochem.mpg.de/s/qYpuHH3HhhYAimi/download",
-        "test": "https://datashare.biochem.mpg.de/s/w1CKclswdcxLbpK/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/point_clouds_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/point_clouds_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/point_clouds_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "ed27789dd4160c9f76e5b618cd50e80e",
+        "val": "c746de69d0063da900edc57ab7124abf",
+        "test": "9f29de1387d1f31b07d5924bc7af3b09",
     }
 
     def url_for_split(self, split: str):

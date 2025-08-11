@@ -146,15 +146,15 @@ class LobsterGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/mU8mA2GqfssxUFt/download",
-        "val": "https://datashare.biochem.mpg.de/s/KTicVKdP6LgTKeV/download",
-        "test": "https://datashare.biochem.mpg.de/s/eYS8K0E6IQ7gZ7j/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/lobster_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/lobster_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/lobster_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "1b2d7b2ac5e6507d09550031865cd29c",
+        "val": "ff7941058df7c9770509e1ee3ab42d28",
+        "test": "4082bf3c380ab921481bf24f25a2934c",
     }
 
     def url_for_split(self, split: str):

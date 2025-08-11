@@ -78,9 +78,10 @@ def load_from_cache(
     path = os.path.join(identifier_to_path(identifier), f"{split}.pt")
     if not os.path.exists(path):
         raise FileNotFoundError
-    if data_hash is not None and file_hash(path) != data_hash:
+    computed_file_hash = file_hash(path)
+    if data_hash is not None and computed_file_hash != data_hash:
         raise ValueError(
-            f"Hash mismatch for {path}. Expected {data_hash}, got {file_hash}"
+            f"Hash mismatch for {path}. Expected {data_hash}, got {computed_file_hash}"
         )
 
     logger.debug(f"Loading data from {path}")

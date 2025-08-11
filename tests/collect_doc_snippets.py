@@ -4,6 +4,7 @@ import types
 import importlib
 import pathlib
 import textwrap
+import inspect
 
 # ----------------------------
 # Configuration
@@ -19,32 +20,56 @@ def extract_code_blocks_from_docstring(docstring):
     """Extract triple-backtick code blocks from a docstring and fix indentation."""
     code_blocks = CODE_BLOCK_PATTERN.findall(docstring or "")
 
-    # Fix indentation for each code block
     fixed_blocks = []
     for code in code_blocks:
-        # Use textwrap.dedent to remove common leading whitespace
-        dedented_code = textwrap.dedent(code)
-        fixed_blocks.append(dedented_code)
+        fixed_blocks.append(textwrap.dedent(code))
 
     return fixed_blocks
 
 
+def _collect_from_class(cls, qualname, out):
+    """Collect docstrings from a class, its methods, properties, and nested classes."""
+    if getattr(cls, "__doc__", None):
+        out.append((qualname, cls.__doc__))
+
+    for name, member in vars(cls).items():
+        if name.startswith("__") and name.endswith("__"):
+            continue
+
+        # Unwrap staticmethod/classmethod
+        if isinstance(member, (staticmethod, classmethod)):
+            member = member.__func__
+
+        # Properties (capture the fget docstring if present)
+        if isinstance(member, property):
+            fget = member.fget
+            if fget and fget.__doc__:
+                out.append((f"{qualname}.{name}", fget.__doc__))
+            continue
+
+        if inspect.isfunction(member):
+            if member.__doc__:
+                out.append((f"{qualname}.{name}", member.__doc__))
+        elif inspect.isclass(member):
+            _collect_from_class(member, f"{qualname}.{name}", out)
+
+
 def extract_all_docstrings_from_module(module):
-    """Get all docstrings from a module, its classes, and functions."""
+    """Get all docstrings from a module, its classes, and functions (recursively)."""
     docstrings = []
 
-    if module.__doc__:
+    if getattr(module, "__doc__", None):
         docstrings.append((module.__name__, module.__doc__))
 
-    for name in dir(module):
-        try:
-            obj = getattr(module, name)
-        except Exception:
-            continue
-        if isinstance(obj, (types.FunctionType, types.MethodType, type)):
+    for name, obj in vars(module).items():
+        # Module-level functions
+        if isinstance(obj, types.FunctionType):
             if obj.__doc__:
-                qualname = f"{module.__name__}.{name}"
-                docstrings.append((qualname, obj.__doc__))
+                docstrings.append((f"{module.__name__}.{name}", obj.__doc__))
+        # Classes: include class docstring and descend into members
+        elif inspect.isclass(obj):
+            _collect_from_class(obj, f"{module.__name__}.{name}", docstrings)
+
     return docstrings
 
 
@@ -64,10 +89,9 @@ def gather_docstring_snippets():
     print("Gathering docstring snippets...")
     print("Starting module discovery...")
 
-    # Skip modules that are known to cause issues during pytest collection
     SKIP_MODULES = {
-        "polygraph.datasets.base.molecules",  # Contains RDKit imports that can hang
-        "polygraph.datasets.molecules",  # Also likely contains RDKit
+        "polygraph.datasets.base.molecules",
+        "polygraph.datasets.molecules",
     }
 
     snippets = []
@@ -90,7 +114,6 @@ def gather_docstring_snippets():
             print(
                 f"  -> Import failed for {module_name}: {type(e).__name__}: {e}"
             )
-            # Treat import errors as test cases too
             snippets.append(
                 (
                     f"{module_name} (import error)",

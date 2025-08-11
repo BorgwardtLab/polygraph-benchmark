@@ -24,15 +24,15 @@ class EgoGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/F0MGpYS7sMGjMIS/download",
-        "val": "https://datashare.biochem.mpg.de/s/o5wq4MRMTsA9uu3/download",
-        "test": "https://datashare.biochem.mpg.de/s/bASBL8VCUVm2jai/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/ego_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/ego_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/ego_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "143e014a419825059b6edccc5a6fd43a",
+        "val": "2774618f6c05f60c87c90f7730cac03c",
+        "test": "90e147b0fd2deb37b8922c1d2ab10a74",
     }
 
     def url_for_split(self, split: str):
@@ -56,15 +56,15 @@ class SmallEgoGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/RtsHhHBTFkZMIap/download",
-        "val": "https://datashare.biochem.mpg.de/s/dWUWhuRj1ipGOVw/download",
-        "test": "https://datashare.biochem.mpg.de/s/ey00DsRG1Zm7SQt/download",
+        "train": "https://sandbox.zenodo.org/records/309573/files/ego_small_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/309573/files/ego_small_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/309573/files/ego_small_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
-        "train": None,
-        "val": None,
-        "test": None,
+        "train": "703d9f95ef74a66f6d261ade0ac1fcdd",
+        "val": "34fbe4cdd6b22ed3d3a494a392e76d4c",
+        "test": "96ff64b4ef87a31ef7e15f489426a50e",
     }
 
     def url_for_split(self, split: str):
