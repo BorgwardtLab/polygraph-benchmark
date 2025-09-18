@@ -147,10 +147,10 @@ class GINEConv(MessagePassing):
 
         return self.propagate(edge_index, x=x, edge_attr=edge_embeddings)
 
-    def message(self, x_j, edge_attr):
+    def message(self, x_j, edge_attr):  # pyright: ignore
         return x_j + edge_attr
 
-    def update(self, aggr_out):
+    def update(self, aggr_out):  # pyright: ignore
         return self.mlp(aggr_out)
 
 

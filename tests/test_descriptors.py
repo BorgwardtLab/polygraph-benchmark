@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_array
 
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     EigenvalueHistogram,

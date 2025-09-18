@@ -3,10 +3,10 @@
 We provide both point estimates of MMD and uncertainty quantifications. The following graph descriptors are available:
 
 Graph Descriptors:
-    - [`OrbitCounts`][polygraph.descriptors.OrbitCounts]: Counts of different graphlet orbits
-    - [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
-    - [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]: Distribution of node degrees
-    - [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
+    - [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]: Counts of different graphlet orbits
+    - [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
+    - [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram]: Distribution of node degrees
+    - [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
 
 
 The [`GaussianTV`][polygraph.utils.kernels.GaussianTV] kernel is used with descriptor-specific bandwidths.
@@ -61,7 +61,7 @@ from polygraph.metrics.base.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
 )
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     ClusteringHistogram,
     EigenvalueHistogram,
     OrbitCounts,
@@ -89,10 +89,10 @@ class GaussianTVMMD2Benchmark(MetricCollection[nx.Graph]):
 
     This graphs combines the following graph descriptors into one benchmark:
 
-    - [`OrbitCounts`][polygraph.descriptors.OrbitCounts]
-    - [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]
-    - [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]
-    - [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]
+    - [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]
+    - [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]
+    - [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram]
+    - [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram]
 
     Args:
         reference_graphs: Collection of reference graphs to fit the metric to.

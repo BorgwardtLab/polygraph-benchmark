@@ -1,5 +1,5 @@
 from polygraph.metrics.base.frechet_distance import FrechetDistance
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     NormalizedDescriptor,
     RandomGIN,
 )

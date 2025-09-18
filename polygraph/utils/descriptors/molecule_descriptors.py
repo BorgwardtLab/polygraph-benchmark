@@ -8,11 +8,13 @@ from fcd.fcd import get_predictions, load_ref_model
 from sklearn.random_projection import SparseRandomProjection
 from torch_geometric.data import Batch
 
-from polygraph.utils.molclr import mol_to_graph, load_molclr_model
-from polygraph.descriptors import GraphDescriptor
+from polygraph.utils.descriptors.molclr import mol_to_graph, load_molclr_model
+from polygraph.utils.descriptors import GraphDescriptor
 
 
 class TopoChemicalDescriptor(GraphDescriptor[Chem.Mol]):
+    """Computes topological properties."""
+
     def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         all_fps = []
         for mol in mols:
@@ -43,6 +45,13 @@ class TopoChemicalDescriptor(GraphDescriptor[Chem.Mol]):
 
 
 class FingerprintDescriptor(GraphDescriptor[Chem.Mol]):
+    """Computes molecular fingerprints.
+
+    Args:
+        dim: Dimension of the fingerprint
+        algorithm: Algorithm to use for fingerprint generation. Either "rdkit" or "morgan".
+    """
+
     def __init__(
         self, dim: int = 128, algorithm: Literal["rdkit", "morgan"] = "morgan"
     ):
@@ -65,6 +74,8 @@ class FingerprintDescriptor(GraphDescriptor[Chem.Mol]):
 
 
 class LipinskiDescriptor(GraphDescriptor[Chem.Mol]):
+    """Physico-chemical properties of molecules."""
+
     def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         all_descriptors = []
         for mol in mols:
@@ -105,6 +116,12 @@ class LipinskiDescriptor(GraphDescriptor[Chem.Mol]):
 
 
 class ChemNetDescriptor(GraphDescriptor[Chem.Mol]):
+    """Random projection of ChemNet embeddings.
+
+    Args:
+        dim: Dimension of the projected embedding
+    """
+
     def __init__(self, dim: int = 128):
         self._dim = dim
         self._model = load_ref_model()
@@ -119,6 +136,13 @@ class ChemNetDescriptor(GraphDescriptor[Chem.Mol]):
 
 
 class MolCLRDescriptor(GraphDescriptor[Chem.Mol]):
+    """Random projection of MolCLR embeddings.
+
+    Args:
+        dim: Dimension of the projected embedding
+        batch_size: Batch size for the model used during inference
+    """
+
     def __init__(self, dim: int = 128, batch_size: int = 128):
         self._dim = dim
         self._model = load_molclr_model()

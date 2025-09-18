@@ -44,7 +44,7 @@ from polygraph.metrics import (
 )
 from polygraph.metrics import RBFMMD2Benchmark, RBFMMD2BenchmarkInterval
 from polygraph.utils.kernels import LinearKernel
-from polygraph.descriptors import WeisfeilerLehmanDescriptor
+from polygraph.utils.descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.mmd_utils import mmd_from_gram
 from polygraph.metrics.base.metric_interval import MetricInterval
 

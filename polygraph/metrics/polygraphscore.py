@@ -1,10 +1,10 @@
 """PGS5 is a [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore] metric based on five different graph descriptors.
 
-- [`OrbitCounts`][polygraph.descriptors.OrbitCounts]: Counts of different graphlet orbits
-- [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
-- [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]: Distribution of node degrees
-- [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
-- [`RandomGIN`][polygraph.descriptors.RandomGIN]: Graph Neural Network embedding of the graph, combined with a normalization layer ([`NormalizedDescriptor`][polygraph.descriptors.NormalizedDescriptor]). Proposed by Thompson et al. [1].
+- [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]: Counts of different graphlet orbits
+- [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
+- [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram]: Distribution of node degrees
+- [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
+- [`RandomGIN`][polygraph.utils.descriptors.RandomGIN]: Graph Neural Network embedding of the graph, combined with a normalization layer ([`NormalizedDescriptor`][polygraph.utils.descriptors.NormalizedDescriptor]). Proposed by Thompson et al. [1].
 
 By default, we use TabPFN for binary classification and evaluate it by data log-likelihood, obtaining a PolyGraphScore that provides an estimated lower bound on the Jensen-Shannon
 distance between the generated and true graph distribution.
@@ -24,11 +24,11 @@ print(benchmark.compute(generated))     # {'polygraphscore': 0.9902651620251016,
 
 We also provide classes that implement individual [`ClassifierMetric`][polygraph.metrics.base.polygraphscore.ClassifierMetric]s:
 
-- [`ClassifierOrbitMetric`][polygraph.metrics.polygraphscore.ClassifierOrbitMetric]: Classifier metric based on [`OrbitCounts`][polygraph.descriptors.OrbitCounts]
-- [`ClassifierClusteringMetric`][polygraph.metrics.polygraphscore.ClassifierClusteringMetric]: Classifier metric based on [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]
-- [`ClassifierDegreeMetric`][polygraph.metrics.polygraphscore.ClassifierDegreeMetric]: Classifier metric based on [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]
-- [`ClassifierSpectralMetric`][polygraph.metrics.polygraphscore.ClassifierSpectralMetric]: Classifier metric based on [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]
-- [`GraphNeuralNetworkClassifierMetric`][polygraph.metrics.polygraphscore.GraphNeuralNetworkClassifierMetric]: Classifier metric based on [`RandomGIN`][polygraph.descriptors.RandomGIN]
+- [`ClassifierOrbitMetric`][polygraph.metrics.polygraphscore.ClassifierOrbitMetric]: Classifier metric based on [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]
+- [`ClassifierClusteringMetric`][polygraph.metrics.polygraphscore.ClassifierClusteringMetric]: Classifier metric based on [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]
+- [`ClassifierDegreeMetric`][polygraph.metrics.polygraphscore.ClassifierDegreeMetric]: Classifier metric based on [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram]
+- [`ClassifierSpectralMetric`][polygraph.metrics.polygraphscore.ClassifierSpectralMetric]: Classifier metric based on [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram]
+- [`GraphNeuralNetworkClassifierMetric`][polygraph.metrics.polygraphscore.GraphNeuralNetworkClassifierMetric]: Classifier metric based on [`RandomGIN`][polygraph.utils.descriptors.RandomGIN]
 """
 
 from typing import Collection, Literal, Optional, List, Union
@@ -41,7 +41,7 @@ from polygraph.metrics.base.polygraphscore import (
     PolyGraphScoreInterval,
     ClassifierProtocol,
 )
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     OrbitCounts,
     ClusteringHistogram,
     SparseDegreeHistogram,
@@ -142,7 +142,7 @@ class PGS5Interval(PolyGraphScoreInterval[nx.Graph]):
 
 class ClassifierOrbitMetric(ClassifierMetric[nx.Graph]):
     """
-    Classifier metric based on [`OrbitCounts`][polygraph.descriptors.OrbitCounts].
+    Classifier metric based on [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts].
 
     Args:
         reference_graphs: Collection of reference graphs.
@@ -166,7 +166,7 @@ class ClassifierOrbitMetric(ClassifierMetric[nx.Graph]):
 
 class ClassifierClusteringMetric(ClassifierMetric[nx.Graph]):
     """
-    Classifier metric based on [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram].
+    Classifier metric based on [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram].
 
     Args:
         reference_graphs: Collection of reference graphs.
@@ -190,7 +190,7 @@ class ClassifierClusteringMetric(ClassifierMetric[nx.Graph]):
 
 class ClassifierDegreeMetric(ClassifierMetric[nx.Graph]):
     """
-    Classifier metric based on [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram].
+    Classifier metric based on [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram].
 
     Args:
         reference_graphs: Collection of reference graphs.
@@ -214,7 +214,7 @@ class ClassifierDegreeMetric(ClassifierMetric[nx.Graph]):
 
 class ClassifierSpectralMetric(ClassifierMetric[nx.Graph]):
     """
-    Classifier metric based on [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram].
+    Classifier metric based on [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram].
 
     Args:
         reference_graphs: Collection of reference graphs.
@@ -238,7 +238,7 @@ class ClassifierSpectralMetric(ClassifierMetric[nx.Graph]):
 
 class GraphNeuralNetworkClassifierMetric(ClassifierMetric[nx.Graph]):
     """
-    Classifier metric based on [`RandomGIN`][polygraph.descriptors.RandomGIN].
+    Classifier metric based on [`RandomGIN`][polygraph.utils.descriptors.RandomGIN].
 
     Args:
         reference_graphs: Collection of reference graphs.

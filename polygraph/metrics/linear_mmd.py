@@ -8,7 +8,7 @@ from polygraph.metrics.base.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
 )
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     NormalizedDescriptor,
     RandomGIN,
 )

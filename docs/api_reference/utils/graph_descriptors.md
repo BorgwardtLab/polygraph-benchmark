@@ -1,6 +1,6 @@
 # Graph Descriptors
 
-::: polygraph.descriptors
+::: polygraph.utils.descriptors
     options:
         show_root_heading: false
         show_root_toc_entry: false
@@ -9,7 +9,7 @@
         heading_level: 2
         members: []
 
-::: polygraph.descriptors.GraphDescriptor
+::: polygraph.utils.descriptors.GraphDescriptor
     options:
         show_root_heading: true
         show_source: false

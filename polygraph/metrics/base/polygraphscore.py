@@ -21,7 +21,7 @@ Example:
     ```python
     from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
     from polygraph.metrics.base import PolyGraphScore
-    from polygraph.descriptors import OrbitCounts, SparseDegreeHistogram
+    from polygraph.utils.descriptors import OrbitCounts, SparseDegreeHistogram
 
     reference = PlanarGraphDataset("val").to_nx()
     generated = SBMGraphDataset("val").to_nx()
@@ -63,7 +63,7 @@ from tabpfn import TabPFNClassifier
 
 from polygraph import GraphType
 from polygraph.metrics.base.metric_interval import MetricInterval
-from polygraph.descriptors import GraphDescriptor
+from polygraph.utils.descriptors import GraphDescriptor
 from polygraph.metrics.base.interface import GenerationMetric
 
 

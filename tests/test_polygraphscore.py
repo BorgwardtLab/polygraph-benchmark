@@ -2,7 +2,7 @@ import pytest
 
 from sklearn.linear_model import LogisticRegression
 import networkx as nx
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     SparseDegreeHistogram,
     DegreeHistogram,
     ClusteringHistogram,

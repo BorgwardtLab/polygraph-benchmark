@@ -14,7 +14,8 @@ from polygraph import GraphType
 class GraphDescriptor(Protocol, Generic[GraphType]):
     """Interface for graph descriptors.
 
-    A graph descriptor is a callable that takes an iterable of networkx graphs and returns a numpy array or a sparse matrix.
+    A graph descriptor is a callable that takes an iterable of graphs and returns a numpy array or a sparse matrix.
+    Graphs must be of the type specified by the `GraphType` generic parameter. In practice, this may either be `nx.Graph` or `rdkit.Chem.Mol`.
     """
 
     def __call__(

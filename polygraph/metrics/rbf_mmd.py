@@ -3,11 +3,11 @@
 The following graph descriptors are available:
 
 Graph Descriptors:
-    - [`OrbitCounts`][polygraph.descriptors.OrbitCounts]: Counts of different graphlet orbits
-    - [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
-    - [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]: Distribution of node degrees
-    - [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
-    - [`RandomGIN`][polygraph.descriptors.RandomGIN]: Graph Neural Network embedding of the graph, combined with a normalization layer ([`NormalizedDescriptor`][polygraph.descriptors.NormalizedDescriptor]). Proposed by Thompson et al. [1].
+    - [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]: Counts of different graphlet orbits
+    - [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
+    - [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram]: Distribution of node degrees
+    - [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
+    - [`RandomGIN`][polygraph.utils.descriptors.RandomGIN]: Graph Neural Network embedding of the graph, combined with a normalization layer ([`NormalizedDescriptor`][polygraph.utils.descriptors.NormalizedDescriptor]). Proposed by Thompson et al. [1].
 
 Below, we demonstrate how to evaluate all metrics in the benchmark with point estimates and with uncertainty quantification.
 
@@ -46,7 +46,7 @@ from polygraph.metrics.base.mmd import (
     MaxDescriptorMMD2,
     MaxDescriptorMMD2Interval,
 )
-from polygraph.descriptors import (
+from polygraph.utils.descriptors import (
     ClusteringHistogram,
     EigenvalueHistogram,
     NormalizedDescriptor,

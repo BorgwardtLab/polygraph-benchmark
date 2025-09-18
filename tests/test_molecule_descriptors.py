@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from polygraph.descriptors.molecule_descriptors import (
+from polygraph.utils.descriptors.molecule_descriptors import (
     TopoChemicalDescriptor,
     FingerprintDescriptor,
     LipinskiDescriptor,

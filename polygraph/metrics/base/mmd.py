@@ -14,7 +14,7 @@ MMD metrics are initialized with a kernel function (see [`DescriptorKernel`][pol
 Example:
     ```python
     from polygraph.metrics.base import DescriptorMMD2, MaxDescriptorMMD2, DescriptorMMD2Interval
-    from polygraph.descriptors import SparseDegreeHistogram
+    from polygraph.utils.descriptors import SparseDegreeHistogram
     from polygraph.utils.kernels import AdaptiveRBFKernel
     import networkx as nx
     import numpy as np

@@ -60,7 +60,7 @@ from polygraph.utils.sparse_dist import (
     sparse_euclidean,
     sparse_manhattan,
 )
-from polygraph.descriptors import GraphDescriptor
+from polygraph.utils.descriptors import GraphDescriptor
 
 
 MatrixLike: TypeAlias = Union[np.ndarray, csr_array]

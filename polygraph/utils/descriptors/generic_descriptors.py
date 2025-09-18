@@ -23,8 +23,8 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
 from polygraph import GraphType
-from polygraph.descriptors.interface import GraphDescriptor
-from polygraph.utils.gin import GIN
+from polygraph.utils.descriptors.interface import GraphDescriptor
+from polygraph.utils.descriptors.gin import GIN
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
 
 

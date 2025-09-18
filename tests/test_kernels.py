@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_array
 
-from polygraph.descriptors import WeisfeilerLehmanDescriptor
+from polygraph.utils.descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.kernels import (
     AdaptiveRBFKernel,
     DescriptorKernel,
