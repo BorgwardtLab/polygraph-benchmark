@@ -1,4 +1,4 @@
-from typing import Literal, Tuple, Optional
+from typing import Literal, Optional, Tuple
 
 import joblib
 import networkx as nx
@@ -9,7 +9,7 @@ from torch_geometric.data import Batch
 from torch_geometric.utils import from_networkx
 from tqdm.rich import tqdm
 
-from polygraph.datasets.base import SplitGraphDataset, ProceduralGraphDataset
+from polygraph.datasets.base import ProceduralGraphDataset, SplitGraphDataset
 from polygraph.datasets.base.graph_storage import GraphStorage
 
 
@@ -335,9 +335,9 @@ class SBMGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://sandbox.zenodo.org/records/309573/files/sbm_train.pt?download=1",
-        "val": "https://sandbox.zenodo.org/records/309573/files/sbm_val.pt?download=1",
-        "test": "https://sandbox.zenodo.org/records/309573/files/sbm_test.pt?download=1",
+        "train": "https://sandbox.zenodo.org/records/332447/files/sbm_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/332447/files/sbm_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/332447/files/sbm_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {

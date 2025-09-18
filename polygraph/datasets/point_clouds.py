@@ -25,9 +25,9 @@ class PointCloudGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://sandbox.zenodo.org/records/309573/files/point_clouds_train.pt?download=1",
-        "val": "https://sandbox.zenodo.org/records/309573/files/point_clouds_val.pt?download=1",
-        "test": "https://sandbox.zenodo.org/records/309573/files/point_clouds_test.pt?download=1",
+        "train": "https://sandbox.zenodo.org/records/332447/files/point_clouds_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/332447/files/point_clouds_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/332447/files/point_clouds_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
