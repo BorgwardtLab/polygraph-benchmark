@@ -4,12 +4,11 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import GraphDescriptors, Lipinski
 import numpy as np
-from pyprojroot import here
 from fcd.fcd import get_predictions, load_ref_model
 from sklearn.random_projection import SparseRandomProjection
-from molclr import GINet, mol_to_graph
 from torch_geometric.data import Batch
 
+from polygraph.utils.molclr import mol_to_graph, load_molclr_model
 from polygraph.descriptors import GraphDescriptor
 
 
@@ -45,7 +44,7 @@ class TopoChemicalDescriptor(GraphDescriptor[Chem.Mol]):
 
 class FingerprintDescriptor(GraphDescriptor[Chem.Mol]):
     def __init__(
-        self, dim: int = 128, algorithm: Literal["rdkit", "morgan"] = "rdkit"
+        self, dim: int = 128, algorithm: Literal["rdkit", "morgan"] = "morgan"
     ):
         self._dim = dim
         if algorithm == "rdkit":
@@ -66,11 +65,6 @@ class FingerprintDescriptor(GraphDescriptor[Chem.Mol]):
 
 
 class LipinskiDescriptor(GraphDescriptor[Chem.Mol]):
-    """
-    Calculates all Lipinski descriptors available in rdkit.Chem.Lipinski module.
-    Based on: https://www.rdkit.org/docs/source/rdkit.Chem.Lipinski.html
-    """
-
     def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         all_descriptors = []
         for mol in mols:
@@ -113,9 +107,7 @@ class LipinskiDescriptor(GraphDescriptor[Chem.Mol]):
 class ChemNetDescriptor(GraphDescriptor[Chem.Mol]):
     def __init__(self, dim: int = 128):
         self._dim = dim
-        self._model = load_ref_model(
-            here() / ".local/molecule_data/chemnet_model.pt"
-        )
+        self._model = load_ref_model()
         self._proj = SparseRandomProjection(
             n_components=self._dim,  # pyright: ignore
             random_state=42,
@@ -129,16 +121,7 @@ class ChemNetDescriptor(GraphDescriptor[Chem.Mol]):
 class MolCLRDescriptor(GraphDescriptor[Chem.Mol]):
     def __init__(self, dim: int = 128, batch_size: int = 128):
         self._dim = dim
-        self._model = GINet(
-            num_layer=5, emb_dim=300, feat_dim=512, drop_ratio=0, pool="mean"
-        )
-        self._model.load_state_dict(
-            torch.load(
-                here() / ".local/molecule_data/molclr_model.pth",
-                map_location="cpu",
-            )
-        )
-        self._model.eval()
+        self._model = load_molclr_model()
         self._proj = SparseRandomProjection(
             n_components=self._dim,  # pyright: ignore
             random_state=42,

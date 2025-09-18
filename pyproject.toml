@@ -29,7 +29,8 @@ dependencies = [
     "orbit-count",
     "numba",
     "scikit-learn",
-    "tabpfn==2.0.9"
+    "tabpfn==2.0.9",
+    "fcd~=1.2.2"
 ]
 
 [project.optional-dependencies]

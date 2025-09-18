@@ -6,6 +6,7 @@ pytest at the start of the session.
 """
 
 import rdkit  # noqa
+from rdkit.Chem import AllChem  # noqa
 import graph_tool.all as _  # noqa
 
 import subprocess
