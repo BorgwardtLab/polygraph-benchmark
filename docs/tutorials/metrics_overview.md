@@ -99,6 +99,7 @@ E.g., you may construct the following metric
 ```python
 from polygraph.descriptors import OrbitCounts, SparseDegreeHistogram
 from polygraph.metrics.base import PolyGraphScore
+from sklearn.linear_model import LogisticRegression
 
 metric = PolyGraphScore(
     reference_graphs=PlanarGraphDataset("test").to_nx(),
@@ -106,7 +107,7 @@ metric = PolyGraphScore(
         "orbit": OrbitCounts(),
         "degree": SparseDegreeHistogram(),
     },
-    classifier="logistic",
+    classifier=LogisticRegression(),
     variant="informedness",
 )
 metric.compute(SBMGraphDataset("test").to_nx())         # {'polygraphscore': 0.9, 'polygraphscore_descriptor': 'orbit', 'subscores': {'orbit': 0.9, 'degree': 0.9}}
