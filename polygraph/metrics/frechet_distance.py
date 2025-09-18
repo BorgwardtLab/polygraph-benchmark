@@ -1,18 +1,22 @@
 from polygraph.metrics.base.frechet_distance import FrechetDistance
-from polygraph.utils.graph_descriptors import (
+from polygraph.descriptors import (
     NormalizedDescriptor,
     RandomGIN,
 )
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Generic
+from polygraph import GraphType
+from typing import Collection
 
 __all__ = ["GraphNeuralNetworkFrechetDistance"]
 
 
-class GraphNeuralNetworkFrechetDistance(FrechetDistance):
+class GraphNeuralNetworkFrechetDistance(
+    FrechetDistance[GraphType], Generic[GraphType]
+):
     def __init__(
         self,
-        reference_graphs,
+        reference_graphs: Collection[GraphType],
         node_feat_loc: Optional[List[str]] = None,
         node_feat_dim: int = 1,
         edge_feat_loc: Optional[List[str]] = None,

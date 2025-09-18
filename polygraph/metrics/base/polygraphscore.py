@@ -21,7 +21,7 @@ Example:
     ```python
     from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
     from polygraph.metrics.base import PolyGraphScore
-    from polygraph.utils.graph_descriptors import OrbitCounts, SparseDegreeHistogram
+    from polygraph.descriptors import OrbitCounts, SparseDegreeHistogram
 
     reference = PlanarGraphDataset("val").to_nx()
     generated = SBMGraphDataset("val").to_nx()
@@ -46,6 +46,8 @@ from typing import (
     Dict,
     Union,
     TypedDict,
+    Protocol,
+    Generic,
 )
 from importlib.metadata import version
 from collections import Counter
@@ -53,15 +55,15 @@ import warnings
 from sklearn.metrics import roc_curve
 from scipy.sparse import csr_array
 
-import networkx as nx
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 import torch
 from tabpfn import TabPFNClassifier
+
+from polygraph import GraphType
 from polygraph.metrics.base.metric_interval import MetricInterval
-from polygraph.utils.graph_descriptors import GraphDescriptor
+from polygraph.descriptors import GraphDescriptor
 from polygraph.metrics.base.interface import GenerationMetric
 
 
@@ -70,6 +72,11 @@ __all__ = [
     "PolyGraphScore",
     "PolyGraphScoreInterval",
 ]
+
+
+class ClassifierProtocol(Protocol):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "ClassifierProtocol": ...
+    def predict_proba(self, X: np.ndarray) -> np.ndarray: ...
 
 
 class PolyGraphScoreResult(TypedDict):
@@ -132,7 +139,7 @@ def _scores_and_threshold_to_informedness(
 
 
 def _classifier_cross_validation(
-    classifier: Union[LogisticRegression, TabPFNClassifier],
+    classifier: ClassifierProtocol,
     train_ref_descriptions: np.ndarray,
     train_gen_descriptions: np.ndarray,
     variant: Literal["informedness", "jsd"],
@@ -220,7 +227,7 @@ def _descriptions_to_classifier_metric(
     ref_descriptions: Union[np.ndarray, csr_array],
     gen_descriptions: Union[np.ndarray, csr_array],
     variant: Literal["informedness", "jsd"] = "jsd",
-    classifier: Literal["logistic", "tabpfn"] = "tabpfn",
+    classifier: Optional[ClassifierProtocol] = None,
     rng: Optional[np.random.Generator] = None,
 ) -> Tuple[float, float]:
     rng = np.random.default_rng(0) if rng is None else rng
@@ -280,9 +287,7 @@ def _descriptions_to_classifier_metric(
     assert isinstance(test_ref_descriptions, np.ndarray)
     assert isinstance(test_gen_descriptions, np.ndarray)
 
-    if classifier == "logistic":
-        clf = LogisticRegression(penalty="l2", max_iter=1000)
-    elif classifier == "tabpfn":
+    if classifier is None:
         if version("tabpfn") != "2.0.9":
             raise RuntimeError(
                 "TabPFN version 2.0.9 is required for this classifier. Please install it with `pip install tabpfn==2.0.9`."
@@ -291,7 +296,7 @@ def _descriptions_to_classifier_metric(
             device="cuda" if torch.cuda.is_available() else "cpu"
         )
     else:
-        raise ValueError(f"Invalid classifier: {classifier}")
+        clf = classifier
 
     # Use custom cross-validation function
     scores = _classifier_cross_validation(
@@ -346,7 +351,7 @@ def _descriptions_to_classifier_metric(
     return train_metric, test_metric
 
 
-class ClassifierMetric(GenerationMetric):
+class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
     """Classifier-based metric using a single graph descriptor.
 
     Args:
@@ -357,14 +362,14 @@ class ClassifierMetric(GenerationMetric):
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Literal["logistic", "tabpfn"]
+    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        descriptor: GraphDescriptor,
+        reference_graphs: Collection[GraphType],
+        descriptor: GraphDescriptor[GraphType],
         variant: Literal["informedness", "jsd"] = "jsd",
-        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
+        classifier: Optional[ClassifierProtocol] = None,
     ):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
@@ -372,7 +377,7 @@ class ClassifierMetric(GenerationMetric):
         self._classifier = classifier
 
     def compute(
-        self, generated_graphs: Collection[nx.Graph]
+        self, generated_graphs: Collection[GraphType]
     ) -> Tuple[float, float]:
         """Compute the classifier metric.
 
@@ -391,16 +396,16 @@ class ClassifierMetric(GenerationMetric):
         )
 
 
-class _ClassifierMetricSamples:
+class _ClassifierMetricSamples(Generic[GraphType]):
     _variant: Literal["informedness", "jsd"]
-    _classifier: Literal["logistic", "tabpfn"]
+    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        descriptor: GraphDescriptor,
+        reference_graphs: Collection[GraphType],
+        descriptor: GraphDescriptor[GraphType],
         variant: Literal["informedness", "jsd"] = "jsd",
-        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
+        classifier: Optional[ClassifierProtocol] = None,
     ):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
@@ -409,7 +414,7 @@ class _ClassifierMetricSamples:
 
     def compute(
         self,
-        generated_graphs: Collection[nx.Graph],
+        generated_graphs: Collection[GraphType],
         subsample_size: int,
         num_samples: int = 100,
     ) -> np.ndarray:
@@ -440,7 +445,7 @@ class _ClassifierMetricSamples:
         return samples
 
 
-class PolyGraphScore(GenerationMetric):
+class PolyGraphScore(GenerationMetric[GraphType], Generic[GraphType]):
     """PolyGraphScore to compare graph distributions, combining multiple graph descriptors.
 
     Args:
@@ -451,14 +456,14 @@ class PolyGraphScore(GenerationMetric):
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Literal["logistic", "tabpfn"]
+    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        descriptors: Dict[str, GraphDescriptor],
+        reference_graphs: Collection[GraphType],
+        descriptors: Dict[str, GraphDescriptor[GraphType]],
         variant: Literal["informedness", "jsd"] = "jsd",
-        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
+        classifier: Optional[ClassifierProtocol] = None,
     ):
         self._sub_metrics = {
             name: ClassifierMetric(
@@ -468,7 +473,7 @@ class PolyGraphScore(GenerationMetric):
         }
 
     def compute(
-        self, generated_graphs: Collection[nx.Graph]
+        self, generated_graphs: Collection[GraphType]
     ) -> PolyGraphScoreResult:
         """Compute the PolyGraphScore.
 
@@ -499,7 +504,7 @@ class PolyGraphScore(GenerationMetric):
         return PolyGraphScoreResult(**result)
 
 
-class PolyGraphScoreInterval(GenerationMetric):
+class PolyGraphScoreInterval(GenerationMetric[GraphType], Generic[GraphType]):
     """Uncertainty quantification for [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore].
 
     Args:
@@ -512,16 +517,16 @@ class PolyGraphScoreInterval(GenerationMetric):
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Literal["logistic", "tabpfn"]
+    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        descriptors: Dict[str, GraphDescriptor],
+        reference_graphs: Collection[GraphType],
+        descriptors: Dict[str, GraphDescriptor[GraphType]],
         subsample_size: int,
         num_samples: int = 10,
         variant: Literal["informedness", "jsd"] = "jsd",
-        classifier: Literal["logistic", "tabpfn"] = "tabpfn",
+        classifier: Optional[ClassifierProtocol] = None,
     ):
         if len(reference_graphs) < 2 * subsample_size:
             raise ValueError(
@@ -539,7 +544,7 @@ class PolyGraphScoreInterval(GenerationMetric):
 
     def compute(
         self,
-        generated_graphs: Collection[nx.Graph],
+        generated_graphs: Collection[GraphType],
     ) -> PolyGraphScoreIntervalResult:
         """Compute the PolyGraphScoreInterval.
 

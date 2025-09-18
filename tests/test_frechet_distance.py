@@ -3,7 +3,7 @@ import numpy as np
 
 from polygraph.datasets import PlanarGraphDataset
 from polygraph.metrics.base import FrechetDistance
-from polygraph.utils.graph_descriptors import OrbitCounts
+from polygraph.descriptors import OrbitCounts
 
 
 def test_frechet_distance() -> None:

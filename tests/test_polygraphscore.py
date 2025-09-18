@@ -1,7 +1,7 @@
 import pytest
 
 import networkx as nx
-from polygraph.utils.graph_descriptors import (
+from polygraph.descriptors import (
     SparseDegreeHistogram,
     DegreeHistogram,
     ClusteringHistogram,

@@ -3,11 +3,11 @@
 The following graph descriptors are available:
 
 Graph Descriptors:
-    - [`OrbitCounts`][polygraph.utils.graph_descriptors.OrbitCounts]: Counts of different graphlet orbits
-    - [`ClusteringHistogram`][polygraph.utils.graph_descriptors.ClusteringHistogram]: Distribution of clustering coefficients
-    - [`SparseDegreeHistogram`][polygraph.utils.graph_descriptors.SparseDegreeHistogram]: Distribution of node degrees
-    - [`EigenvalueHistogram`][polygraph.utils.graph_descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
-    - [`RandomGIN`][polygraph.utils.graph_descriptors.RandomGIN]: Graph Neural Network embedding of the graph, combined with a normalization layer ([`NormalizedDescriptor`][polygraph.utils.graph_descriptors.NormalizedDescriptor]). Proposed by Thompson et al. [1].
+    - [`OrbitCounts`][polygraph.descriptors.OrbitCounts]: Counts of different graphlet orbits
+    - [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
+    - [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]: Distribution of node degrees
+    - [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
+    - [`RandomGIN`][polygraph.descriptors.RandomGIN]: Graph Neural Network embedding of the graph, combined with a normalization layer ([`NormalizedDescriptor`][polygraph.descriptors.NormalizedDescriptor]). Proposed by Thompson et al. [1].
 
 Below, we demonstrate how to evaluate all metrics in the benchmark with point estimates and with uncertainty quantification.
 
@@ -46,7 +46,7 @@ from polygraph.metrics.base.mmd import (
     MaxDescriptorMMD2,
     MaxDescriptorMMD2Interval,
 )
-from polygraph.utils.graph_descriptors import (
+from polygraph.descriptors import (
     ClusteringHistogram,
     EigenvalueHistogram,
     NormalizedDescriptor,
@@ -73,7 +73,7 @@ __all__ = [
 ]
 
 
-class RBFMMD2Benchmark(MetricCollection):
+class RBFMMD2Benchmark(MetricCollection[nx.Graph]):
     """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths."""
 
     def __init__(self, reference_graphs: Collection[nx.Graph]):
@@ -88,7 +88,7 @@ class RBFMMD2Benchmark(MetricCollection):
         )
 
 
-class RBFMMD2BenchmarkInterval(MetricCollection):
+class RBFMMD2BenchmarkInterval(MetricCollection[nx.Graph]):
     """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths and uncertainty quantification."""
 
     def __init__(
@@ -122,7 +122,7 @@ class RBFMMD2BenchmarkInterval(MetricCollection):
 # Below are the definitions of individual MMD2 metrics
 
 
-class RBFOrbitMMD2(MaxDescriptorMMD2):
+class RBFOrbitMMD2(MaxDescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -136,7 +136,7 @@ class RBFOrbitMMD2(MaxDescriptorMMD2):
         )
 
 
-class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval):
+class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -159,7 +159,7 @@ class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval):
         )
 
 
-class RBFClusteringMMD2(MaxDescriptorMMD2):
+class RBFClusteringMMD2(MaxDescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -173,7 +173,7 @@ class RBFClusteringMMD2(MaxDescriptorMMD2):
         )
 
 
-class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval):
+class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -196,7 +196,7 @@ class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval):
         )
 
 
-class RBFDegreeMMD2(MaxDescriptorMMD2):
+class RBFDegreeMMD2(MaxDescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -210,7 +210,7 @@ class RBFDegreeMMD2(MaxDescriptorMMD2):
         )
 
 
-class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval):
+class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -233,7 +233,7 @@ class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval):
         )
 
 
-class RBFSpectralMMD2(MaxDescriptorMMD2):
+class RBFSpectralMMD2(MaxDescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -247,7 +247,7 @@ class RBFSpectralMMD2(MaxDescriptorMMD2):
         )
 
 
-class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval):
+class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -270,7 +270,7 @@ class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval):
         )
 
 
-class RBFGraphNeuralNetworkMMD2(MaxDescriptorMMD2):
+class RBFGraphNeuralNetworkMMD2(MaxDescriptorMMD2[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -301,7 +301,7 @@ class RBFGraphNeuralNetworkMMD2(MaxDescriptorMMD2):
         )
 
 
-class RBFGraphNeuralNetworkMMD2Interval(MaxDescriptorMMD2Interval):
+class RBFGraphNeuralNetworkMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],

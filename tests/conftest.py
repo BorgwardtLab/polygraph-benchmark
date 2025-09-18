@@ -21,7 +21,7 @@ from polygraph.datasets import (
     PlanarGraphDataset,
     SBMGraphDataset,
 )
-from polygraph.utils.graph_descriptors import (
+from polygraph.descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     OrbitCounts,

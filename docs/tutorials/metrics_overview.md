@@ -56,7 +56,7 @@ We implement a large number of different descriptors and kernels in `polygraph`.
 An MMD metric operating on orbit counts with a linear kernel may thus be constructed in the following fashion:
 
 ```python
-from polygraph.utils.graph_descriptors import OrbitCounts
+from polygraph.descriptors import OrbitCounts
 from polygraph.utils.kernels import LinearKernel
 from polygraph.metrics.base import DescriptorMMD2
 from polygraph.datasets import PlanarGraphDataset
@@ -97,7 +97,7 @@ As with MMD metrics, you may also construct custom PolyGraphScore variants using
 E.g., you may construct the following metric
 
 ```python
-from polygraph.utils.graph_descriptors import OrbitCounts, SparseDegreeHistogram
+from polygraph.descriptors import OrbitCounts, SparseDegreeHistogram
 from polygraph.metrics.base import PolyGraphScore
 
 metric = PolyGraphScore(

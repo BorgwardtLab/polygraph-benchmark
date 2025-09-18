@@ -47,19 +47,20 @@ Example:
 
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import Any, Iterable, Union, Literal
+from typing import Any, Iterable, Union, Literal, Generic
 from typing_extensions import TypeAlias
 
-import networkx as nx
 import numpy as np
 from scipy.sparse import csr_array
 from sklearn.metrics import pairwise_distances
+
+from polygraph import GraphType
 from polygraph.utils.sparse_dist import (
     sparse_dot_product,
     sparse_euclidean,
     sparse_manhattan,
 )
-from polygraph.utils.graph_descriptors import GraphDescriptor
+from polygraph.descriptors import GraphDescriptor
 
 
 MatrixLike: TypeAlias = Union[np.ndarray, csr_array]
@@ -69,7 +70,7 @@ GramBlocks = namedtuple(
 )
 
 
-class DescriptorKernel(ABC):
+class DescriptorKernel(ABC, Generic[GraphType]):
     """Abstract base class for kernel functions that operate on graph descriptors.
 
     This class defines the interface for kernels that compute similarity between graphs
@@ -80,7 +81,7 @@ class DescriptorKernel(ABC):
         descriptor_fn: Function that transforms graphs into descriptor vectors/matrices
     """
 
-    def __init__(self, descriptor_fn: GraphDescriptor):
+    def __init__(self, descriptor_fn: GraphDescriptor[GraphType]):
         self._descriptor_fn = descriptor_fn
 
     @abstractmethod
@@ -97,7 +98,7 @@ class DescriptorKernel(ABC):
     @abstractmethod
     def num_kernels(self) -> int: ...
 
-    def featurize(self, graphs: Iterable[nx.Graph]) -> Any:
+    def featurize(self, graphs: Iterable[GraphType]) -> Any:
         """Converts graphs into descriptor representations.
 
         Args:
@@ -159,7 +160,7 @@ class DescriptorKernel(ABC):
         return self.adapt(self.pre_gram(ref, gen))
 
 
-class LaplaceKernel(DescriptorKernel):
+class LaplaceKernel(DescriptorKernel[GraphType], Generic[GraphType]):
     """Laplace kernel using L1 (Manhattan) distance.
 
     Computes similarity using the formula:
@@ -176,12 +177,14 @@ class LaplaceKernel(DescriptorKernel):
     """
 
     def __init__(
-        self, descriptor_fn: GraphDescriptor, lbd: Union[float, np.ndarray]
+        self,
+        descriptor_fn: GraphDescriptor[GraphType],
+        lbd: Union[float, np.ndarray],
     ):
         super().__init__(descriptor_fn)
         self.lbd = lbd
 
-    def get_subkernel(self, idx: int) -> DescriptorKernel:
+    def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert isinstance(self.lbd, np.ndarray)
         return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
@@ -212,7 +215,7 @@ class LaplaceKernel(DescriptorKernel):
         return comparison
 
 
-class GaussianTV(DescriptorKernel):
+class GaussianTV(DescriptorKernel[GraphType], Generic[GraphType]):
     """Gaussian kernel using L1 distance.
 
     Computes similarity using the formula:
@@ -232,12 +235,14 @@ class GaussianTV(DescriptorKernel):
     """
 
     def __init__(
-        self, descriptor_fn: GraphDescriptor, bw: Union[float, np.ndarray]
+        self,
+        descriptor_fn: GraphDescriptor[GraphType],
+        bw: Union[float, np.ndarray],
     ):
         super().__init__(descriptor_fn)
         self.bw = bw
 
-    def get_subkernel(self, idx: int) -> DescriptorKernel:
+    def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert isinstance(self.bw, np.ndarray)
         return GaussianTV(self._descriptor_fn, self.bw[idx])
 
@@ -268,7 +273,7 @@ class GaussianTV(DescriptorKernel):
         return comparison
 
 
-class RBFKernel(DescriptorKernel):
+class RBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
     """Radial Basis Function (RBF) kernel, also known as Gaussian kernel.
 
     Computes similarity using the formula:
@@ -285,12 +290,14 @@ class RBFKernel(DescriptorKernel):
     """
 
     def __init__(
-        self, descriptor_fn: GraphDescriptor, bw: Union[float, np.ndarray]
+        self,
+        descriptor_fn: GraphDescriptor[GraphType],
+        bw: Union[float, np.ndarray],
     ) -> None:
         super().__init__(descriptor_fn)
         self.bw = bw
 
-    def get_subkernel(self, idx: int) -> DescriptorKernel:
+    def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert isinstance(self.bw, np.ndarray)
         assert isinstance(idx, int), type(idx)
         return RBFKernel(self._descriptor_fn, self.bw[idx])
@@ -322,7 +329,7 @@ class RBFKernel(DescriptorKernel):
         return comparison
 
 
-class AdaptiveRBFKernel(DescriptorKernel):
+class AdaptiveRBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
     """Adaptive RBF kernel with data-dependent bandwidth.
 
     Similar to the standard RBF kernel but adapts its bandwidth based on the data:
@@ -345,7 +352,7 @@ class AdaptiveRBFKernel(DescriptorKernel):
 
     def __init__(
         self,
-        descriptor_fn: GraphDescriptor,
+        descriptor_fn: GraphDescriptor[GraphType],
         bw: Union[float, np.ndarray],
         variant: Literal["mean", "median"] = "mean",
     ) -> None:
@@ -353,7 +360,7 @@ class AdaptiveRBFKernel(DescriptorKernel):
         self.bw = bw
         self._variant = variant
 
-    def get_subkernel(self, idx: int) -> DescriptorKernel:
+    def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert isinstance(self.bw, np.ndarray)
         return AdaptiveRBFKernel(
             self._descriptor_fn, self.bw[idx], variant=self._variant
@@ -400,7 +407,7 @@ class AdaptiveRBFKernel(DescriptorKernel):
         return GramBlocks(ref_ref, ref_gen, gen_gen)
 
 
-class LinearKernel(DescriptorKernel):
+class LinearKernel(DescriptorKernel[GraphType], Generic[GraphType]):
     """Simple linear kernel using dot product.
 
     Computes similarity using the formula:
@@ -417,7 +424,7 @@ class LinearKernel(DescriptorKernel):
     def num_kernels(self) -> int:
         return 1
 
-    def get_subkernel(self, idx: int) -> DescriptorKernel:
+    def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert idx == 0, idx
         return LinearKernel(self._descriptor_fn)
 

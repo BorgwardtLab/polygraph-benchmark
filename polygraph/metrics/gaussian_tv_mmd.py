@@ -3,10 +3,10 @@
 We provide both point estimates of MMD and uncertainty quantifications. The following graph descriptors are available:
 
 Graph Descriptors:
-    - [`OrbitCounts`][polygraph.utils.graph_descriptors.OrbitCounts]: Counts of different graphlet orbits
-    - [`ClusteringHistogram`][polygraph.utils.graph_descriptors.ClusteringHistogram]: Distribution of clustering coefficients
-    - [`SparseDegreeHistogram`][polygraph.utils.graph_descriptors.SparseDegreeHistogram]: Distribution of node degrees
-    - [`EigenvalueHistogram`][polygraph.utils.graph_descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
+    - [`OrbitCounts`][polygraph.descriptors.OrbitCounts]: Counts of different graphlet orbits
+    - [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
+    - [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]: Distribution of node degrees
+    - [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]: Distribution of graph Laplacian eigenvalues
 
 
 The [`GaussianTV`][polygraph.utils.kernels.GaussianTV] kernel is used with descriptor-specific bandwidths.
@@ -61,7 +61,7 @@ from polygraph.metrics.base.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
 )
-from polygraph.utils.graph_descriptors import (
+from polygraph.descriptors import (
     ClusteringHistogram,
     EigenvalueHistogram,
     OrbitCounts,
@@ -84,15 +84,15 @@ __all__ = [
 ]
 
 
-class GaussianTVMMD2Benchmark(MetricCollection):
+class GaussianTVMMD2Benchmark(MetricCollection[nx.Graph]):
     """Collection of MMD2 metrics using the Gaussian TV kernel.
 
     This graphs combines the following graph descriptors into one benchmark:
 
-    - [`OrbitCounts`][polygraph.utils.graph_descriptors.OrbitCounts]
-    - [`ClusteringHistogram`][polygraph.utils.graph_descriptors.ClusteringHistogram]
-    - [`SparseDegreeHistogram`][polygraph.utils.graph_descriptors.SparseDegreeHistogram]
-    - [`EigenvalueHistogram`][polygraph.utils.graph_descriptors.EigenvalueHistogram]
+    - [`OrbitCounts`][polygraph.descriptors.OrbitCounts]
+    - [`ClusteringHistogram`][polygraph.descriptors.ClusteringHistogram]
+    - [`SparseDegreeHistogram`][polygraph.descriptors.SparseDegreeHistogram]
+    - [`EigenvalueHistogram`][polygraph.descriptors.EigenvalueHistogram]
 
     Args:
         reference_graphs: Collection of reference graphs to fit the metric to.
@@ -109,7 +109,7 @@ class GaussianTVMMD2Benchmark(MetricCollection):
         )
 
 
-class GaussianTVMMD2BenchmarkInterval(MetricCollection):
+class GaussianTVMMD2BenchmarkInterval(MetricCollection[nx.Graph]):
     """Collection of MMD2 metrics using the Gaussian TV kernel with uncertainty quantification.
 
     This class provides the same metrics as [`GaussianTVMMD2Benchmark`][polygraph.metrics.GaussianTVMMD2Benchmark] but with uncertainty quantification.
@@ -149,7 +149,7 @@ class GaussianTVMMD2BenchmarkInterval(MetricCollection):
 # Below are the definitions of individual MMD2 metrics
 
 
-class GaussianTVOrbitMMD2(DescriptorMMD2):
+class GaussianTVOrbitMMD2(DescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -158,7 +158,7 @@ class GaussianTVOrbitMMD2(DescriptorMMD2):
         )
 
 
-class GaussianTVOrbitMMD2Interval(DescriptorMMD2Interval):
+class GaussianTVOrbitMMD2Interval(DescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -176,7 +176,7 @@ class GaussianTVOrbitMMD2Interval(DescriptorMMD2Interval):
         )
 
 
-class GaussianTVClusteringMMD2(DescriptorMMD2):
+class GaussianTVClusteringMMD2(DescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -187,7 +187,7 @@ class GaussianTVClusteringMMD2(DescriptorMMD2):
         )
 
 
-class GaussianTVClusteringMMD2Interval(DescriptorMMD2Interval):
+class GaussianTVClusteringMMD2Interval(DescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -207,7 +207,7 @@ class GaussianTVClusteringMMD2Interval(DescriptorMMD2Interval):
         )
 
 
-class GaussianTVDegreeMMD2(DescriptorMMD2):
+class GaussianTVDegreeMMD2(DescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -216,7 +216,7 @@ class GaussianTVDegreeMMD2(DescriptorMMD2):
         )
 
 
-class GaussianTVDegreeMMD2Interval(DescriptorMMD2Interval):
+class GaussianTVDegreeMMD2Interval(DescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -234,7 +234,7 @@ class GaussianTVDegreeMMD2Interval(DescriptorMMD2Interval):
         )
 
 
-class GaussianTVSpectralMMD2(DescriptorMMD2):
+class GaussianTVSpectralMMD2(DescriptorMMD2[nx.Graph]):
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -243,7 +243,7 @@ class GaussianTVSpectralMMD2(DescriptorMMD2):
         )
 
 
-class GaussianTVSpectralMMD2Interval(DescriptorMMD2Interval):
+class GaussianTVSpectralMMD2Interval(DescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],

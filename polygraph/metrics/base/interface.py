@@ -24,14 +24,15 @@ print(metrics.compute(generated_graphs))
 ```
 """
 
-from typing import Protocol, Collection, Any, Dict
-import networkx as nx
+from polygraph import GraphType
+
+from typing import Protocol, Collection, Any, Dict, Generic
 
 
-class GenerationMetric(Protocol):
+class GenerationMetric(Protocol, Generic[GraphType]):
     """Interface for metrics that provide a single estimate."""
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> Any:
+    def compute(self, generated_graphs: Collection[GraphType]) -> Any:
         """Compute the metric on the generated graphs.
 
         Args:
@@ -40,15 +41,15 @@ class GenerationMetric(Protocol):
         ...
 
 
-class MetricCollection(GenerationMetric):
+class MetricCollection(GenerationMetric[GraphType], Generic[GraphType]):
     """Collection of metrics that provide a single estimate."""
 
-    def __init__(self, metrics: Dict[str, GenerationMetric]):
+    def __init__(self, metrics: Dict[str, GenerationMetric[GraphType]]):
         self._metrics = metrics
 
     def compute(
         self,
-        generated_graphs: Collection[nx.Graph],
+        generated_graphs: Collection[GraphType],
     ) -> Dict[str, Any]:
         """Compute the metrics on the generated graphs.
 

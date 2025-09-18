@@ -1,48 +1,48 @@
 # Graph Descriptors
 
-::: polygraph.utils.graph_descriptors.DegreeHistogram
+::: polygraph.descriptors.DegreeHistogram
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.SparseDegreeHistogram
+::: polygraph.descriptors.SparseDegreeHistogram
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.ClusteringHistogram
+::: polygraph.descriptors.ClusteringHistogram
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.OrbitCounts
+::: polygraph.descriptors.OrbitCounts
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.EigenvalueHistogram
+::: polygraph.descriptors.EigenvalueHistogram
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.RandomGIN
+::: polygraph.descriptors.RandomGIN
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.WeisfeilerLehmanDescriptor
+::: polygraph.descriptors.WeisfeilerLehmanDescriptor
     options:
         show_root_heading: true
         show_source: false
         heading_level: 2
 
-::: polygraph.utils.graph_descriptors.NormalizedDescriptor
+::: polygraph.descriptors.NormalizedDescriptor
     options:
         show_root_heading: true
         show_source: false
