@@ -54,7 +54,7 @@ They may then instantiate the dataset like this:
 from polygraph.datasets import URLGraphDataset
 
 ds = URLGraphDataset(
-    url="https://sandbox.zenodo.org/records/309573/files/planar_train.pt?download=1",
+    url="https://sandbox.zenodo.org/records/332447/files/planar_train.pt?download=1",
     file_hash="edc2630954a23b1cf6a549d43a95e359"
 )
 ```

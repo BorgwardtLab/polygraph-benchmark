@@ -24,9 +24,9 @@ class EgoGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://sandbox.zenodo.org/records/309573/files/ego_train.pt?download=1",
-        "val": "https://sandbox.zenodo.org/records/309573/files/ego_val.pt?download=1",
-        "test": "https://sandbox.zenodo.org/records/309573/files/ego_test.pt?download=1",
+        "train": "https://sandbox.zenodo.org/records/332447/files/ego_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/332447/files/ego_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/332447/files/ego_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
@@ -56,9 +56,9 @@ class SmallEgoGraphDataset(SplitGraphDataset):
     """
 
     _URL_FOR_SPLIT = {
-        "train": "https://sandbox.zenodo.org/records/309573/files/ego_small_train.pt?download=1",
-        "val": "https://sandbox.zenodo.org/records/309573/files/ego_small_val.pt?download=1",
-        "test": "https://sandbox.zenodo.org/records/309573/files/ego_small_test.pt?download=1",
+        "train": "https://sandbox.zenodo.org/records/332447/files/ego_small_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/332447/files/ego_small_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/332447/files/ego_small_test.pt?download=1",
     }
 
     _HASH_FOR_SPLIT = {
