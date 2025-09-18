@@ -24,7 +24,7 @@ def my_descriptor(graphs: Iterable[nx.Graph]) -> np.ndarray:
     return hists / hists.sum(axis=1, keepdims=True) # shape: (n_graphs, n_features)
 ```
 
-Generic graph descriptors (applicable to networkx graphs):
+Generic graph descriptors:
     - [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram]: Sparse degree distribution
     - [`DegreeHistogram`][polygraph.utils.descriptors.DegreeHistogram]: Dense degree distribution
     - [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
@@ -35,12 +35,12 @@ Generic graph descriptors (applicable to networkx graphs):
     - [`NormalizedDescriptor`][polygraph.utils.descriptors.NormalizedDescriptor]: Standardized descriptor wrapper
 
 
-Molecule descriptors (applicable to rdkit molecules):
-    - [`TopoChemicalDescriptor`][polygraph.utils.descriptors.TopoChemicalDescriptor]: Topological features based on bond structure
-    - [`FingerprintDescriptor`][polygraph.utils.descriptors.FingerprintDescriptor]: Molecular fingerprints
-    - [`LipinskiDescriptor`][polygraph.utils.descriptors.LipinskiDescriptor]: Physico-chemical properties
-    - [`ChemNetDescriptor`][polygraph.utils.descriptors.ChemNetDescriptor]: Random projection of ChemNet embeddings, based on SMILES strings
-    - [`MolCLRDescriptor`][polygraph.utils.descriptors.MolCLRDescriptor]: Random projection of MolCLR embeddings from a GNN
+Molecule descriptors:
+    - [`TopoChemicalDescriptor`][polygraph.utils.descriptors.molecule_descriptors.TopoChemicalDescriptor]: Topological features based on bond structure
+    - [`FingerprintDescriptor`][polygraph.utils.descriptors.molecule_descriptors.FingerprintDescriptor]: Molecular fingerprints
+    - [`LipinskiDescriptor`][polygraph.utils.descriptors.molecule_descriptors.LipinskiDescriptor]: Physico-chemical properties
+    - [`ChemNetDescriptor`][polygraph.utils.descriptors.molecule_descriptors.ChemNetDescriptor]: Random projection of ChemNet embeddings, based on SMILES strings
+    - [`MolCLRDescriptor`][polygraph.utils.descriptors.molecule_descriptors.MolCLRDescriptor]: Random projection of MolCLR embeddings from a GNN
 """
 
 from polygraph.utils.descriptors.interface import GraphDescriptor
