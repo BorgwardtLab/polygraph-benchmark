@@ -8,7 +8,7 @@ from polygraph.metrics.base.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
 )
-from polygraph.utils.graph_descriptors import (
+from polygraph.utils.descriptors import (
     NormalizedDescriptor,
     RandomGIN,
 )
@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 
-class LinearGraphNeuralNetworkMMD2(DescriptorMMD2):
+class LinearGraphNeuralNetworkMMD2(DescriptorMMD2[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
@@ -52,7 +52,7 @@ class LinearGraphNeuralNetworkMMD2(DescriptorMMD2):
         )
 
 
-class LinearGraphNeuralNetworkMMD2Interval(DescriptorMMD2Interval):
+class LinearGraphNeuralNetworkMMD2Interval(DescriptorMMD2Interval[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],

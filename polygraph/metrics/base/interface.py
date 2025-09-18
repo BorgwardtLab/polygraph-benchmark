@@ -1,7 +1,8 @@
 """
 PolyGraph implements metrics that provide either a single estimate or an interval to quantify uncertainty.
 We provide a minimal common interface for metrics as the protocol [`GenerationMetric`][polygraph.metrics.base.GenerationMetric].
-The only requirement to satisfy this interface is to implement a `compute` method that accepts a collection of NetworkX graphs.
+The only requirement to satisfy this interface is to implement a `compute` method that accepts a collection of graphs.
+In practice, these graphs may either be `nx.Graph` or `rdkit.Chem.Mol` objects, as determined by the `GraphType` generic parameter.
 
 Metrics that implement this interface may be evaluated jointly using the [`MetricCollection`][polygraph.metrics.base.MetricCollection] class.
 
@@ -24,14 +25,15 @@ print(metrics.compute(generated_graphs))
 ```
 """
 
-from typing import Protocol, Collection, Any, Dict
-import networkx as nx
+from polygraph import GraphType
+
+from typing import Protocol, Collection, Any, Dict, Generic
 
 
-class GenerationMetric(Protocol):
+class GenerationMetric(Protocol, Generic[GraphType]):
     """Interface for metrics that provide a single estimate."""
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> Any:
+    def compute(self, generated_graphs: Collection[GraphType]) -> Any:
         """Compute the metric on the generated graphs.
 
         Args:
@@ -40,15 +42,15 @@ class GenerationMetric(Protocol):
         ...
 
 
-class MetricCollection(GenerationMetric):
+class MetricCollection(GenerationMetric[GraphType], Generic[GraphType]):
     """Collection of metrics that provide a single estimate."""
 
-    def __init__(self, metrics: Dict[str, GenerationMetric]):
+    def __init__(self, metrics: Dict[str, GenerationMetric[GraphType]]):
         self._metrics = metrics
 
     def compute(
         self,
-        generated_graphs: Collection[nx.Graph],
+        generated_graphs: Collection[GraphType],
     ) -> Dict[str, Any]:
         """Compute the metrics on the generated graphs.
 

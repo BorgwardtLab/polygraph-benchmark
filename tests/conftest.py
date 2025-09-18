@@ -5,6 +5,8 @@ The conftest.py file is used to define fixtures and other configurations for
 pytest at the start of the session.
 """
 
+import rdkit  # noqa
+from rdkit.Chem import AllChem  # noqa
 import graph_tool.all as _  # noqa
 
 import subprocess
@@ -21,7 +23,7 @@ from polygraph.datasets import (
     PlanarGraphDataset,
     SBMGraphDataset,
 )
-from polygraph.utils.graph_descriptors import (
+from polygraph.utils.descriptors import (
     ClusteringHistogram,
     DegreeHistogram,
     OrbitCounts,

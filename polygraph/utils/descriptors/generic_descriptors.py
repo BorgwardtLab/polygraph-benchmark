@@ -1,45 +1,8 @@
-"""Graph descriptor functions for converting graphs into feature vectors.
-
-This module provides various functions that convert networkx graphs into numerical
-representations suitable for kernel methods. Each descriptor is callable with an iterable of graphs and returns either a dense
-`numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
-They implement the [`GraphDescriptor`][polygraph.utils.graph_descriptors.GraphDescriptor] interface.
-
-
-Descriptors may, for example, be implemented as follows:
-
-```python
-from typing import Iterable
-import networkx as nx
-import numpy as np
-
-def my_descriptor(graphs: Iterable[nx.Graph]) -> np.ndarray:
-    hists = [nx.degree_histogram(graph) for graph in graphs]
-    hists = [
-        np.concatenate([hist, np.zeros(128 - len(hist))], axis=0)
-        for hist in hists
-    ]
-    hists = np.stack(hists, axis=0)
-    return hists / hists.sum(axis=1, keepdims=True) # shape: (n_graphs, n_features)
-```
-
-Available descriptors:
-    - [`SparseDegreeHistogram`][polygraph.utils.graph_descriptors.SparseDegreeHistogram]: Sparse degree distribution
-    - [`DegreeHistogram`][polygraph.utils.graph_descriptors.DegreeHistogram]: Dense degree distribution
-    - [`ClusteringHistogram`][polygraph.utils.graph_descriptors.ClusteringHistogram]: Distribution of clustering coefficients
-    - [`OrbitCounts`][polygraph.utils.graph_descriptors.OrbitCounts]: Graph orbit statistics
-    - [`EigenvalueHistogram`][polygraph.utils.graph_descriptors.EigenvalueHistogram]: Eigenvalue histogram of normalized Laplacian
-    - [`RandomGIN`][polygraph.utils.graph_descriptors.RandomGIN]: Embeddings of random Graph Isomorphism Network
-    - [`WeisfeilerLehmanDescriptor`][polygraph.utils.graph_descriptors.WeisfeilerLehmanDescriptor]: Weisfeiler-Lehman subtree features
-    - [`NormalizedDescriptor`][polygraph.utils.graph_descriptors.NormalizedDescriptor]: Standardized descriptor wrapper
-"""
-
 import copy
 import warnings
 from collections import Counter
 from hashlib import blake2b
 from typing import (
-    Protocol,
     Callable,
     Iterable,
     List,
@@ -47,6 +10,7 @@ from typing import (
     Tuple,
     Union,
     Literal,
+    Generic,
 )
 
 import networkx as nx
@@ -58,7 +22,9 @@ from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
-from polygraph.utils.gin import GIN
+from polygraph import GraphType
+from polygraph.utils.descriptors.interface import GraphDescriptor
+from polygraph.utils.descriptors.gin import GIN
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
 
 
@@ -100,27 +66,7 @@ def sparse_histograms_to_array(
     return csr_array((data, index, ptr), (len(sparse_histograms), num_bins))
 
 
-class GraphDescriptor(Protocol):
-    """Interface for graph descriptors.
-
-    A graph descriptor is a callable that takes an iterable of networkx graphs and returns a numpy array or a sparse matrix.
-    """
-
-    def __call__(
-        self, graphs: Iterable[nx.Graph]
-    ) -> Union[np.ndarray, csr_array]:
-        """Compute features of graphs.
-
-        Args:
-            graphs: Iterable of networkx graphs
-
-        Returns:
-            Features of graphs. Dense numpy array or sparse matrix of shape `(n_graphs, n_features)`.
-        """
-        ...
-
-
-class DegreeHistogram(GraphDescriptor):
+class DegreeHistogram(GraphDescriptor[nx.Graph]):
     """Computes normalized degree distributions of graphs.
 
     For each graph, computes a histogram of node degrees and normalizes it to sum to 1.
@@ -145,7 +91,7 @@ class DegreeHistogram(GraphDescriptor):
         return hists / hists.sum(axis=1, keepdims=True)
 
 
-class SparseDegreeHistogram(GraphDescriptor):
+class SparseDegreeHistogram(GraphDescriptor[nx.Graph]):
     """Memory-efficient version of degree distribution computation.
 
     Similar to DegreeHistogram but returns a sparse matrix, making it suitable for
@@ -168,7 +114,7 @@ class SparseDegreeHistogram(GraphDescriptor):
         return result
 
 
-class ClusteringHistogram(GraphDescriptor):
+class ClusteringHistogram(GraphDescriptor[nx.Graph]):
     """Computes histograms of local clustering coefficients.
 
     For each graph, computes the distribution of local clustering coefficients
@@ -218,7 +164,7 @@ class ClusteringHistogram(GraphDescriptor):
             return hists / hists.sum(axis=1, keepdims=True)
 
 
-class OrbitCounts(GraphDescriptor):
+class OrbitCounts(GraphDescriptor[nx.Graph]):
     """Computes graph orbit statistics .
 
     Warning:
@@ -259,7 +205,7 @@ class OrbitCounts(GraphDescriptor):
         return np.stack(counts, axis=0)
 
 
-class EigenvalueHistogram(GraphDescriptor):
+class EigenvalueHistogram(GraphDescriptor[nx.Graph]):
     """Computes eigenvalue histogram of normalized Laplacian.
 
     For each graph, computes the eigenvalue spectrum of its normalized Laplacian
@@ -306,7 +252,7 @@ class EigenvalueHistogram(GraphDescriptor):
             return np.stack(histograms, axis=0)
 
 
-class RandomGIN(GraphDescriptor):
+class RandomGIN(GraphDescriptor[nx.Graph]):
     """Random Graph Isomorphism Network for graph embeddings.
 
     Initializes a randomly weighted Graph Isomorphism Network (GIN) and uses it
@@ -411,7 +357,7 @@ class RandomGIN(GraphDescriptor):
         return graph_embeds.cpu().detach().numpy()
 
 
-class NormalizedDescriptor(GraphDescriptor):
+class NormalizedDescriptor(GraphDescriptor[GraphType], Generic[GraphType]):
     """Standardizes graph descriptors using reference graph statistics.
 
     Wraps a graph descriptor to standardize its output features (zero mean, unit variance)
@@ -427,21 +373,21 @@ class NormalizedDescriptor(GraphDescriptor):
 
     def __init__(
         self,
-        descriptor_fn: Callable[[Iterable[nx.Graph]], np.ndarray],
-        ref_graphs: Iterable[nx.Graph],
+        descriptor_fn: Callable[[Iterable[GraphType]], np.ndarray],
+        ref_graphs: Iterable[GraphType],
     ):
         self._descriptor_fn = descriptor_fn
         self._scaler = StandardScaler()
         self._scaler.fit(self._descriptor_fn(ref_graphs))
 
-    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
+    def __call__(self, graphs: Iterable[GraphType]) -> np.ndarray:
         result = self._descriptor_fn(graphs)
         result = self._scaler.transform(result)
         assert isinstance(result, np.ndarray)
         return result
 
 
-class WeisfeilerLehmanDescriptor(GraphDescriptor):
+class WeisfeilerLehmanDescriptor(GraphDescriptor[nx.Graph]):
     """Weisfeiler-Lehman subtree features for graphs.
 
     Computes graph features by iteratively hashing node neighborhoods using the

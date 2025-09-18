@@ -138,7 +138,7 @@ class _GraphSet:
         return hash_set
 
 
-class VUN(GenerationMetric):
+class VUN(GenerationMetric[nx.Graph]):
     """Computes Valid-Unique-Novel metrics for generated graphs.
 
     Measures the fraction of generated graphs that are valid (optional), unique

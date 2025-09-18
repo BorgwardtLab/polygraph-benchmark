@@ -1,10 +1,10 @@
 from collections import namedtuple
-from typing import Callable, Collection
+from typing import Callable, Collection, Generic
 
-import networkx as nx
 import numpy as np
 import scipy
 
+from polygraph import GraphType
 from polygraph.metrics.base.interface import GenerationMetric
 
 
@@ -75,8 +75,8 @@ def compute_wasserstein_distance(
 
 
 def fit_gaussian(
-    graphs: Collection[nx.Graph],
-    descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
+    graphs: Collection[GraphType],
+    descriptor_fn: Callable[[Collection[GraphType]], np.ndarray],
 ):
     """Fits a multivariate Gaussian to graph descriptors.
 
@@ -93,7 +93,7 @@ def fit_gaussian(
     return GaussianParameters(mean=mean, covariance=cov)
 
 
-class FittedFrechetDistance(GenerationMetric):
+class FittedFrechetDistance(GenerationMetric[GraphType], Generic[GraphType]):
     """Frechet distance using pre-computed Gaussian parameters.
 
     This class accepts pre-computed Gaussian parameters rather than fitting them,
@@ -108,13 +108,13 @@ class FittedFrechetDistance(GenerationMetric):
     def __init__(
         self,
         fitted_gaussian: GaussianParameters,
-        descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
+        descriptor_fn: Callable[[Collection[GraphType]], np.ndarray],
     ):
         self._reference_gaussian = fitted_gaussian
         self._descriptor_fn = descriptor_fn
         self._dim = None
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
+    def compute(self, generated_graphs: Collection[GraphType]) -> float:
         """Computes Frechet distance between reference and generated graphs.
 
         Args:
@@ -132,7 +132,7 @@ class FittedFrechetDistance(GenerationMetric):
         )
 
 
-class FrechetDistance(GenerationMetric):
+class FrechetDistance(GenerationMetric[GraphType], Generic[GraphType]):
     """Computes Frechet distance between reference and generated graphs.
 
     The Frechet distance is computed by fitting Gaussian distributions to graph
@@ -146,8 +146,8 @@ class FrechetDistance(GenerationMetric):
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        descriptor_fn: Callable[[Collection[nx.Graph]], np.ndarray],
+        reference_graphs: Collection[GraphType],
+        descriptor_fn: Callable[[Collection[GraphType]], np.ndarray],
     ):
         reference_gaussian = fit_gaussian(
             reference_graphs,
@@ -158,7 +158,7 @@ class FrechetDistance(GenerationMetric):
             descriptor_fn=descriptor_fn,
         )
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
+    def compute(self, generated_graphs: Collection[GraphType]) -> float:
         """Computes Frechet distance between reference and generated graphs.
 
         Args:

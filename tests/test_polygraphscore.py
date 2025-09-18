@@ -1,7 +1,8 @@
 import pytest
 
+from sklearn.linear_model import LogisticRegression
 import networkx as nx
-from polygraph.utils.graph_descriptors import (
+from polygraph.utils.descriptors import (
     SparseDegreeHistogram,
     DegreeHistogram,
     ClusteringHistogram,
@@ -41,6 +42,11 @@ def sparse_graphs():
 def test_classifier_metric(
     descriptor, classifier, variant, dense_graphs, sparse_graphs
 ):
+    if classifier == "tabpfn":
+        classifier = None
+    else:
+        classifier = LogisticRegression()
+
     clf_metric = ClassifierMetric(dense_graphs, descriptor, variant, classifier)
     train, test = clf_metric.compute(sparse_graphs)
 
@@ -60,6 +66,12 @@ def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
     }
+
+    if classifier == "tabpfn":
+        classifier = None
+    else:
+        classifier = LogisticRegression()
+
     polygraphscore = PolyGraphScore(
         dense_graphs, descriptors, variant, classifier
     )
@@ -94,6 +106,11 @@ def test_polygraphscore_interval(
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
     }
+    if classifier == "tabpfn":
+        classifier = None
+    else:
+        classifier = LogisticRegression()
+
     polygraphscore = PolyGraphScoreInterval(
         dense_graphs,
         descriptors,
@@ -118,19 +135,19 @@ def test_pgs5(dense_graphs, sparse_graphs):
 
     individual_metrics = {
         "orbit": ClassifierOrbitMetric(
-            dense_graphs, variant="jsd", classifier="tabpfn"
+            dense_graphs, variant="jsd", classifier=None
         ),
         "clustering": ClassifierClusteringMetric(
-            dense_graphs, variant="jsd", classifier="tabpfn"
+            dense_graphs, variant="jsd", classifier=None
         ),
         "degree": ClassifierDegreeMetric(
-            dense_graphs, variant="jsd", classifier="tabpfn"
+            dense_graphs, variant="jsd", classifier=None
         ),
         "spectral": ClassifierSpectralMetric(
-            dense_graphs, variant="jsd", classifier="tabpfn"
+            dense_graphs, variant="jsd", classifier=None
         ),
         "gin": GraphNeuralNetworkClassifierMetric(
-            dense_graphs, variant="jsd", classifier="tabpfn"
+            dense_graphs, variant="jsd", classifier=None
         ),
     }
     individual_results = {

@@ -1,8 +1,8 @@
-from typing import Collection, Literal
+from typing import Collection, Literal, Generic
 
-import networkx as nx
 import numpy as np
 
+from polygraph import GraphType
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
 from polygraph.utils.mmd_utils import (
     full_gram_from_blocks,
@@ -13,13 +13,13 @@ from polygraph.utils.mmd_utils import (
 __all__ = ["BootStrapMMDTest", "BootStrapMaxMMDTest"]
 
 
-class _BootStrapTestBase:
+class _BootStrapTestBase(Generic[GraphType]):
     _variant: Literal["biased", "umve", "ustat"]
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        reference_graphs: Collection[GraphType],
+        kernel: DescriptorKernel[GraphType],
         variant: Literal["biased", "umve", "ustat"] = "ustat",
     ):
         self._kernel = kernel
@@ -64,7 +64,7 @@ class _BootStrapTestBase:
         return mmd_samples
 
     def _get_realized_and_samples(
-        self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000
+        self, generated_graphs: Collection[GraphType], num_samples: int = 1000
     ):
         descriptions = self._kernel.featurize(generated_graphs)
 
@@ -90,10 +90,10 @@ class _BootStrapTestBase:
         return realized_mmd, mmd_samples
 
 
-class BootStrapMMDTest(_BootStrapTestBase):
+class BootStrapMMDTest(_BootStrapTestBase[GraphType], Generic[GraphType]):
     def compute(
         self,
-        generated_graphs: Collection[nx.Graph],
+        generated_graphs: Collection[GraphType],
         num_samples: int = 1000,
     ):
         if self._kernel.num_kernels != 1:
@@ -107,9 +107,9 @@ class BootStrapMMDTest(_BootStrapTestBase):
         return np.sum(mmd_samples >= realized_mmd, axis=0) / len(mmd_samples)
 
 
-class BootStrapMaxMMDTest(_BootStrapTestBase):
+class BootStrapMaxMMDTest(_BootStrapTestBase[GraphType], Generic[GraphType]):
     def compute(
-        self, generated_graphs: Collection[nx.Graph], num_samples: int = 1000
+        self, generated_graphs: Collection[GraphType], num_samples: int = 1000
     ):
         if self._kernel.num_kernels == 1:
             raise ValueError(

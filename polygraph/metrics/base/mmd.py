@@ -14,7 +14,7 @@ MMD metrics are initialized with a kernel function (see [`DescriptorKernel`][pol
 Example:
     ```python
     from polygraph.metrics.base import DescriptorMMD2, MaxDescriptorMMD2, DescriptorMMD2Interval
-    from polygraph.utils.graph_descriptors import SparseDegreeHistogram
+    from polygraph.utils.descriptors import SparseDegreeHistogram
     from polygraph.utils.kernels import AdaptiveRBFKernel
     import networkx as nx
     import numpy as np
@@ -38,11 +38,11 @@ Example:
     ```
 """
 
-from typing import Collection, Literal, Union, Optional
+from typing import Collection, Literal, Union, Optional, Generic
 
-import networkx as nx
 import numpy as np
 
+from polygraph import GraphType
 from polygraph.utils.kernels import DescriptorKernel, GramBlocks
 from polygraph.utils.mmd_utils import mmd_from_gram
 from polygraph.metrics.base.interface import GenerationMetric
@@ -56,7 +56,7 @@ __all__ = [
 ]
 
 
-class DescriptorMMD2(GenerationMetric):
+class DescriptorMMD2(GenerationMetric[GraphType], Generic[GraphType]):
     """Computes squared MMD between reference and generated graphs using a kernel.
 
     Args:
@@ -69,8 +69,8 @@ class DescriptorMMD2(GenerationMetric):
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        reference_graphs: Collection[GraphType],
+        kernel: DescriptorKernel[GraphType],
         variant: Literal["biased", "umve", "ustat"] = "biased",
     ):
         self._kernel = kernel
@@ -78,7 +78,7 @@ class DescriptorMMD2(GenerationMetric):
         self._reference_descriptions = self._kernel.featurize(reference_graphs)
 
     def compute(
-        self, generated_graphs: Collection[nx.Graph]
+        self, generated_graphs: Collection[GraphType]
     ) -> Union[float, np.ndarray]:
         """Computes MMD² between reference and generated graphs.
 
@@ -97,7 +97,7 @@ class DescriptorMMD2(GenerationMetric):
         )
 
 
-class MaxDescriptorMMD2(DescriptorMMD2):
+class MaxDescriptorMMD2(DescriptorMMD2[GraphType], Generic[GraphType]):
     """Computes maximum MMD² across multiple kernel parameters.
 
     Similar to DescriptorMMD2 but takes the maximum across different kernel parameters
@@ -114,8 +114,8 @@ class MaxDescriptorMMD2(DescriptorMMD2):
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        reference_graphs: Collection[GraphType],
+        kernel: DescriptorKernel[GraphType],
         variant: Literal["biased", "umve", "ustat"] = "biased",
     ):
         super().__init__(
@@ -126,7 +126,7 @@ class MaxDescriptorMMD2(DescriptorMMD2):
                 "Must provide several kernels, i.e. a kernel with multiple parameters"
             )
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> float:
+    def compute(self, generated_graphs: Collection[GraphType]) -> float:
         """Computes maximum MMD² between reference and generated graphs.
 
         Args:
@@ -141,15 +141,15 @@ class MaxDescriptorMMD2(DescriptorMMD2):
         return multi_kernel_result[idx]
 
 
-class _MMD2SamplingMixin:
+class _MMD2SamplingMixin(Generic[GraphType]):
     """Base class for computing MMD² confidence intervals through subsampling."""
 
     _variant: Literal["biased", "umve", "ustat"]
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        reference_graphs: Collection[GraphType],
+        kernel: DescriptorKernel[GraphType],
         subsample_size: int,
         num_samples: int = 500,
         variant: Literal["biased", "umve", "ustat"] = "biased",
@@ -162,7 +162,7 @@ class _MMD2SamplingMixin:
 
     def _generate_mmd_samples(
         self,
-        generated_graphs: Collection[nx.Graph],
+        generated_graphs: Collection[GraphType],
     ) -> np.ndarray:
         descriptions = self._kernel.featurize(
             generated_graphs,
@@ -200,7 +200,11 @@ class _MMD2SamplingMixin:
         return mmd_samples
 
 
-class DescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
+class DescriptorMMD2Interval(
+    GenerationMetric[GraphType],
+    _MMD2SamplingMixin[GraphType],
+    Generic[GraphType],
+):
     """Computes MMD² confidence intervals using subsampling.
 
     Estimates uncertainty in MMD² by repeatedly computing it on random subsamples
@@ -217,8 +221,8 @@ class DescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        reference_graphs: Collection[GraphType],
+        kernel: DescriptorKernel[GraphType],
         subsample_size: int,
         num_samples: int = 500,
         coverage: Optional[float] = 0.95,
@@ -234,7 +238,9 @@ class DescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
         )
         self._coverage = coverage
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> MetricInterval:
+    def compute(
+        self, generated_graphs: Collection[GraphType]
+    ) -> MetricInterval:
         """Computes MMD² confidence intervals through subsampling.
 
         Args:
@@ -250,7 +256,11 @@ class DescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
         return MetricInterval.from_samples(mmd_samples, coverage=self._coverage)
 
 
-class MaxDescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
+class MaxDescriptorMMD2Interval(
+    GenerationMetric[GraphType],
+    _MMD2SamplingMixin[GraphType],
+    Generic[GraphType],
+):
     """Computes confidence intervals for maximum MMD² across kernel parameters.
 
     Similar to DescriptorMMD2Interval but takes the maximum across different kernel
@@ -271,8 +281,8 @@ class MaxDescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
 
     def __init__(
         self,
-        reference_graphs: Collection[nx.Graph],
-        kernel: DescriptorKernel,
+        reference_graphs: Collection[GraphType],
+        kernel: DescriptorKernel[GraphType],
         subsample_size: int,
         num_samples: int = 500,
         coverage: Optional[float] = 0.95,
@@ -292,7 +302,9 @@ class MaxDescriptorMMD2Interval(GenerationMetric, _MMD2SamplingMixin):
                 "Must provide several kernels, i.e. either a kernel with multiple parameters"
             )
 
-    def compute(self, generated_graphs: Collection[nx.Graph]) -> MetricInterval:
+    def compute(
+        self, generated_graphs: Collection[GraphType]
+    ) -> MetricInterval:
         """Computes confidence intervals for maximum MMD² through subsampling.
 
         Args:

@@ -56,7 +56,7 @@ We implement a large number of different descriptors and kernels in `polygraph`.
 An MMD metric operating on orbit counts with a linear kernel may thus be constructed in the following fashion:
 
 ```python
-from polygraph.utils.graph_descriptors import OrbitCounts
+from polygraph.utils.descriptors import OrbitCounts
 from polygraph.utils.kernels import LinearKernel
 from polygraph.metrics.base import DescriptorMMD2
 from polygraph.datasets import PlanarGraphDataset
@@ -97,8 +97,9 @@ As with MMD metrics, you may also construct custom PolyGraphScore variants using
 E.g., you may construct the following metric
 
 ```python
-from polygraph.utils.graph_descriptors import OrbitCounts, SparseDegreeHistogram
+from polygraph.utils.descriptors import OrbitCounts, SparseDegreeHistogram
 from polygraph.metrics.base import PolyGraphScore
+from sklearn.linear_model import LogisticRegression
 
 metric = PolyGraphScore(
     reference_graphs=PlanarGraphDataset("test").to_nx(),
@@ -106,7 +107,7 @@ metric = PolyGraphScore(
         "orbit": OrbitCounts(),
         "degree": SparseDegreeHistogram(),
     },
-    classifier="logistic",
+    classifier=LogisticRegression(),
     variant="informedness",
 )
 metric.compute(SBMGraphDataset("test").to_nx())         # {'polygraphscore': 0.9, 'polygraphscore_descriptor': 'orbit', 'subscores': {'orbit': 0.9, 'degree': 0.9}}
