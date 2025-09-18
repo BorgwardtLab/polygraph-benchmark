@@ -14,7 +14,7 @@ from polygraph.descriptors import GraphDescriptor
 
 
 class TopoChemicalDescriptor(GraphDescriptor[Chem.Mol]):
-    def __call__(self, mols: Iterable[Chem.Mol]):
+    def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         all_fps = []
         for mol in mols:
             fp = [
@@ -55,7 +55,7 @@ class FingerprintDescriptor(GraphDescriptor[Chem.Mol]):
         else:
             raise ValueError(f"Invalid algorithm: {algorithm}")
 
-    def __call__(self, mols: Iterable[Chem.Mol]):
+    def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         all_fps = []
 
         for mol in mols:
@@ -71,7 +71,7 @@ class LipinskiDescriptor(GraphDescriptor[Chem.Mol]):
     Based on: https://www.rdkit.org/docs/source/rdkit.Chem.Lipinski.html
     """
 
-    def __call__(self, mols: Iterable[Chem.Mol]):
+    def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         all_descriptors = []
         for mol in mols:
             descriptors = [
@@ -117,11 +117,11 @@ class ChemNetDescriptor(GraphDescriptor[Chem.Mol]):
             here() / ".local/molecule_data/chemnet_model.pt"
         )
         self._proj = SparseRandomProjection(
-            n_components=self._dim,
-            random_state=42,  # pyright: ignore
+            n_components=self._dim,  # pyright: ignore
+            random_state=42,
         )
 
-    def __call__(self, mols: Iterable[Chem.Mol]):
+    def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         smiles = [Chem.MolToSmiles(mol, canonical=True) for mol in mols]
         return self._proj.fit_transform(get_predictions(self._model, smiles))
 
@@ -140,13 +140,13 @@ class MolCLRDescriptor(GraphDescriptor[Chem.Mol]):
         )
         self._model.eval()
         self._proj = SparseRandomProjection(
-            n_components=self._dim,
-            random_state=42,  # pyright: ignore
+            n_components=self._dim,  # pyright: ignore
+            random_state=42,
         )
         self._batch_size = batch_size
 
     @torch.inference_mode()
-    def __call__(self, mols: Iterable[Chem.Mol]):
+    def __call__(self, mols: Iterable[Chem.Mol]) -> np.ndarray:
         graphs = [mol_to_graph(mol) for mol in mols]
         embeddings = []
         for i in range(0, len(graphs), self._batch_size):

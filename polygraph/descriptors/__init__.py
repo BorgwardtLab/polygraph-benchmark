@@ -34,7 +34,7 @@ Available descriptors:
     - [`NormalizedDescriptor`][polygraph.descriptors.NormalizedDescriptor]: Standardized descriptor wrapper
 """
 
-from polygraph.descriptors.base import GraphDescriptor
+from polygraph.descriptors.interface import GraphDescriptor
 from polygraph.descriptors.generic_descriptors import (
     SparseDegreeHistogram,
     DegreeHistogram,
@@ -44,13 +44,6 @@ from polygraph.descriptors.generic_descriptors import (
     RandomGIN,
     WeisfeilerLehmanDescriptor,
     NormalizedDescriptor,
-)
-from polygraph.descriptors.molecule_descriptors import (
-    TopoChemicalDescriptor,
-    FingerprintDescriptor,
-    LipinskiDescriptor,
-    ChemNetDescriptor,
-    MolCLRDescriptor,
 )
 
 __all__ = [
@@ -63,9 +56,4 @@ __all__ = [
     "RandomGIN",
     "WeisfeilerLehmanDescriptor",
     "NormalizedDescriptor",
-    "TopoChemicalDescriptor",
-    "FingerprintDescriptor",
-    "LipinskiDescriptor",
-    "ChemNetDescriptor",
-    "MolCLRDescriptor",
 ]

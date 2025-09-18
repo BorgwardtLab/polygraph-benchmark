@@ -10,6 +10,7 @@ from typing import (
     Tuple,
     Union,
     Literal,
+    Generic,
 )
 
 import networkx as nx
@@ -21,7 +22,8 @@ from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
-from polygraph.descriptors.base import GraphDescriptor
+from polygraph import GraphType
+from polygraph.descriptors.interface import GraphDescriptor
 from polygraph.utils.gin import GIN
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
 
@@ -355,7 +357,7 @@ class RandomGIN(GraphDescriptor[nx.Graph]):
         return graph_embeds.cpu().detach().numpy()
 
 
-class NormalizedDescriptor(GraphDescriptor[nx.Graph]):
+class NormalizedDescriptor(GraphDescriptor[GraphType], Generic[GraphType]):
     """Standardizes graph descriptors using reference graph statistics.
 
     Wraps a graph descriptor to standardize its output features (zero mean, unit variance)
@@ -371,14 +373,14 @@ class NormalizedDescriptor(GraphDescriptor[nx.Graph]):
 
     def __init__(
         self,
-        descriptor_fn: Callable[[Iterable[nx.Graph]], np.ndarray],
-        ref_graphs: Iterable[nx.Graph],
+        descriptor_fn: Callable[[Iterable[GraphType]], np.ndarray],
+        ref_graphs: Iterable[GraphType],
     ):
         self._descriptor_fn = descriptor_fn
         self._scaler = StandardScaler()
         self._scaler.fit(self._descriptor_fn(ref_graphs))
 
-    def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
+    def __call__(self, graphs: Iterable[GraphType]) -> np.ndarray:
         result = self._descriptor_fn(graphs)
         result = self._scaler.transform(result)
         assert isinstance(result, np.ndarray)
