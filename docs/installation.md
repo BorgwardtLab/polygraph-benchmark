@@ -39,6 +39,26 @@ GPL licensed. If you don't want to include it in your project, you can install
 provide BSD-licensed implementations of the SBM graph validity checking
 functions in `is_valid_alt`.
 
+## Installation with Pixi (Conda + PyPI)
+
+Pixi can manage conda and PyPI packages together and ensures `graph_tool` is installed via conda-forge first.
+
+```bash
+# One-time: install pixi (see docs at https://pixi.sh)
+
+# From repo root with pixi.toml present
+pixi install
+
+# Enter the environment
+pixi shell
+
+# Run tests or docs
+pixi run test
+pixi run docs
+```
+
+The provided `pixi.toml` pins Python 3.10, installs `graph-tool` from `conda-forge`, and installs this package in editable mode with `[dev]` extras.
+
 <details>
 <summary><strong>🛠️ Development Installation</strong></summary>
 
@@ -49,7 +69,7 @@ install the dependencies there.
 
 ```bash
 # Clone the repository
-git clone https://github.com/polygraph-eval/polygraph.git
+git clone https://github.com/polygraph-eval/polygraph-benchmark.git
 cd polygraph
 
 # Create a new mamba environment
@@ -78,3 +98,34 @@ To run the tests sequentially, you can use:
 pytest -svx --skip-slow ./tests/
 ```
 </details>
+
+## Installation with uv
+
+`uv` is a fast pip/venv manager. Since `graph_tool` is not available on PyPI for all platforms, install it with conda first if you need SBM validation via graph-tool; otherwise skip it.
+
+Option A: With conda for `graph_tool` first, then use `uv` for Python deps:
+
+```bash
+mamba create -n polygraph python=3.10 graph-tool -c conda-forge
+mamba activate polygraph
+pip install uv
+uv pip install -e .[dev]
+```
+
+Option B: Pure `uv` (no graph_tool support):
+
+```bash
+pip install uv
+uv venv
+uv pip install -e .[dev]
+```
+
+## Installation with pip (no graph_tool)
+
+If you don't need `graph_tool`, a standard virtualenv works:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+```

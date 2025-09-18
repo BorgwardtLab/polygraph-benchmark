@@ -1,0 +1,15 @@
+[project]
+name = "polygraph-benchmark"
+channels = ["conda-forge"]
+platforms = ["osx-64", "osx-arm64", "linux-64"]
+
+[dependencies]
+python = "3.10.*"
+graph-tool = "*"
+
+[pypi-dependencies]
+polygraph = { path = ".", editable = true, extras = ["dev"] }
+
+[tasks]
+test = "pytest -n auto -sv --skip-slow ./tests"
+docs = "mkdocs build"

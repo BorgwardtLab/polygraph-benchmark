@@ -1,0 +1,10 @@
+name: polygraph
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - graph-tool
+  - pip:
+      - -e .[dev]
+
