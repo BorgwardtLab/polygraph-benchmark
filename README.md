@@ -11,9 +11,11 @@ Here are a set of datasets and metrics this library provides:
   - Real-world: `QM9`, `MOSES`, `Guacamol`, `DobsonDoigGraphDataset`, `ModelNet10GraphDataset`
   - Also: `EgoGraphDataset`, `PointCloudGraphDataset`
 - **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
-  - MMD2: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`, with optional `Interval` classes for uncertainty estimation
-  - PolyGraphScore: `PGS5` and `PGS5Interval`.
+  - MMD<sup>2</sup>: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`
+  - Kernel hyperparameter optimization with `MaxDescriptorMMD2`.
+  - PolyGraphScore: `PGS5`.
   - Validation/Uniqueness/Novelty: `VUN`.
+  - Uncertainty quantification for benchmarking (`GaussianTVMMD2BenchmarkInterval`, `RBFMMD2Benchmark`, `PGS5Interval`)
 - **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`.
 
 ## Installation
@@ -97,6 +99,6 @@ for metric in metrics:
 		coverage=0.95       # Optional, coverage of the quantiles (here, 5th and 95th percentile)
 	)
 
-metrics_results[0] # "mean=..., std=..., low=..., high=..., coverage=..."
+metrics_results[0] # "MetricInterval(mean=..., std=..., low=..., high=..., coverage=...)"
 ```
 
