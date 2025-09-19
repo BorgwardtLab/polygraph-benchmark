@@ -4,7 +4,7 @@ This module implements various kernel functions that measure similarities betwee
 Each kernel is initialized with a descriptor function that converts graphs into vector
 representations. The kernel then computes similarities between these feature vectors.
 
-Descriptor functions accept iterables of networkx graphs and return descriptions as dense or sparse arrays.
+Descriptor functions accept iterables of graphs (networkx graphs or rdkit molecules) and return descriptions as dense or sparse arrays.
 Specifically, they should either return a dense `numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
 
 Available kernels:
@@ -102,7 +102,7 @@ class DescriptorKernel(ABC, Generic[GraphType]):
         """Converts graphs into descriptor representations.
 
         Args:
-            graphs: Collection of networkx graphs to featurize
+            graphs: Collection of networkx graphs or rdkit molecules to featurize
 
         Returns:
             Descriptor representation of the graphs

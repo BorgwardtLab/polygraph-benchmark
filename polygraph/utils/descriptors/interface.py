@@ -24,7 +24,7 @@ class GraphDescriptor(Protocol, Generic[GraphType]):
         """Compute features of graphs.
 
         Args:
-            graphs: Iterable of networkx graphs
+            graphs: Iterable of networkx graphs or rdkit molecules
 
         Returns:
             Features of graphs. Dense numpy array or sparse matrix of shape `(n_graphs, n_features)`.
