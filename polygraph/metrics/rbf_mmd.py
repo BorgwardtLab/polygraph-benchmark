@@ -74,7 +74,11 @@ __all__ = [
 
 
 class RBFMMD2Benchmark(MetricCollection[nx.Graph]):
-    """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths."""
+    """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths.
+
+    Args:
+        reference_graphs: Collection of reference networkx graphs.
+    """
 
     def __init__(self, reference_graphs: Collection[nx.Graph]):
         super().__init__(
@@ -89,7 +93,14 @@ class RBFMMD2Benchmark(MetricCollection[nx.Graph]):
 
 
 class RBFMMD2BenchmarkInterval(MetricCollection[nx.Graph]):
-    """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths and uncertainty quantification."""
+    """Collection of MMD2 metrics using RBF kernels with dynamic bandwidths and uncertainty quantification.
+
+    Args:
+        reference_graphs: Collection of reference networkx graphs.
+        subsample_size: Number of graphs used in each individual MMD2 sample. Should be consistent with the sample size in point estimates.
+        num_samples: Number of MMD2 samples used to compute the uncertainty interval.
+        coverage: Coverage of the uncertainty interval.
+    """
 
     def __init__(
         self,

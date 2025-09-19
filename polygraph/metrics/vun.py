@@ -171,7 +171,7 @@ class VUN(GenerationMetric[nx.Graph]):
         """Computes VUN metrics for a collection of generated graphs.
 
         Args:
-            generated_graphs: Collection of graphs to evaluate
+            generated_graphs: Collection of networkx graphs to evaluate
 
         Returns:
             Dictionary containing metrics. If `confidence_level` was provided, it contains

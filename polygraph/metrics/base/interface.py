@@ -30,7 +30,7 @@ from typing import Protocol, Collection, Any, Dict, Generic
 
 
 class GenerationMetric(Protocol, Generic[GraphType]):
-    """Interface for metrics that provide a single estimate."""
+    """Interface for all graph generation metrics."""
 
     def compute(self, generated_graphs: Collection[GraphType]) -> Any:
         """Compute the metric on the generated graphs.
@@ -42,7 +42,7 @@ class GenerationMetric(Protocol, Generic[GraphType]):
 
 
 class MetricCollection(GenerationMetric[GraphType], Generic[GraphType]):
-    """Collection of metrics that provide a single estimate."""
+    """Collection of metrics that are evaluated jointly."""
 
     def __init__(self, metrics: Dict[str, GenerationMetric[GraphType]]):
         self._metrics = metrics
