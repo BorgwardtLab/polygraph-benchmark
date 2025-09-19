@@ -83,13 +83,13 @@ It aims to make metrics comparable across graph descriptors and produces interpr
 The PolyGraphScore is computed for several graph descriptors and produces a summary metric for these descriptors.
 This summary metric is an estimated lower bound on a probability metric that is intrinsic to the graph distributions and independent of the descriptors
 
-We provide [`PGS5`][polygraph.metrics.PGS5], a standardized version of the PolyGraphScore that combines 5 different graph descriptors:
+We provide [`StandardPGS`][polygraph.metrics.StandardPGS], a standardized version of the PolyGraphScore that combines 5 different graph descriptors:
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
-from polygraph.metrics import PGS5
+from polygraph.metrics import StandardPGS
 
-metric = PGS5(reference_graphs=PlanarGraphDataset("test").to_nx())
+metric = StandardPGS(reference_graphs=PlanarGraphDataset("test").to_nx())
 metric.compute(SBMGraphDataset("test").to_nx()) # {'polygraphscore': 0.999301797449604, 'polygraphscore_descriptor': 'degree', 'subscores': {'orbit': 0.9986018004713674, 'clustering': 0.9933180272388359, 'degree': 0.999301797449604, 'spectral': 0.9690467491487502, 'gin': 0.9984711185804029}}
 ```
 

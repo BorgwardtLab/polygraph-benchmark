@@ -388,6 +388,12 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
             Tuple of train and test metric
         """
         descriptions = self._descriptor(generated_graphs)
+
+        if descriptions.shape[0] != self._reference_descriptions.shape[0]:
+            raise ValueError(
+                f"Number of generated graphs must be equal to the number of reference graphs. Got {descriptions.shape[0]} and {self._reference_descriptions.shape[0]}."
+            )
+
         return _descriptions_to_classifier_metric(
             self._reference_descriptions,
             descriptions,

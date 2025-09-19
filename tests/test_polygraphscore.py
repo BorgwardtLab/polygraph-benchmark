@@ -13,10 +13,11 @@ from polygraph.metrics.base import (
     ClassifierMetric,
 )
 from polygraph.metrics.base.metric_interval import MetricInterval
-from polygraph.metrics.polygraphscore import (
-    PGS5,
-    PGS5Interval,
-    ClassifierOrbitMetric,
+from polygraph.metrics.standard_pgs import (
+    StandardPGS,
+    StandardPGSInterval,
+    ClassifierOrbit4Metric,
+    ClassifierOrbit5Metric,
     ClassifierClusteringMetric,
     ClassifierDegreeMetric,
     ClassifierSpectralMetric,
@@ -129,12 +130,15 @@ def test_polygraphscore_interval(
     assert isinstance(result["polygraphscore_descriptor"], dict)
 
 
-def test_pgs5(dense_graphs, sparse_graphs):
-    pgs5 = PGS5(dense_graphs)
-    result = pgs5.compute(sparse_graphs)
+def test_standard_pgs(dense_graphs, sparse_graphs):
+    metric = StandardPGS(dense_graphs)
+    result = metric.compute(sparse_graphs)
 
     individual_metrics = {
-        "orbit": ClassifierOrbitMetric(
+        "orbit4": ClassifierOrbit4Metric(
+            dense_graphs, variant="jsd", classifier=None
+        ),
+        "orbit5": ClassifierOrbit5Metric(
             dense_graphs, variant="jsd", classifier=None
         ),
         "clustering": ClassifierClusteringMetric(
@@ -157,10 +161,12 @@ def test_pgs5(dense_graphs, sparse_graphs):
 
     for name, (_, individual_result) in individual_results.items():
         assert isinstance(individual_result, float)
-        assert individual_result == result["subscores"][name]
+        assert individual_result == result["subscores"][name], (
+            f"Individual result {individual_result} for descriptor {name} does not match the overall result {result['subscores'][name]}"
+        )
 
-    pgs5_interval = PGS5Interval(dense_graphs, subsample_size=10, num_samples=4)
-    result = pgs5_interval.compute(sparse_graphs)
+    metric = StandardPGSInterval(dense_graphs, subsample_size=10, num_samples=4)
+    result = metric.compute(sparse_graphs)
     assert isinstance(result, dict)
     assert "polygraphscore" in result
     assert "polygraphscore_descriptor" in result

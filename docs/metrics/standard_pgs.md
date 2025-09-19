@@ -1,6 +1,6 @@
-# 5-Descriptor PolyGraphScore
+# Standard PolyGraphScore
 
-::: polygraph.metrics.polygraphscore
+::: polygraph.metrics.standard_pgs
     options:
         show_root_heading: false
         show_full_path: false
@@ -10,9 +10,9 @@
         members: []
 
 
-## PGS5
+## StandardPGS
 
-::: polygraph.metrics.PGS5
+::: polygraph.metrics.StandardPGS
     options:
         show_root_heading: true
         show_full_path: true
@@ -20,7 +20,7 @@
         heading_level: 3
         members: [compute]
 
-::: polygraph.metrics.PGS5Interval
+::: polygraph.metrics.StandardPGSInterval
     options:
         show_root_heading: true
         show_full_path: true
@@ -31,35 +31,42 @@
 
 ## Individual Classifier Metrics
 
-::: polygraph.metrics.polygraphscore.ClassifierOrbitMetric
+::: polygraph.metrics.standard_pgs.ClassifierOrbit4Metric
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.polygraphscore.ClassifierDegreeMetric
+::: polygraph.metrics.standard_pgs.ClassifierOrbit5Metric
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.polygraphscore.ClassifierClusteringMetric
+::: polygraph.metrics.standard_pgs.ClassifierDegreeMetric
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.polygraphscore.ClassifierSpectralMetric
+::: polygraph.metrics.standard_pgs.ClassifierClusteringMetric
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.polygraphscore.GraphNeuralNetworkClassifierMetric
+::: polygraph.metrics.standard_pgs.ClassifierSpectralMetric
+    options:
+        show_root_heading: true
+        show_full_path: true
+        show_source: false
+        heading_level: 3
+
+::: polygraph.metrics.standard_pgs.GraphNeuralNetworkClassifierMetric
     options:
         show_root_heading: true
         show_full_path: true
