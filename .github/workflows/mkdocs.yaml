@@ -1,11 +1,7 @@
 name: MkDocs Documentation
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   deploy-preview:
