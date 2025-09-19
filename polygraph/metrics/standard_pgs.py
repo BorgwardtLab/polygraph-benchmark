@@ -68,7 +68,7 @@ class StandardPGS(PolyGraphScore[nx.Graph]):
     distance between the generated and true graph distribution.
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
     """
 
     def __init__(self, reference_graphs: Collection[nx.Graph]):
@@ -97,7 +97,7 @@ class StandardPGSInterval(PolyGraphScoreInterval[nx.Graph]):
     """StandardPGS with uncertainty quantification.
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
         subsample_size: Size of each subsample, should be consistent with the number
             of reference and generated graphs passed to [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore]
             for point estimates.
@@ -141,7 +141,7 @@ class ClassifierOrbit4Metric(ClassifierMetric[nx.Graph]):
     Classifier metric based on [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts].
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
         variant: Probability metric to approximate.
         classifier: Binary classifier to fit.
     """
@@ -163,6 +163,11 @@ class ClassifierOrbit4Metric(ClassifierMetric[nx.Graph]):
 class ClassifierOrbit5Metric(ClassifierMetric[nx.Graph]):
     """
     Classifier metric based on [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts].
+
+    Args:
+        reference_graphs: Collection of reference networkx graphs.
+        variant: Probability metric to approximate.
+        classifier: Binary classifier to fit.
     """
 
     def __init__(
@@ -184,7 +189,7 @@ class ClassifierClusteringMetric(ClassifierMetric[nx.Graph]):
     Classifier metric based on [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram].
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
         variant: Probability metric to approximate.
         classifier: Binary classifier to fit.
     """
@@ -208,7 +213,7 @@ class ClassifierDegreeMetric(ClassifierMetric[nx.Graph]):
     Classifier metric based on [`SparseDegreeHistogram`][polygraph.utils.descriptors.SparseDegreeHistogram].
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
         variant: Probability metric to approximate.
         classifier: Binary classifier to fit.
     """
@@ -232,7 +237,7 @@ class ClassifierSpectralMetric(ClassifierMetric[nx.Graph]):
     Classifier metric based on [`EigenvalueHistogram`][polygraph.utils.descriptors.EigenvalueHistogram].
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
         variant: Probability metric to approximate.
         classifier: Binary classifier to fit.
     """
@@ -256,7 +261,7 @@ class GraphNeuralNetworkClassifierMetric(ClassifierMetric[nx.Graph]):
     Classifier metric based on [`RandomGIN`][polygraph.utils.descriptors.RandomGIN].
 
     Args:
-        reference_graphs: Collection of reference graphs.
+        reference_graphs: Collection of reference networkx graphs.
         variant: Probability metric to approximate.
         classifier: Binary classifier to fit.
     """

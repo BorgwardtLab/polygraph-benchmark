@@ -1,3 +1,21 @@
+"""
+Code modified from https://github.com/yuyangw/MolCLR, implementing the MolCLR GNN.
+
+The code was originally authored by Yuyang Wang, Jianren Wang, Zhonglin Cao, Amir Barati Farimani.
+It is originally released under the MIT license.
+
+Citation:
+@article{wang2022molclr,
+  title={Molecular contrastive learning of representations via graph neural networks},
+  author={Wang, Yuyang and Wang, Jianren and Cao, Zhonglin and Barati Farimani, Amir},
+  journal={Nature Machine Intelligence},
+  pages={1--9},
+  year={2022},
+  publisher={Nature Publishing Group},
+  doi={10.1038/s42256-022-00447-x}
+}
+"""
+
 import os
 import urllib.request
 
