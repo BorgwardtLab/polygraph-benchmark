@@ -3,3 +3,9 @@ mkdocs-material
 mkdocstrings
 mkdocstrings-python
 mkdocs-terminal
+sphinx
+pydata-sphinx-theme
+myst-parser
+sphinx-copybutton
+sphinx-design
+sphinx-autodoc-typehints

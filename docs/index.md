@@ -32,3 +32,20 @@ We provide a few basic tutorials:
 - [Basic Usage](tutorials/basic_usage.md) - How to load datasets and compute metrics
 - [Metrics Overview](tutorials/metrics_overview.md) - An overview of which metrics are implemented in `polygraph` (MMD, PGS, VUN, Frechet Distance)
 - [Custom Datasets](tutorials/custom_datasets.md) - How to build custom datasets and share them
+
+```{toctree}
+:maxdepth: 2
+:caption: Contents
+
+installation
+tutorials/basic_usage
+tutorials/metrics_overview
+tutorials/custom_datasets
+datasets/index
+metrics/gaussian_tv_mmd
+metrics/pgs5
+metrics/rbf_mmd
+metrics/vun
+utils/index
+api_reference/index
+```

@@ -2,8 +2,13 @@
 
 This section provides detailed documentation for all public APIs in the polygraph package.
 
-## Main Modules
+```{toctree}
+:maxdepth: 2
 
-- **[Metrics](metrics/index.md)** - MMD metrics and evaluation functions for graph analysis
-- **[Datasets](datasets.md)** - Dataset abstractions and graph storage utilities
-- **[Utils](utils/index.md)** - Utility functions including graph descriptors, kernels, and MMD utilities
+datasets/index
+metrics/mmd
+metrics/frechet
+metrics/polygraphscore
+metrics/interface
+utils/index
+```

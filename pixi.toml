@@ -13,3 +13,5 @@ polygraph = { path = ".", editable = true, extras = ["dev"] }
 [tasks]
 test = "pytest -n auto -sv --skip-slow ./tests"
 docs = "mkdocs build"
+docs-sphinx = "sphinx-build -b html docs docs/_build/html"
+docs-serve = "sphinx-autobuild --watch polygraph --watch docs -b html docs docs/_build/html --open-browser --port 8000"
