@@ -1,6 +1,20 @@
 # PolyGraph
 
-PolyGraph is a Python library for evaluating graph generative models.
+PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics 
+(including PolyGraphScore).
+
+## At a glance
+
+Here are a set of datasets and metrics this library provides:
+- **Datasets**: ready-to-use splits for procedural and real-world graphs
+  - Procedural: `PlanarGraphDataset`, `SBMGraphDataset`, `LobsterGraphDataset`
+  - Real-world: `QM9`, `MOSES`, `Guacamol`, `DobsonDoigGraphDataset`, `ModelNet10GraphDataset`
+  - Also: `EgoGraphDataset`, `PointCloudGraphDataset`
+- **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
+  - MMD2: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`, with optional `Interval` classes for uncertainty estimation
+  - PolyGraphScore: `PGS5` and `PGS5Interval`.
+  - Validation/Uniqueness/Novelty: `VUN`.
+- **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`.
 
 ## Installation
 
@@ -10,16 +24,79 @@ pip install polygraph-benchmark
 
 No manual compilation of ORCA is required. For details on interaction with `graph_tool`, see the more detailed installation instructions in the docs.
 
-## Quickstart
+## Tutorial
+
+### Datasets
+Instantiate a benchmark dataset as follows:
+```python
+from polygraph.datasets import PlanarGraphDataset # can also be SBMGraphDataset, LobsterGraphDataset
+
+reference = PlanarGraphDataset("test")
+
+reference_nx = reference.to_nx()
+
+# Let's also generate some graphs coming from another distribution.
+generated = [nx.erdos_renyi_graph(64, 0.1) for _ in range(40)]
+```
+
+### Metrics
+
+#### Maximum Mean Discrepancy
+To compute existing MMD2 formulations (e.g. based on the TV pseudokernel), one can use the following:
+```python
+from polygraph.metrics import GaussianTVMMD2Benchmark # Can also be RBFMMD2Benchmark
+
+gtv_benchmark = GaussianTVMMD2Benchmark(reference)
+
+print(gtv_benchmark.compute(generated))  # {'orbit': ..., 'clustering': ..., 'degree': ..., 'spectral': ...}
+```
+
+#### PolyGraphScore
+Similarly, you can compute our proposed PolyGraphScore, like so:
 
 ```python
-import networkx as nx
-from polygraph.datasets import PlanarGraphDataset
-from polygraph.metrics import GaussianTVMMD2Benchmark
+from polygraph.metrics import PGS5
 
-reference = PlanarGraphDataset("test").to_nx()
-benchmark = GaussianTVMMD2Benchmark(reference)
-
-generated = [nx.erdos_renyi_graph(64, 0.1) for _ in range(40)]
-print(benchmark.compute(generated))  # {'orbit': ..., 'clustering': ..., 'degree': ..., 'spectral': ...}
+pgs = PGS5(reference)
+print(pgs.compute(generated)) # {'polygraphscore': ..., 'polygraphscore_descriptor': ..., 'subscores': {'orbit': ..., }}
 ```
+
+`polygraphscore_descriptor` provides the best descriptor used to report the final score.
+
+#### Validity, uniqueness and novelty
+VUN values follow a similar interface:
+```python
+from polygraph.metrics import VUN
+
+pgs = VUN(reference, validity_fn=reference.is_valid, confidence_level=0.95) # if applicable, validity functions are defined as a dataset attribute
+print(pgs.compute(generated))  # {'valid': ..., 'valid_unique_novel': ..., 'valid_novel': ..., 'valid_unique': ...}
+```
+
+#### Metric uncertainty quantification
+
+For MMD and PGS, uncertainty quantifiation for the metrics are obtained through subsampling. For VUN, a confidence interval is obtained with a binomial test.
+
+For `VUN`, the results can be obtained by specifying a confidence level when instantiating the metric. 
+
+For the others, the `Interval` suffix references the class that implements subsampling.
+
+```python
+
+from polygraph.metrics import GaussianTVMMD2BenchmarkInterval, RBFMMD2BenchmarkInterval, PGS5Interval
+
+metrics = [
+	GaussianTVMMD2BenchmarkInterval(), 
+	RBFMMD2BenchmarkInterval(), 
+	PGS5Interval()
+]
+
+for metric in metrics:
+	metric_results = metric.compute(
+		subsample_size=100, # Number of subsamples to consider for each estimate
+		num_samples=500,    # Number of estimates to compute
+		coverage=0.95       # Optional, coverage of the quantiles (here, 5th and 95th percentile)
+	)
+
+metrics_results[0] # "mean=..., std=..., low=..., high=..., coverage=..."
+```
+
