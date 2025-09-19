@@ -7,18 +7,17 @@ In practice, these graphs may either be `nx.Graph` or `rdkit.Chem.Mol` objects, 
 Metrics that implement this interface may be evaluated jointly using the [`MetricCollection`][polygraph.metrics.base.MetricCollection] class.
 
 ```python
-from polygraph.metrics import MetricCollection
+from polygraph.metrics import MetricCollection, StandardPGS
 from polygraph.metrics.rbf_mmd import RBFOrbitMMD2
-from polygraph.metrics.polygraphscore import PGS5
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
 
 reference_graphs = PlanarGraphDataset("val").to_nx()
-generated_graphs = SBMGraphDataset("test").to_nx()
+generated_graphs = SBMGraphDataset("val").to_nx()
 
 metrics = MetricCollection(
     metrics={
         "rbf_orbit": RBFOrbitMMD2(reference_graphs=reference_graphs),
-        "pgs5": PGS5(reference_graphs=reference_graphs),
+        "pgs": StandardPGS(reference_graphs=reference_graphs),
     }
 )
 print(metrics.compute(generated_graphs))

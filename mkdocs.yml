@@ -26,7 +26,8 @@ nav:
       - Graph Descriptors: api_reference/utils/graph_descriptors.md
       - Graph Kernels: api_reference/utils/graph_kernels.md
   - Standardized Metrics:
-    - PGS5: metrics/pgs5.md
+    - StandardPGS: metrics/standard_pgs.md
+    - MoleculePGS: metrics/molecule_pgs.md
     - Gaussian TV MMD: metrics/gaussian_tv_mmd.md
     - RBF MMD: metrics/rbf_mmd.md
     - VUN: metrics/vun.md
