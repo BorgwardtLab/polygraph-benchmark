@@ -38,40 +38,42 @@ Example:
 
 """
 
+import warnings
+from collections import Counter
+from importlib.metadata import version
 from typing import (
     Collection,
+    Dict,
+    Generic,
     Literal,
     Optional,
-    Tuple,
-    Dict,
-    Union,
-    TypedDict,
     Protocol,
-    Generic,
+    Tuple,
+    TypedDict,
+    Union,
 )
-from importlib.metadata import version
-from collections import Counter
-import warnings
-from sklearn.metrics import roc_curve
-from scipy.sparse import csr_array
 
 import numpy as np
+import torch
+from scipy.sparse import csr_array
+from sklearn.metrics import roc_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
-import torch
 from tabpfn import TabPFNClassifier
+from typing_extensions import TypeAlias
 
 from polygraph import GraphType
+from polygraph.metrics.base.interface import GenerationMetric
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.utils.descriptors import GraphDescriptor
-from polygraph.metrics.base.interface import GenerationMetric
-
 
 __all__ = [
     "ClassifierMetric",
     "PolyGraphScore",
     "PolyGraphScoreInterval",
 ]
+
+FloatLike: TypeAlias = Union[float, np.floating]
 
 
 class ClassifierProtocol(Protocol):
@@ -229,7 +231,7 @@ def _descriptions_to_classifier_metric(
     variant: Literal["informedness", "jsd"] = "jsd",
     classifier: Optional[ClassifierProtocol] = None,
     rng: Optional[np.random.Generator] = None,
-) -> Tuple[float, float]:
+) -> Tuple[FloatLike, FloatLike]:
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
@@ -347,7 +349,8 @@ def _descriptions_to_classifier_metric(
     else:
         raise ValueError(f"Invalid variant: {variant}")
 
-    assert isinstance(train_metric, float)
+    assert isinstance(train_metric, FloatLike)
+    assert isinstance(test_metric, FloatLike)
     return train_metric, test_metric
 
 
