@@ -388,6 +388,10 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
             Tuple of train and test metric
         """
         descriptions = self._descriptor(generated_graphs)
+        assert (
+            self._reference_descriptions.shape is not None
+            and descriptions.shape is not None
+        )
 
         if descriptions.shape[0] != self._reference_descriptions.shape[0]:
             raise ValueError(

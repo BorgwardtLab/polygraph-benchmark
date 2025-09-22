@@ -157,7 +157,7 @@ class MolCLRDescriptor(GraphDescriptor[Chem.Mol]):
         graphs = [mol_to_graph(mol) for mol in mols]
         embeddings = []
         for i in range(0, len(graphs), self._batch_size):
-            batch = Batch.from_data_list(graphs[i : i + self._batch_size])
+            batch = Batch.from_data_list(graphs[i : i + self._batch_size])  # pyright: ignore
             h, _ = self._model(batch)
             embeddings.append(h)
         embeddings = torch.cat(embeddings, dim=0).cpu().numpy()
