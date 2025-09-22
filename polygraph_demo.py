@@ -18,9 +18,9 @@ import polygraph
 from polygraph.datasets import ProceduralPlanarGraphDataset
 from polygraph.metrics import (
     VUN,
-    GaussianTVMMD2BenchmarkInterval,
-    RBFMMD2BenchmarkInterval,
-    StandardPGSInterval,
+    GaussianTVMMD2Benchmark,
+    RBFMMD2Benchmark,
+    StandardPGS,
 )
 
 
@@ -30,7 +30,7 @@ def _sample_generated_graphs(n: int, num_nodes: int = 64, start_seed: int = 0) -
 
 def data_location():
     cache_dir = user_cache_dir(f"polygraph-{polygraph.__version__}", "MPIB-MLSB")
-    logger.info(f"PolyGraph cache is typically located at: {cache_dir}.")
+    logger.info(f"PolyGraph cache is typically located at: {cache_dir}")
     logger.info("It can be changed by setting the POLYGRAPH_CACHE_DIR environment variable.")
     logger.info("Current value: ", os.environ.get("POLYGRAPH_CACHE_DIR"))
 
@@ -49,7 +49,7 @@ def calculate_gtv_mmd(reference, generated):
     Calculate the GTV pseudokernel MMD between a reference dataset and a generated dataset.
     """
     logger.info("GaussianTV MMD² Benchmark")
-    gtv = GaussianTVMMD2BenchmarkInterval(reference, subsample_size=8, num_samples=10, coverage=0.95)
+    gtv = GaussianTVMMD2Benchmark(reference)
     logger.info(f"Computed Gaussian TV pseudokernel MMD²: {gtv.compute(generated)}")
 
 def calculate_rbf_mmd(reference, generated):
@@ -57,7 +57,7 @@ def calculate_rbf_mmd(reference, generated):
     Calculate the RBF MMD between a reference dataset and a generated dataset.
     """
     logger.info("RBF MMD² Benchmark")
-    rbf = RBFMMD2BenchmarkInterval(reference, subsample_size=8, num_samples=10, coverage=0.95)
+    rbf = RBFMMD2Benchmark(reference)
     logger.info(f"Computed RBF MMD²: {rbf.compute(generated)}")
 
 
@@ -66,7 +66,7 @@ def calculate_pgs(reference, generated):
     Calculate the PolyGraphScore between a reference dataset and a generated dataset.
     """
     logger.info("PolyGraphScore (StandardPGS)")
-    pgs = StandardPGSInterval(reference, subsample_size=8, num_samples=2)
+    pgs = StandardPGS(reference)
     logger.info(f"Computed PolyGraphScore: {pgs.compute(generated)}")
 
 def calculate_vun(reference, generated):
@@ -91,7 +91,7 @@ def main():
     calculate_rbf_mmd(reference, generated)
     calculate_pgs(reference, generated)
     calculate_vun(reference, generated)
-
+    
     logger.success("=== PolyGraph Demo End ===")
 
 if __name__ == "__main__":
