@@ -42,7 +42,7 @@ print(metric.compute(mols_b))
 
 from typing import Collection
 
-import rdkit
+import rdkit.Chem
 
 from polygraph.utils.descriptors.molecule_descriptors import (
     TopoChemicalDescriptor,
