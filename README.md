@@ -1,22 +1,44 @@
 # PolyGraph
 
+## Reviewer Installation Guide
+
+You can simply install the library by doing the following:
+
+Install conda or [mamba](https://github.com/mamba-org/mamba), then create an environment:
+
+```bash
+conda create -n polygraph-benchmark python=3.10
+conda activate polygraph-benchmark
+```
+
+Then install 
+```bash
+pip install -e ".[dev]"
+```
+
+If you'd like to use SBM graph dataset validation with `graph_tool`, use a mamba or pixi environment. More information is available in the documentation. 
+
+
+
+
 PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics 
 (including PolyGraphScore).
 
 ## At a glance
 
 Here are a set of datasets and metrics this library provides:
-- **Datasets**: ready-to-use splits for procedural and real-world graphs
+- 🗂️ **Datasets**: ready-to-use splits for procedural and real-world graphs
   - Procedural datasets: `PlanarLGraphDataset`, `SBMLGraphDataset`, `LobsterLGraphDataset`
   - Real-world: `QM9`, `MOSES`, `Guacamol`, `DobsonDoigGraphDataset`, `ModelNet10GraphDataset`
   - Also: `EgoGraphDataset`, `PointCloudGraphDataset`
-- **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
+- 📊 **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
   - MMD<sup>2</sup>: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`
   - Kernel hyperparameter optimization with `MaxDescriptorMMD2`.
   - PolyGraphScore: `StandardPGS`, `MolecularPGS` (for molecule descriptors).
   - Validation/Uniqueness/Novelty: `VUN`.
   - Uncertainty quantification for benchmarking (`GaussianTVMMD2BenchmarkInterval`, `RBFMMD2Benchmark`, `PGS5Interval`)
-- **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`.
+- 🧩 **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`. Works on Mac and Linux.
+- ✅ **Tested, type checked and documented**
 
 
 <details>
@@ -35,24 +57,6 @@ We provide larger datasets that should be used instead:
 - `LobsterLGraphDataset`
 
 </details>
-
-## Reviewer Installation Guide
-
-You can simply install the library by doing the following:
-
-Install [mamba](https://github.com/mamba-org/mamba), then create an environment:
-
-```bash
-mamba create -n polygraph-benchmark python=3.10
-```
-
-Then install 
-```bash
-pip install -e ".[dev]"
-```
-
-If you'd like to use SBM graph dataset validation with `graph_tool`, use a mamba or pixi environment. More information is available in the documentation. 
-
 
 ## Tutorial
 
