@@ -13,7 +13,7 @@ Here are a set of datasets and metrics this library provides:
 - **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
   - MMD<sup>2</sup>: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`
   - Kernel hyperparameter optimization with `MaxDescriptorMMD2`.
-  - PolyGraphScore: `StandardPGS`, `MolecularPGS`.
+  - PolyGraphScore: `StandardPGS`, `MolecularPGS` (for molecule descriptors).
   - Validation/Uniqueness/Novelty: `VUN`.
   - Uncertainty quantification for benchmarking (`GaussianTVMMD2BenchmarkInterval`, `RBFMMD2Benchmark`, `PGS5Interval`)
 - **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`.
