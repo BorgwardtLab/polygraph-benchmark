@@ -49,7 +49,7 @@ No manual compilation of ORCA is required. For details on interaction with `grap
 ### Datasets
 Instantiate a benchmark dataset as follows:
 ```python
-from polygraph.datasets import PlanarGraphDataset # can also be SBMGraphDataset, LobsterGraphDataset
+from polygraph.datasets import PlanarGraphDataset
 
 reference = PlanarGraphDataset("test")
 
@@ -75,9 +75,9 @@ print(gtv_benchmark.compute(generated))  # {'orbit': ..., 'clustering': ..., 'de
 Similarly, you can compute our proposed PolyGraphScore, like so:
 
 ```python
-from polygraph.metrics import PGS5
+from polygraph.metrics import StandardPGS 
 
-pgs = PGS5(reference)
+pgs = StandardPGS(reference)
 print(pgs.compute(generated)) # {'polygraphscore': ..., 'polygraphscore_descriptor': ..., 'subscores': {'orbit': ..., }}
 ```
 
@@ -107,7 +107,7 @@ from polygraph.metrics import GaussianTVMMD2BenchmarkInterval, RBFMMD2BenchmarkI
 metrics = [
 	GaussianTVMMD2BenchmarkInterval(), 
 	RBFMMD2BenchmarkInterval(), 
-	PGS5Interval()
+	StandardPGSInterval()
 ]
 
 for metric in metrics:
