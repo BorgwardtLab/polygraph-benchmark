@@ -65,11 +65,10 @@ Our [demo script](polygraph_demo.py) showcases some features of our library in a
 ### Datasets
 Instantiate a benchmark dataset as follows:
 ```python
+import networkx as nx
 from polygraph.datasets import PlanarGraphDataset
 
-reference = PlanarGraphDataset("test")
-
-reference_nx = reference.to_nx()
+reference = PlanarGraphDataset("test").to_nx()
 
 # Let's also generate some graphs coming from another distribution.
 generated = [nx.erdos_renyi_graph(64, 0.1) for _ in range(40)]
@@ -103,8 +102,8 @@ print(pgs.compute(generated)) # {'polygraphscore': ..., 'polygraphscore_descript
 VUN values follow a similar interface:
 ```python
 from polygraph.metrics import VUN
-
-pgs = VUN(reference, validity_fn=reference.is_valid, confidence_level=0.95) # if applicable, validity functions are defined as a dataset attribute
+reference_ds = PlanarGraphDataset("test")
+pgs = VUN(reference, validity_fn=reference_ds.is_valid, confidence_level=0.95) # if applicable, validity functions are defined as a dataset attribute
 print(pgs.compute(generated))  # {'valid': ..., 'valid_unique_novel': ..., 'valid_novel': ..., 'valid_unique': ...}
 ```
 
@@ -117,22 +116,18 @@ For `VUN`, the results can be obtained by specifying a confidence level when ins
 For the others, the `Interval` suffix references the class that implements subsampling.
 
 ```python
-
-from polygraph.metrics import GaussianTVMMD2BenchmarkInterval, RBFMMD2BenchmarkInterval, PGS5Interval
+from polygraph.metrics import GaussianTVMMD2BenchmarkInterval, RBFMMD2BenchmarkInterval, StandardPGSInterval
+from tqdm import tqdm
 
 metrics = [
-	GaussianTVMMD2BenchmarkInterval(), 
-	RBFMMD2BenchmarkInterval(), 
-	StandardPGSInterval()
+  GaussianTVMMD2BenchmarkInterval(reference, subsample_size=8, num_samples=10), # specify size of each subsample, and the number of samples
+  RBFMMD2BenchmarkInterval(reference, subsample_size=8, num_samples=10),
+  StandardPGSInterval(reference, subsample_size=8, num_samples=10)
 ]
 
-for metric in metrics:
+for metric in tqdm(metrics):
 	metric_results = metric.compute(
-		subsample_size=100, # Number of subsamples to consider for each estimate
-		num_samples=500,    # Number of estimates to compute
-		coverage=0.95       # Optional, coverage of the quantiles (here, 5th and 95th percentile)
-	)
-
-metrics_results[0] # "MetricInterval(mean=..., std=..., low=..., high=..., coverage=...)"
+    generated,
+  )
 ```
 
