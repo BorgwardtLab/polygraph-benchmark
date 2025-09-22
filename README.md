@@ -36,15 +36,23 @@ We provide larger datasets that should be used instead:
 
 </details>
 
-## Installation
+## Reviewer Installation Guide
+
+You can simply install the library by doing the following:
+
+Install [mamba](https://github.com/mamba-org/mamba), then create an environment:
 
 ```bash
-pip install polygraph-benchmark
+mamba create -n polygraph-benchmark python=3.10
 ```
 
-No manual compilation of ORCA is required. For details on interaction with `graph_tool`, see the more detailed installation instructions in the docs.
+Then install 
+```bash
+pip install -e ".[dev]"
+```
 
-If you'd like to use SBM graph dataset validation with graph tools, use a mamba or pixi environment. More information is available in the documentation. 
+If you'd like to use SBM graph dataset validation with `graph_tool`, use a mamba or pixi environment. More information is available in the documentation. 
+
 
 ## Tutorial
 

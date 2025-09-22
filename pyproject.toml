@@ -6,12 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "polygraph"
 version = "0.1"
 description = "Graph Generation Gym"
-authors = [
-    { name = "Markus Krimmel", email = "krimmel@biochem.mpg.de" },
-    { name = "Philip Hartout", email = "hartout@biochem.mpg.de" },
-    { name = "Dexiong Chen", email = "dchen@biochem.mpg.de" },
-    { name = "Karsten Borgwardt", email = "borgwardt@biochem.mpg.de" },
-]
 requires-python = ">=3.7"
 dependencies = [
     "numpy",

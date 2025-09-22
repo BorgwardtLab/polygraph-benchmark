@@ -29,7 +29,7 @@ def _sample_generated_graphs(n: int, num_nodes: int = 64, start_seed: int = 0) -
     return [nx.erdos_renyi_graph(num_nodes, 0.1, seed=i + start_seed) for i in range(n)]
 
 def data_location():
-    cache_dir = user_cache_dir(f"polygraph-{polygraph.__version__}", "MPIB-MLSB")
+    cache_dir = user_cache_dir(f"polygraph-{polygraph.__version__}", "ANON_ORG")
     logger.info(f"PolyGraph cache is typically located at: {cache_dir}")
     logger.info("It can be changed by setting the POLYGRAPH_CACHE_DIR environment variable.")
     logger.info("Current value: ", os.environ.get("POLYGRAPH_CACHE_DIR"))

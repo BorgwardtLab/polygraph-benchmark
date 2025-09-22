@@ -24,7 +24,7 @@ def file_hash(path: str) -> str:
 def identifier_to_path(identifier: str):
     cache_dir = os.environ.get("POLYGRAPH_CACHE_DIR")
     if cache_dir is None:
-        cache_dir = user_cache_dir(f"polygraph-{__version__}", "MPIB-MLSB")
+        cache_dir = user_cache_dir(f"polygraph-{__version__}", "ANON_ORG")
     else:
         cache_dir = os.path.join(cache_dir, str(__version__))
     os.makedirs(cache_dir, exist_ok=True)
