@@ -46,6 +46,8 @@ No manual compilation of ORCA is required. For details on interaction with `grap
 
 ## Tutorial
 
+Our [demo script](polygraph_demo.py) showcases some features of our library in action.
+
 ### Datasets
 Instantiate a benchmark dataset as follows:
 ```python
