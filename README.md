@@ -6,18 +6,18 @@ PolyGraph is a Python library for evaluating graph generative models by providin
 ## At a glance
 
 Here are a set of datasets and metrics this library provides:
-- **Datasets**: ready-to-use splits for procedural and real-world graphs
+- 🗂️ **Datasets**: ready-to-use splits for procedural and real-world graphs
   - Procedural datasets: `PlanarLGraphDataset`, `SBMLGraphDataset`, `LobsterLGraphDataset`
   - Real-world: `QM9`, `MOSES`, `Guacamol`, `DobsonDoigGraphDataset`, `ModelNet10GraphDataset`
   - Also: `EgoGraphDataset`, `PointCloudGraphDataset`
-- **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
+- 📊 **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
   - MMD<sup>2</sup>: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`
   - Kernel hyperparameter optimization with `MaxDescriptorMMD2`.
   - PolyGraphScore: `StandardPGS`, `MolecularPGS` (for molecule descriptors).
   - Validation/Uniqueness/Novelty: `VUN`.
   - Uncertainty quantification for benchmarking (`GaussianTVMMD2BenchmarkInterval`, `RBFMMD2Benchmark`, `PGS5Interval`)
-- **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`.
-
+- 🧩 **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`. Works on Mac and Linux.
+- ✅ **Tested, type checked and documented**
 
 <details>
 <summary><strong>⚠️ Important - Dataset Usage Warning</strong></summary>
