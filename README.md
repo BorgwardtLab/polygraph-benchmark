@@ -44,6 +44,8 @@ pip install polygraph-benchmark
 
 No manual compilation of ORCA is required. For details on interaction with `graph_tool`, see the more detailed installation instructions in the docs.
 
+If you'd like to use SBM graph dataset validation with graph tools, use a mamba or pixi environment. More information is available in the documentation. 
+
 ## Tutorial
 
 Our [demo script](polygraph_demo.py) showcases some features of our library in action.
