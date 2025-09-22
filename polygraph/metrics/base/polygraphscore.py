@@ -38,40 +38,40 @@ Example:
 
 """
 
+import warnings
+from collections import Counter
+from importlib.metadata import version
 from typing import (
     Collection,
+    Dict,
+    Generic,
     Literal,
     Optional,
-    Tuple,
-    Dict,
-    Union,
-    TypedDict,
     Protocol,
-    Generic,
+    Tuple,
+    TypedDict,
+    Union,
 )
-from importlib.metadata import version
-from collections import Counter
-import warnings
-from sklearn.metrics import roc_curve
-from scipy.sparse import csr_array
 
 import numpy as np
+import torch
+from scipy.sparse import csr_array
+from sklearn.metrics import roc_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
-import torch
 from tabpfn import TabPFNClassifier
 
 from polygraph import GraphType
+from polygraph.metrics.base.interface import GenerationMetric
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.utils.descriptors import GraphDescriptor
-from polygraph.metrics.base.interface import GenerationMetric
-
 
 __all__ = [
     "ClassifierMetric",
     "PolyGraphScore",
     "PolyGraphScoreInterval",
 ]
+
 
 
 class ClassifierProtocol(Protocol):
@@ -102,7 +102,7 @@ def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
         + np.log2(1 - gen_scores + eps).mean()
         + 2
     )
-    return np.sqrt(np.clip(divergence, 0, 1))
+    return np.sqrt(np.clip(divergence, 0, 1)).item()
 
 
 def _scores_to_informedness_and_threshold(
@@ -133,8 +133,8 @@ def _scores_and_threshold_to_informedness(
     assert ref_scores.ndim == 1 and gen_scores.ndim == 1
     ref_pred = (ref_scores >= threshold).astype(int)
     gen_pred = (gen_scores >= threshold).astype(int)
-    tpr = np.mean(ref_pred, axis=0)
-    fpr = np.mean(gen_pred, axis=0)
+    tpr = np.mean(ref_pred, axis=0).item()
+    fpr = np.mean(gen_pred, axis=0).item()
     return tpr - fpr
 
 
@@ -229,7 +229,7 @@ def _descriptions_to_classifier_metric(
     variant: Literal["informedness", "jsd"] = "jsd",
     classifier: Optional[ClassifierProtocol] = None,
     rng: Optional[np.random.Generator] = None,
-) -> Tuple[float, float]:
+) -> Tuple[float, int | float]:
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
@@ -307,7 +307,7 @@ def _descriptions_to_classifier_metric(
         n_folds=4,
     )
 
-    train_metric = np.mean(scores)
+    train_metric = np.mean(scores).item()
 
     # Refit on all training data
     train_all_descriptions = np.concatenate(
@@ -348,6 +348,7 @@ def _descriptions_to_classifier_metric(
         raise ValueError(f"Invalid variant: {variant}")
 
     assert isinstance(train_metric, float)
+    assert isinstance(test_metric, float)
     return train_metric, test_metric
 
 
