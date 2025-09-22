@@ -13,7 +13,7 @@ conda activate polygraph-benchmark
 
 Then install 
 ```bash
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 If you'd like to use SBM graph dataset validation with `graph_tool`, use a mamba or pixi environment. More information is available in the documentation. 
