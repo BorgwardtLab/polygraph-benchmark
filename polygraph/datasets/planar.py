@@ -132,3 +132,29 @@ class PlanarGraphDataset(SplitGraphDataset):
 
     def hash_for_split(self, split: str) -> Optional[str]:
         return self._HASH_FOR_SPLIT[split]
+
+
+
+class PlanarLGraphDataset(ProceduralPlanarGraphDataset):
+    def __init__(
+        self,
+        split: Literal["train", "val", "test"],
+        num_graphs: int,
+        seed: int = 42,
+        memmap: bool = False,
+        show_generation_progress: bool = False,
+    ):
+        if split == "train":
+            num_graphs = 8192
+        elif split == "val":
+            num_graphs = 4096
+        elif split == "test":
+            num_graphs = 4096
+
+        super().__init__(
+            split,
+            num_graphs,
+            seed,
+            memmap,
+            show_generation_progress,
+        )
