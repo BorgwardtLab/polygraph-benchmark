@@ -29,7 +29,7 @@ PolyGraph is a Python library for evaluating graph generative models by providin
 Here are a set of datasets and metrics this library provides:
 - 🗂️ **Datasets**: ready-to-use splits for procedural and real-world graphs
   - Procedural datasets: `PlanarLGraphDataset`, `SBMLGraphDataset`, `LobsterLGraphDataset`
-  - Real-world: `QM9`, `MOSES`, `Guacamol`, `DobsonDoigGraphDataset`, `ModelNet10GraphDataset`
+  - Real-world: `QM9`, `MOSES`, `Guacamol`, `DobsonDoigGraphDataset`
   - Also: `EgoGraphDataset`, `PointCloudGraphDataset`
 - 📊 **Metrics**: unified, fit-once/compute-many interface with convenience wrappers, avoiding redundant computations.
   - MMD<sup>2</sup>: `GaussianTVMMD2Benchmark`, `RBFMMD2Benchmark`

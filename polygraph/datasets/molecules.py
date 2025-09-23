@@ -48,9 +48,9 @@ class MoleculeDataset(SplitGraphDataset):
 
 class QM9(MoleculeDataset):
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/OcGj065QUzbIgvM/download",
-        "val": "https://datashare.biochem.mpg.de/s/bzuxQ3uZnPSTjMZ/download",
-        "test": "https://datashare.biochem.mpg.de/s/xMJYUrAjz4D1tIj/download",
+        "train": "https://sandbox.zenodo.org/records/334629/files/QM9_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/334629/files/QM9_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/334629/files/QM9_test.pt?download=1",
     }
 
     def url_for_split(self, split: str):
@@ -59,9 +59,9 @@ class QM9(MoleculeDataset):
 
 class MOSES(MoleculeDataset):
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/uMkCFQwuKPqnEIq/download",
-        "val": "https://datashare.biochem.mpg.de/s/HBEyI64aySBUlta/download",
-        "test": "https://datashare.biochem.mpg.de/s/nX61TFqMgRMwuKf/download",
+        "train": "https://sandbox.zenodo.org/records/334629/files/MOSES_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/334629/files/MOSES_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/334629/files/MOSES_test.pt?download=1",
     }
 
     def url_for_split(self, split: str):
@@ -70,9 +70,9 @@ class MOSES(MoleculeDataset):
 
 class Guacamol(MoleculeDataset):
     _URL_FOR_SPLIT = {
-        "train": "https://datashare.biochem.mpg.de/s/zMifbN4VWFohbdm/download",
-        "val": "https://datashare.biochem.mpg.de/s/p9ZccTox73lIVFw/download",
-        "test": "https://datashare.biochem.mpg.de/s/z2MlUDLB0SzAxoA/download",
+        "train": "https://sandbox.zenodo.org/records/334629/files/Guacamol_train.pt?download=1",
+        "val": "https://sandbox.zenodo.org/records/334629/files/Guacamol_val.pt?download=1",
+        "test": "https://sandbox.zenodo.org/records/334629/files/Guacamol_test.pt?download=1",
     }
 
     def url_for_split(self, split: str):

@@ -12,7 +12,6 @@ from .planar import PlanarGraphDataset, ProceduralPlanarGraphDataset
 from .point_clouds import PointCloudGraphDataset
 from .proteins import DobsonDoigGraphDataset
 from .sbm import ProceduralSBMGraphDataset, SBMGraphDataset
-from .modelnet import ModelNet10GraphDataset
 
 __all__ = [
     "AbstractDataset",
@@ -33,5 +32,4 @@ __all__ = [
     "SBMGraphDataset",
     "ProceduralSBMGraphDataset",
     "PointCloudGraphDataset",
-    "ModelNet10GraphDataset",
 ]
