@@ -37,7 +37,7 @@ Here are a set of datasets and metrics this library provides:
   - PolyGraphScore: `StandardPGS`, `MolecularPGS` (for molecule descriptors).
   - Validation/Uniqueness/Novelty: `VUN`.
   - Uncertainty quantification for benchmarking (`GaussianTVMMD2BenchmarkInterval`, `RBFMMD2Benchmark`, `PGS5Interval`)
-- 🧩 **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`. Works on Mac and Linux.
+- 🧩 **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`. Works on Apple Silicon Macs and Linux.
 - ✅ **Tested, type checked and documented**
 
 
