@@ -45,7 +45,8 @@ Here are a set of datasets and metrics this library provides:
 
 ## Tutorial
 
-Our [demo script](polygraph_demo.py) showcases some features of our library in action.
+Our [demo script](demo_polygraph.py) showcases some basic features of our library in action.
+For more advanced usage (namely, defining custom metrics), we refer to our [second demo script](demo_custom_metrics.py).
 
 
 ### Datasets
