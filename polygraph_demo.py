@@ -8,9 +8,8 @@ In this file, we aim to demonstrate some of the features of the polygraph librar
 """
 
 import os
-from typing import List, Iterable, Collection
+from typing import List
 
-import numpy as np
 import networkx as nx
 from appdirs import user_cache_dir
 from loguru import logger
@@ -23,8 +22,6 @@ from polygraph.metrics import (
     RBFMMD2Benchmark,
     StandardPGS,
 )
-from polygraph.metrics.base import PolyGraphScore
-from polygraph.utils.descriptors import ClusteringHistogram
 
 
 REF_SMILES = [
@@ -112,45 +109,6 @@ def calculate_pgs(reference, generated):
     logger.info(f"Computed PolyGraphScore: {pgs.compute(generated)}")
 
 
-def calculate_custom_pgs(
-    reference: Collection[nx.Graph], generated: Collection[nx.Graph]
-):
-    """
-    Calculate a customized PGS between a reference dataset and a generated dataset.
-
-    This PGS uses betweenness centrality and clustering coefficients as graph descriptors. Instead of TabPFN, it uses logistic regression.
-
-    PolyGraphScore may be instantiated with any descriptors implementing the `polygraph.utils.descriptors.GraphDescriptor` interface
-    and any classifier implementing the `polygraph.metrics.base.polygraphscore.ClassifierProtocol` interface (i.e., the sklearn interface).
-    """
-    from sklearn.linear_model import LogisticRegression
-
-    def betweenness_descriptor(graphs: Iterable[nx.Graph]) -> np.ndarray:
-        """A custom graph descriptor that computes betweenness centrality.
-
-        This implements the polygraph.utils.descriptors.GraphDescriptor interface.
-        """
-        histograms = []
-        for graph in graphs:
-            btw_values = list(nx.betweenness_centrality(graph).values())
-            histograms.append(
-                np.histogram(
-                    btw_values, bins=100, range=(0.0, 1.0), density=True
-                )[0]
-            )
-        return np.stack(histograms, axis=0)
-
-    pgs = PolyGraphScore(
-        reference,
-        descriptors={
-            "betweenness": betweenness_descriptor,
-            "clustering": ClusteringHistogram(bins=100),
-        },
-        classifier=LogisticRegression(),
-    )
-    logger.info(f"Computed Customized PolyGraphScore: {pgs.compute(generated)}")
-
-
 def calculate_molecule_pgs(ref_smiles, gen_smiles):
     """
     Calculate the PolyGraphScore between a reference dataset of molecules and a generated dataset of molecules.
@@ -189,7 +147,6 @@ def main():
     calculate_gtv_mmd(reference, generated)
     calculate_rbf_mmd(reference, generated)
     calculate_pgs(reference, generated)
-    calculate_custom_pgs(reference, generated)
     calculate_vun(reference, generated)
     calculate_molecule_pgs(REF_SMILES, GEN_SMILES)
 
