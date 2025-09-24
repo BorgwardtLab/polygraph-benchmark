@@ -9,6 +9,7 @@ In this file, we aim to demonstrate some of the features of the polygraph librar
 
 import os
 from typing import List
+import warnings
 
 import networkx as nx
 from appdirs import user_cache_dir
@@ -45,6 +46,10 @@ GEN_SMILES = [
     "COc1ccc2[nH]cc(CCNC(=O)c3ccco3)c2c1",
 ]
 
+logger.disable("polygraph")
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 def _sample_generated_graphs(
     n: int, num_nodes: int = 64, start_seed: int = 0
@@ -58,11 +63,11 @@ def _sample_generated_graphs(
 
 def data_location():
     cache_dir = user_cache_dir(f"polygraph-{polygraph.__version__}", "ANON_ORG")
-    logger.info(f"PolyGraph cache is typically located at: {cache_dir}")
-    logger.info(
+    print(f"PolyGraph cache is typically located at: {cache_dir}")
+    print(
         "It can be changed by setting the POLYGRAPH_CACHE_DIR environment variable."
     )
-    logger.info("Current value: ", os.environ.get("POLYGRAPH_CACHE_DIR"))
+    print("Current value: ", os.environ.get("POLYGRAPH_CACHE_DIR"))
 
 
 def get_example_datasets():
@@ -74,7 +79,7 @@ def get_example_datasets():
         ProceduralPlanarGraphDataset("val", num_graphs=32).to_nx()
     )
     generated = _sample_generated_graphs(32)
-    logger.info(
+    print(
         f"Reference graphs: {len(reference_ds)} | Generated graphs: {len(generated)}"
     )
     return reference_ds, generated
@@ -84,29 +89,41 @@ def calculate_gtv_mmd(reference, generated):
     """
     Calculate the GTV pseudokernel MMD between a reference dataset and a generated dataset.
     """
-    logger.info("GaussianTV MMD² Benchmark")
+    print("GaussianTV MMD² Benchmark")
     gtv = GaussianTVMMD2Benchmark(reference)
-    logger.info(
-        f"Computed Gaussian TV pseudokernel MMD²: {gtv.compute(generated)}"
-    )
+    result = gtv.compute(generated)
+    print("Computed Gaussian TV pseudokernel MMD²:")
+    for metric, score in result.items():
+        print(f"  {metric.capitalize()}: {score:.6f}")
+    print()
 
 
 def calculate_rbf_mmd(reference, generated):
     """
     Calculate the RBF MMD between a reference dataset and a generated dataset.
     """
-    logger.info("RBF MMD² Benchmark")
+    print("RBF MMD² Benchmark")
     rbf = RBFMMD2Benchmark(reference)
-    logger.info(f"Computed RBF MMD²: {rbf.compute(generated)}")
+    result = rbf.compute(generated)
+    print("Computed RBF MMD²:")
+    for metric, score in result.items():
+        print(f"  {metric.capitalize()}: {score:.6f}")
+    print()
 
 
 def calculate_pgs(reference, generated):
     """
     Calculate the standard PolyGraphScore between a reference dataset and a generated dataset.
     """
-    logger.info("PolyGraphScore (StandardPGS)")
+    print("PolyGraphScore (StandardPGS)")
     pgs = StandardPGS(reference)
-    logger.info(f"Computed PolyGraphScore: {pgs.compute(generated)}")
+    result = pgs.compute(generated)
+    print(f"Overall PGS: {result['polygraphscore']:.6f}")
+    print(f"Most powerful descriptor: {result['polygraphscore_descriptor']}")
+    print("Subscores:")
+    for metric, score in result["subscores"].items():
+        print(f"  {metric.capitalize()}: {score:.6f}")
+    print()
 
 
 def calculate_molecule_pgs(ref_smiles, gen_smiles):
@@ -119,11 +136,17 @@ def calculate_molecule_pgs(ref_smiles, gen_smiles):
     ref_mols = [rdkit.Chem.MolFromSmiles(smiles) for smiles in ref_smiles]
     gen_mols = [rdkit.Chem.MolFromSmiles(smiles) for smiles in gen_smiles]
 
-    logger.info(
+    print(
         f"PolyGraphScore (MoleculePGS) between {len(ref_mols)} reference and {len(gen_mols)} generated molecules:"
     )
     pgs = MoleculePGS(ref_mols)
-    logger.info(f"Computed MoleculePGS: {pgs.compute(gen_mols)}")
+    result = pgs.compute(gen_mols)
+    print(f"Overall MoleculePGS: {result['polygraphscore']:.6f}")
+    print(f"Most powerful descriptor: {result['polygraphscore_descriptor']}")
+    print("Subscores:")
+    for metric, score in result["subscores"].items():
+        print(f"  {metric.replace('_', ' ').title()}: {score:.6f}")
+    print()
 
 
 def calculate_vun(reference, generated):
@@ -132,17 +155,22 @@ def calculate_vun(reference, generated):
     """
     ds = ProceduralPlanarGraphDataset("val", num_graphs=1)
     validity_fn = ds.is_valid if reference is not None else None
-    logger.info("VUN")
+    print("VUN")
     vun = VUN(reference, validity_fn=validity_fn)
-    logger.info(f"Computed VUN: {vun.compute(generated)}")
+    result = vun.compute(generated)
+    print("Computed VUN:")
+    for metric, score in result.items():
+        print(f"  {metric.replace('_', ' ').title()}: {score:.6f}")
+    print()
 
 
 def main():
-    logger.info("=== PolyGraph Demo ===")
+    print("=== PolyGraph Demo ===")
 
     # Data location-related information
     data_location()
     reference, generated = get_example_datasets()
+    print()
 
     calculate_gtv_mmd(reference, generated)
     calculate_rbf_mmd(reference, generated)
@@ -150,7 +178,7 @@ def main():
     calculate_vun(reference, generated)
     calculate_molecule_pgs(REF_SMILES, GEN_SMILES)
 
-    logger.success("=== PolyGraph Demo End ===")
+    print("=== PolyGraph Demo End ===")
 
 
 if __name__ == "__main__":
