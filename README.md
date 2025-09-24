@@ -11,18 +11,18 @@ conda create -n polygraph-benchmark python=3.10
 conda activate polygraph-benchmark
 ```
 
-Then install 
+Then install
 ```bash
 pip install -e .
 ```
 
-If you'd like to use SBM graph dataset validation with `graph_tool`, use a mamba or pixi environment. More information is available in the documentation. 
+If you'd like to use SBM graph dataset validation with `graph_tool`, use a mamba or pixi environment. More information is available in the documentation.
 
 
-
-
-PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics 
+PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics
 (including PolyGraphScore).
+
+
 
 ## At a glance
 
@@ -37,33 +37,21 @@ Here are a set of datasets and metrics this library provides:
   - PolyGraphScore: `StandardPGS`, `MolecularPGS` (for molecule descriptors).
   - Validation/Uniqueness/Novelty: `VUN`.
   - Uncertainty quantification for benchmarking (`GaussianTVMMD2BenchmarkInterval`, `RBFMMD2Benchmark`, `PGS5Interval`)
-- 🧩 **Interoperability**: works with PyTorch Geometric and NetworkX; caching via `POLYGRAPH_CACHE_DIR`. Works on Apple Silicon Macs and Linux.
+- 🧩 **Extendable**: Users can instantiate custom metrics by specifying descriptors, kernels, or classifiers (`PolyGraphScore`, `DescriptorMMD2`). PolyGraph defines all necessary interfaces but imposes no requirements on the data type of graph objects.
+- ⚙️ **Interoperability**: Works on Apple Silicon Macs and Linux.
 - ✅ **Tested, type checked and documented**
 
 
-<details>
-<summary><strong>⚠️ Important - Dataset Usage Warning</strong></summary>
-
-**To help reproduce previous results, we provide the following datasets:**
-- `PlanarGraphDataset`
-- `SBMGraphDataset` 
-- `LobsterGraphDataset`
-
-But they should not be used for benchmarking, due to unreliable metric estimates (see our paper for more details).
-
-We provide larger datasets that should be used instead:
-- `PlanarLGraphDataset`
-- `SBMLGraphDataset` 
-- `LobsterLGraphDataset`
-
-</details>
 
 ## Tutorial
 
-Our [demo script](polygraph_demo.py) showcases some features of our library in action.
+Our [demo script](demo_polygraph.py) showcases some basic features of our library in action.
+For more advanced usage (namely, defining custom metrics), we refer to our [second demo script](demo_custom_metrics.py).
+
 
 ### Datasets
 Instantiate a benchmark dataset as follows:
+
 ```python
 import networkx as nx
 from polygraph.datasets import PlanarGraphDataset
@@ -74,10 +62,12 @@ reference = PlanarGraphDataset("test").to_nx()
 generated = [nx.erdos_renyi_graph(64, 0.1) for _ in range(40)]
 ```
 
+
 ### Metrics
 
 #### Maximum Mean Discrepancy
 To compute existing MMD2 formulations (e.g. based on the TV pseudokernel), one can use the following:
+
 ```python
 from polygraph.metrics import GaussianTVMMD2Benchmark # Can also be RBFMMD2Benchmark
 
@@ -90,7 +80,7 @@ print(gtv_benchmark.compute(generated))  # {'orbit': ..., 'clustering': ..., 'de
 Similarly, you can compute our proposed PolyGraphScore, like so:
 
 ```python
-from polygraph.metrics import StandardPGS 
+from polygraph.metrics import StandardPGS
 
 pgs = StandardPGS(reference)
 print(pgs.compute(generated)) # {'polygraphscore': ..., 'polygraphscore_descriptor': ..., 'subscores': {'orbit': ..., }}
@@ -100,6 +90,7 @@ print(pgs.compute(generated)) # {'polygraphscore': ..., 'polygraphscore_descript
 
 #### Validity, uniqueness and novelty
 VUN values follow a similar interface:
+
 ```python
 from polygraph.metrics import VUN
 reference_ds = PlanarGraphDataset("test")
@@ -111,7 +102,7 @@ print(pgs.compute(generated))  # {'valid': ..., 'valid_unique_novel': ..., 'vali
 
 For MMD and PGS, uncertainty quantifiation for the metrics are obtained through subsampling. For VUN, a confidence interval is obtained with a binomial test.
 
-For `VUN`, the results can be obtained by specifying a confidence level when instantiating the metric. 
+For `VUN`, the results can be obtained by specifying a confidence level when instantiating the metric.
 
 For the others, the `Interval` suffix references the class that implements subsampling.
 
@@ -130,4 +121,3 @@ for metric in tqdm(metrics):
     generated,
   )
 ```
-
