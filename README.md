@@ -2,7 +2,7 @@
 
 ## Reviewer Installation Guide
 
-You can simply install the library by doing the following:
+You can simply install the library on Linux or Apple Silicon Macs by doing the following:
 
 Install conda or [mamba](https://github.com/mamba-org/mamba), then create an environment:
 
@@ -11,7 +11,7 @@ conda create -n polygraph-benchmark python=3.10
 conda activate polygraph-benchmark
 ```
 
-Then install
+Then install the library by executing the following command in the top-level directory (i.e., the directory that contains this README):
 ```bash
 pip install -e .
 ```
