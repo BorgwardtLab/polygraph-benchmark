@@ -8,14 +8,14 @@ from polygraph.utils.descriptors import (
     ClusteringHistogram,
 )
 from polygraph.metrics.base import (
-    PolyGraphScore,
-    PolyGraphScoreInterval,
+    PolyGraphDiscrepancy,
+    PolyGraphDiscrepancyInterval,
     ClassifierMetric,
 )
 from polygraph.metrics.base.metric_interval import MetricInterval
-from polygraph.metrics.standard_pgs import (
-    StandardPGS,
-    StandardPGSInterval,
+from polygraph.metrics.standard_pgd import (
+    StandardPGD,
+    StandardPGDInterval,
     ClassifierOrbit4Metric,
     ClassifierOrbit5Metric,
     ClassifierClusteringMetric,
@@ -73,7 +73,7 @@ def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
     else:
         classifier = LogisticRegression()
 
-    polygraphscore = PolyGraphScore(
+    polygraphscore = PolyGraphDiscrepancy(
         dense_graphs, descriptors, variant, classifier
     )
     result = polygraphscore.compute(sparse_graphs)
@@ -89,12 +89,12 @@ def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
     )
 
     assert result["polygraphscore"] >= 0.8, (
-        f"PolyGraphScore {result['polygraphscore']} is less than 0.8"
+        f"PolyGraphDiscrepancy {result['polygraphscore']} is less than 0.8"
     )
 
     result = polygraphscore.compute(dense_graphs)
     assert result["polygraphscore"] <= 0.2, (
-        f"PolyGraphScore {result['polygraphscore']} is greater than 0.2"
+        f"PolyGraphDiscrepancy {result['polygraphscore']} is greater than 0.2"
     )
 
 
@@ -112,7 +112,7 @@ def test_polygraphscore_interval(
     else:
         classifier = LogisticRegression()
 
-    polygraphscore = PolyGraphScoreInterval(
+    polygraphscore = PolyGraphDiscrepancyInterval(
         dense_graphs,
         descriptors,
         subsample_size=10,
@@ -130,8 +130,8 @@ def test_polygraphscore_interval(
     assert isinstance(result["polygraphscore_descriptor"], dict)
 
 
-def test_standard_pgs(dense_graphs, sparse_graphs):
-    metric = StandardPGS(dense_graphs)
+def test_standard_pgd(dense_graphs, sparse_graphs):
+    metric = StandardPGD(dense_graphs)
     result = metric.compute(sparse_graphs)
 
     individual_metrics = {
@@ -165,7 +165,7 @@ def test_standard_pgs(dense_graphs, sparse_graphs):
             f"Individual result {individual_result} for descriptor {name} does not match the overall result {result['subscores'][name]}"
         )
 
-    metric = StandardPGSInterval(dense_graphs, subsample_size=10, num_samples=4)
+    metric = StandardPGDInterval(dense_graphs, subsample_size=10, num_samples=4)
     result = metric.compute(sparse_graphs)
     assert isinstance(result, dict)
     assert "polygraphscore" in result

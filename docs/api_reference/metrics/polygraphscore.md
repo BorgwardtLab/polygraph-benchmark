@@ -1,4 +1,4 @@
-# PolyGraphScore
+# PolyGraphDiscrepancy
 
 ::: polygraph.metrics.base.polygraphscore
     options:
@@ -9,16 +9,16 @@
         heading_level: 2
         members: []
 
-## PolyGraphScore
+## PolyGraphDiscrepancy
 
-::: polygraph.metrics.base.PolyGraphScore
+::: polygraph.metrics.base.PolyGraphDiscrepancy
     options:
         show_root_heading: true
         show_full_path: true
         show_source: false
         heading_level: 3
 
-::: polygraph.metrics.base.PolyGraphScoreInterval
+::: polygraph.metrics.base.PolyGraphDiscrepancyInterval
     options:
         show_root_heading: true
         show_full_path: true

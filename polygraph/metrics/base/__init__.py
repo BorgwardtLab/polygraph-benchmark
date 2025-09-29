@@ -9,9 +9,9 @@ from polygraph.metrics.base.mmd import (
     MaxDescriptorMMD2Interval,
 )
 from polygraph.metrics.base.polygraphscore import (
-    PolyGraphScore,
+    PolyGraphDiscrepancy,
     ClassifierMetric,
-    PolyGraphScoreInterval,
+    PolyGraphDiscrepancyInterval,
 )
 from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.metrics.base.interface import (
@@ -28,8 +28,8 @@ __all__ = [
     "MaxDescriptorMMD2",
     "MaxDescriptorMMD2Interval",
     "ClassifierMetric",
-    "PolyGraphScore",
-    "PolyGraphScoreInterval",
+    "PolyGraphDiscrepancy",
+    "PolyGraphDiscrepancyInterval",
     "GenerationMetric",
     "MetricCollection",
 ]

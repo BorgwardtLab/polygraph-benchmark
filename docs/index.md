@@ -30,5 +30,5 @@ For details on the interaction with the `graph_tool` package, see the more detai
 We provide a few basic tutorials:
 
 - [Basic Usage](tutorials/basic_usage.md) - How to load datasets and compute metrics
-- [Metrics Overview](tutorials/metrics_overview.md) - An overview of which metrics are implemented in `polygraph` (MMD, PGS, VUN, Frechet Distance)
+- [Metrics Overview](tutorials/metrics_overview.md) - An overview of which metrics are implemented in `polygraph` (MMD, PGD, VUN, Frechet Distance)
 - [Custom Datasets](tutorials/custom_datasets.md) - How to build custom datasets and share them

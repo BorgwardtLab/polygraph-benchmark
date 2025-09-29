@@ -1,7 +1,7 @@
 """
-PolyGraphScores compare generated graphs to reference graphs by fitting a binary classifier to discriminate between the two.
+PolyGraphDiscrepancys compare generated graphs to reference graphs by fitting a binary classifier to discriminate between the two.
 Performance metrics of this classifier lower-bound intrinsic probability metrics.
-Multiple graph descriptors may be combined within PolyGraphScores to yield a theoretically grounded summary metric.
+Multiple graph descriptors may be combined within PolyGraphDiscrepancys to yield a theoretically grounded summary metric.
 
 Either logistic regression or TabPFN may be used for classification.
 The classifiers may be then be evaluated by:
@@ -9,24 +9,24 @@ The classifiers may be then be evaluated by:
 - Data log-likelihood - Provides a lower bound on the Jensen-Shannon distance, or
 - Informedness - Provides a lower bound on the total variation distance.
 
-The [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore] class combines metrics across multiple graph descriptors,
+The [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy] class combines metrics across multiple graph descriptors,
 providing the tightest lower-bound on the probability metrics.
 The [`ClassifierMetric`][polygraph.metrics.base.polygraphscore.ClassifierMetric] class, on the other hand, computes a lower bound
 for a single graph descriptor.
 
-The [`PolyGraphScoreInterval`][polygraph.metrics.base.polygraphscore.PolyGraphScoreInterval] class implements a variant of the PolyGraphScore
+The [`PolyGraphDiscrepancyInterval`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancyInterval] class implements a variant of the PolyGraphDiscrepancy
 with uncertainty quantification.
 
 Example:
     ```python
     from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
-    from polygraph.metrics.base import PolyGraphScore
+    from polygraph.metrics.base import PolyGraphDiscrepancy
     from polygraph.utils.descriptors import OrbitCounts, SparseDegreeHistogram
 
     reference = PlanarGraphDataset("val").to_nx()
     generated = SBMGraphDataset("val").to_nx()
 
-    benchmark = PolyGraphScore(
+    benchmark = PolyGraphDiscrepancy(
         reference,
         descriptors={
             "orbit": OrbitCounts(),
@@ -68,10 +68,9 @@ from polygraph.utils.descriptors import GraphDescriptor
 
 __all__ = [
     "ClassifierMetric",
-    "PolyGraphScore",
-    "PolyGraphScoreInterval",
+    "PolyGraphDiscrepancy",
+    "PolyGraphDiscrepancyInterval",
 ]
-
 
 
 class ClassifierProtocol(Protocol):
@@ -79,16 +78,16 @@ class ClassifierProtocol(Protocol):
     def predict_proba(self, X: np.ndarray) -> np.ndarray: ...
 
 
-class PolyGraphScoreResult(TypedDict):
-    """Return type for PolyGraphScore.compute method."""
+class PolyGraphDiscrepancyResult(TypedDict):
+    """Return type for PolyGraphDiscrepancy.compute method."""
 
     polygraphscore: float
     polygraphscore_descriptor: str
     subscores: Dict[str, float]
 
 
-class PolyGraphScoreIntervalResult(TypedDict):
-    """Return type for PolyGraphScoreInterval.compute method."""
+class PolyGraphDiscrepancyIntervalResult(TypedDict):
+    """Return type for PolyGraphDiscrepancyInterval.compute method."""
 
     polyscore: MetricInterval
     subscores: Dict[str, MetricInterval]
@@ -456,8 +455,8 @@ class _ClassifierMetricSamples(Generic[GraphType]):
         return samples
 
 
-class PolyGraphScore(GenerationMetric[GraphType], Generic[GraphType]):
-    """PolyGraphScore to compare graph distributions, combining multiple graph descriptors.
+class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
+    """PolyGraphDiscrepancy to compare graph distributions, combining multiple graph descriptors.
 
     Args:
         reference_graphs: Reference graphs
@@ -485,15 +484,15 @@ class PolyGraphScore(GenerationMetric[GraphType], Generic[GraphType]):
 
     def compute(
         self, generated_graphs: Collection[GraphType]
-    ) -> PolyGraphScoreResult:
-        """Compute the PolyGraphScore.
+    ) -> PolyGraphDiscrepancyResult:
+        """Compute the PolyGraphDiscrepancy.
 
         Args:
             generated_graphs: Generated graphs
 
         Returns:
             Typed dictionary of scores.
-                The key `"polygraphscore"` specifies the PolyGraphScore, giving the estimated tightest lower-bound on the probability metric.
+                The key `"polygraphscore"` specifies the PolyGraphDiscrepancy, giving the estimated tightest lower-bound on the probability metric.
                 The key `"polygraphscore_descriptor"` specifies the descriptor that achieves this bound.
                 All descritor-wise scores are returned in the key `"subscores"`.
         """
@@ -512,17 +511,19 @@ class PolyGraphScore(GenerationMetric[GraphType], Generic[GraphType]):
                 name: metric[1] for name, metric in all_metrics.items()
             },
         }
-        return PolyGraphScoreResult(**result)
+        return PolyGraphDiscrepancyResult(**result)
 
 
-class PolyGraphScoreInterval(GenerationMetric[GraphType], Generic[GraphType]):
-    """Uncertainty quantification for [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore].
+class PolyGraphDiscrepancyInterval(
+    GenerationMetric[GraphType], Generic[GraphType]
+):
+    """Uncertainty quantification for [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy].
 
     Args:
         reference_graphs: Reference graphs. Must provide at least `2 * subsample_size` graphs.
         descriptors: Dictionary of descriptor names and descriptor functions
         subsample_size: Size of each subsample, should be consistent with the number
-            of reference and generated graphs passed to [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore]
+            of reference and generated graphs passed to [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy]
             for point estimates.
         num_samples: Number of samples to draw for uncertainty quantification.
     """
@@ -556,15 +557,15 @@ class PolyGraphScoreInterval(GenerationMetric[GraphType], Generic[GraphType]):
     def compute(
         self,
         generated_graphs: Collection[GraphType],
-    ) -> PolyGraphScoreIntervalResult:
-        """Compute the PolyGraphScoreInterval.
+    ) -> PolyGraphDiscrepancyIntervalResult:
+        """Compute the PolyGraphDiscrepancyInterval.
 
         Args:
             generated_graphs: Generated graphs. Must provide at least `2 * subsample_size` graphs.
 
         Returns:
             Typed dictionary of scores.
-                The key `"polygraphscore"` specifies the PolyGraphScore, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
+                The key `"polygraphscore"` specifies the PolyGraphDiscrepancy, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
                 The key `"polygraphscore_descriptor"` describes which descriptors achieve this score. This is a dictionary mapping descriptor names to the ratio of samples in which the descriptor was chosen.
                 All descritor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
         """
@@ -607,4 +608,4 @@ class PolyGraphScoreInterval(GenerationMetric[GraphType], Generic[GraphType]):
                 for key in self._sub_metrics.keys()
             },
         }
-        return PolyGraphScoreIntervalResult(**result)
+        return PolyGraphDiscrepancyIntervalResult(**result)

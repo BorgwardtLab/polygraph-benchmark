@@ -1,6 +1,6 @@
-# Molecule PolyGraphScore
+# Molecule PolyGraphDiscrepancy
 
-::: polygraph.metrics.molecule_pgs
+::: polygraph.metrics.molecule_pgd
     options:
         show_root_heading: false
         show_full_path: false
@@ -10,9 +10,9 @@
         members: []
 
 
-## MoleculePGS
+## MoleculePGD
 
-::: polygraph.metrics.molecule_pgs.MoleculePGS
+::: polygraph.metrics.molecule_pgd.MoleculePGD
     options:
         show_root_heading: true
         show_full_path: true
@@ -20,7 +20,7 @@
         heading_level: 3
         members: [compute]
 
-::: polygraph.metrics.molecule_pgs.MoleculePGSInterval
+::: polygraph.metrics.molecule_pgd.MoleculePGDInterval
     options:
         show_root_heading: true
         show_full_path: true

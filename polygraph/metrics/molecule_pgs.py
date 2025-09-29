@@ -1,4 +1,4 @@
-"""MoleculePGS is a [`PolyGraphScore`][polygraph.metrics.base.polygraphscore.PolyGraphScore] metric based on different molecule descriptors.
+"""MoleculePGD is a [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy] metric based on different molecule descriptors.
 
 - [`TopoChemicalDescriptor`][polygraph.utils.descriptors.molecule_descriptors.TopoChemicalDescriptor]: Topological features based on bond structure
 - [`FingerprintDescriptor`][polygraph.utils.descriptors.molecule_descriptors.FingerprintDescriptor]: Molecular fingerprints
@@ -6,12 +6,12 @@
 - [`ChemNetDescriptor`][polygraph.utils.descriptors.molecule_descriptors.ChemNetDescriptor]: Random projection of ChemNet embeddings, based on SMILES strings
 - [`MolCLRDescriptor`][polygraph.utils.descriptors.molecule_descriptors.MolCLRDescriptor]: Random projection of MolCLR embeddings from a GNN
 
-By default, we use TabPFN for binary classification and evaluate it by data log-likelihood, obtaining a PolyGraphScore that provides an estimated lower bound on the Jensen-Shannon
+By default, we use TabPFN for binary classification and evaluate it by data log-likelihood, obtaining a PolyGraphDiscrepancy that provides an estimated lower bound on the Jensen-Shannon
 distance between the generated and true graph distribution.
 
 ```python
 import rdkit.Chem
-from polygraph.metrics.molecule_pgs import MoleculePGS
+from polygraph.metrics.molecule_pgd import MoleculePGD
 
 smiles_a = [
     "CC(=O)Oc1ccccc1C(=O)O",
@@ -35,7 +35,7 @@ smiles_b = [
 ]
 mols_a = [rdkit.Chem.MolFromSmiles(smiles) for smiles in smiles_a]
 mols_b = [rdkit.Chem.MolFromSmiles(smiles) for smiles in smiles_b]
-metric = MoleculePGS(mols_a)
+metric = MoleculePGD(mols_a)
 print(metric.compute(mols_b))
 ```
 """
@@ -52,16 +52,19 @@ from polygraph.utils.descriptors.molecule_descriptors import (
     MolCLRDescriptor,
 )
 
-from polygraph.metrics.base import PolyGraphScore, PolyGraphScoreInterval
+from polygraph.metrics.base import (
+    PolyGraphDiscrepancy,
+    PolyGraphDiscrepancyInterval,
+)
 
 __all__ = [
-    "MoleculePGS",
-    "MoleculePGSInterval",
+    "MoleculePGD",
+    "MoleculePGDInterval",
 ]
 
 
-class MoleculePGS(PolyGraphScore[rdkit.Chem.Mol]):
-    """MoleculePGS to compare molecule distributions, combining different molecule descriptors.
+class MoleculePGD(PolyGraphDiscrepancy[rdkit.Chem.Mol]):
+    """MoleculePGD to compare molecule distributions, combining different molecule descriptors.
 
     Args:
         reference_molecules: Reference rdkit molecules
@@ -84,13 +87,13 @@ class MoleculePGS(PolyGraphScore[rdkit.Chem.Mol]):
         )
 
 
-class MoleculePGSInterval(PolyGraphScoreInterval[rdkit.Chem.Mol]):
-    """Uncertainty quantification for [`MoleculePGS`][polygraph.metrics.molecule_pgs.MoleculePGS].
+class MoleculePGDInterval(PolyGraphDiscrepancyInterval[rdkit.Chem.Mol]):
+    """Uncertainty quantification for [`MoleculePGD`][polygraph.metrics.molecule_pgd.MoleculePGD].
 
     Args:
         reference_molecules: Reference rdkit molecules
         subsample_size: Size of each subsample, should be consistent with the number
-            of reference and generated molecules passed to [`MoleculePGS`][polygraph.metrics.molecule_pgs.MoleculePGS]
+            of reference and generated molecules passed to [`MoleculePGD`][polygraph.metrics.molecule_pgd.MoleculePGD]
             for point estimates.
         num_samples: Number of samples to draw for uncertainty quantification.
     """

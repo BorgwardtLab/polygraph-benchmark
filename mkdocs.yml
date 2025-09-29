@@ -16,7 +16,7 @@ nav:
     - polygraph.metrics:
       - Interface: api_reference/metrics/interface.md
       - MMD: api_reference/metrics/mmd.md
-      - PolyGraphScore: api_reference/metrics/polygraphscore.md
+      - PolyGraphDiscrepancy: api_reference/metrics/polygraphscore.md
       - Frechet: api_reference/metrics/frechet.md
     - polygraph.datasets:
       - Dataset Base Classes: api_reference/datasets/dataset_base_classes.md
@@ -26,8 +26,8 @@ nav:
       - Graph Descriptors: api_reference/utils/graph_descriptors.md
       - Graph Kernels: api_reference/utils/graph_kernels.md
   - Standardized Metrics:
-    - StandardPGS: metrics/standard_pgs.md
-    - MoleculePGS: metrics/molecule_pgs.md
+    - StandardPGD: metrics/standard_pgd.md
+    - MoleculePGD: metrics/molecule_pgd.md
     - Gaussian TV MMD: metrics/gaussian_tv_mmd.md
     - RBF MMD: metrics/rbf_mmd.md
     - VUN: metrics/vun.md

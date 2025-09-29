@@ -8,8 +8,8 @@ from polygraph.utils.descriptors.molecule_descriptors import (
     ChemNetDescriptor,
     MolCLRDescriptor,
 )
-from polygraph.metrics.base import DescriptorMMD2, PolyGraphScore
-from polygraph.metrics.molecule_pgs import MoleculePGS, MoleculePGSInterval
+from polygraph.metrics.base import DescriptorMMD2, PolyGraphDiscrepancy
+from polygraph.metrics.molecule_pgd import MoleculePGD, MoleculePGDInterval
 from polygraph.utils.kernels import LinearKernel
 
 from rdkit.Chem import AllChem
@@ -98,7 +98,7 @@ def test_molecule_descriptors(descriptor):
 
 
 def test_smoke_polygraphscore():
-    metric = PolyGraphScore(mols_a, descriptors)
+    metric = PolyGraphDiscrepancy(mols_a, descriptors)
     metric.compute(mols_b)
 
 
@@ -118,9 +118,9 @@ def test_smoke_mmd2(descriptor, kernel):
     metric.compute(mols_b)
 
 
-def test_smoke_molecule_pgs():
-    metric = MoleculePGS(mols_a)
+def test_smoke_molecule_pgd():
+    metric = MoleculePGD(mols_a)
     metric.compute(mols_b)
 
-    metric = MoleculePGSInterval(mols_a, subsample_size=8, num_samples=4)
+    metric = MoleculePGDInterval(mols_a, subsample_size=8, num_samples=4)
     metric.compute(mols_b)

@@ -76,32 +76,32 @@ In practice the biased estimator is oftentimes used. We refer to the documentati
 !!! warning
     MMD metrics that are computed with different estimators, metrics, or kernels lie on different scales and are not comparable to each other.
 
-## PolyGraphScore
+## PolyGraphDiscrepancy
 
-The [PolyGraphScore metric](../api_reference/metrics/polygraphscore.md) compares two graph distributions by determining how well they can be distinguished by a binary classifier.
+The [PolyGraphDiscrepancy metric](../api_reference/metrics/polygraphscore.md) compares two graph distributions by determining how well they can be distinguished by a binary classifier.
 It aims to make metrics comparable across graph descriptors and produces interpretable values between 0 and 1.
-The PolyGraphScore is computed for several graph descriptors and produces a summary metric for these descriptors.
+The PolyGraphDiscrepancy is computed for several graph descriptors and produces a summary metric for these descriptors.
 This summary metric is an estimated lower bound on a probability metric that is intrinsic to the graph distributions and independent of the descriptors
 
-We provide [`StandardPGS`][polygraph.metrics.StandardPGS], a standardized version of the PolyGraphScore that combines 5 different graph descriptors:
+We provide [`StandardPGD`][polygraph.metrics.StandardPGD], a standardized version of the PolyGraphDiscrepancy that combines 5 different graph descriptors:
 
 ```python
 from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
-from polygraph.metrics import StandardPGS
+from polygraph.metrics import StandardPGD
 
-metric = StandardPGS(reference_graphs=PlanarGraphDataset("test").to_nx())
+metric = StandardPGD(reference_graphs=PlanarGraphDataset("test").to_nx())
 metric.compute(SBMGraphDataset("test").to_nx()) # {'polygraphscore': 0.999301797449604, 'polygraphscore_descriptor': 'degree', 'subscores': {'orbit': 0.9986018004713674, 'clustering': 0.9933180272388359, 'degree': 0.999301797449604, 'spectral': 0.9690467491487502, 'gin': 0.9984711185804029}}
 ```
 
-As with MMD metrics, you may also construct custom PolyGraphScore variants using other graph descriptors, evaluation metrics, or binary classification approaches.
+As with MMD metrics, you may also construct custom PolyGraphDiscrepancy variants using other graph descriptors, evaluation metrics, or binary classification approaches.
 E.g., you may construct the following metric
 
 ```python
 from polygraph.utils.descriptors import OrbitCounts, SparseDegreeHistogram
-from polygraph.metrics.base import PolyGraphScore
+from polygraph.metrics.base import PolyGraphDiscrepancy
 from sklearn.linear_model import LogisticRegression
 
-metric = PolyGraphScore(
+metric = PolyGraphDiscrepancy(
     reference_graphs=PlanarGraphDataset("test").to_nx(),
     descriptors={
         "orbit": OrbitCounts(),
