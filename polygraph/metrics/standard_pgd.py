@@ -1,4 +1,4 @@
-"""StandardPGD is a [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy] metric based on six different graph descriptors.
+"""StandardPGD is a [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy] metric based on six different graph descriptors.
 
 - [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]: Counts of different graphlet orbits
 - [`ClusteringHistogram`][polygraph.utils.descriptors.ClusteringHistogram]: Distribution of clustering coefficients
@@ -19,10 +19,10 @@ reference = PlanarGraphDataset("val").to_nx()
 generated = SBMGraphDataset("val").to_nx()
 
 benchmark = StandardPGD(reference)
-print(benchmark.compute(generated))     # {'polygraphscore': 0.9902651620251016, 'polygraphscore_descriptor': 'clustering', 'subscores': {'orbit': 0.9962500491652303, 'clustering': 0.9902651620251016, 'degree': 0.9975117559449073, 'spectral': 0.9634302070519823, 'gin': 0.994213920319544}}
+print(benchmark.compute(generated))     # {'pgd': 0.9902651620251016, 'pgd_descriptor': 'clustering', 'subscores': {'orbit': 0.9962500491652303, 'clustering': 0.9902651620251016, 'degree': 0.9975117559449073, 'spectral': 0.9634302070519823, 'gin': 0.994213920319544}}
 ```
 
-We also provide classes that implement individual [`ClassifierMetric`][polygraph.metrics.base.polygraphscore.ClassifierMetric]s:
+We also provide classes that implement individual [`ClassifierMetric`][polygraph.metrics.base.polygraphdiscrepancy.ClassifierMetric]s:
 
 - [`ClassifierOrbit4Metric`][polygraph.metrics.standard_pgd.ClassifierOrbit4Metric]: Classifier metric based on [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]
 - [`ClassifierOrbit5Metric`][polygraph.metrics.standard_pgd.ClassifierOrbit5Metric]: Classifier metric based on [`OrbitCounts`][polygraph.utils.descriptors.OrbitCounts]
@@ -36,7 +36,7 @@ from typing import Collection, Literal, Optional, List, Union
 
 import networkx as nx
 
-from polygraph.metrics.base.polygraphscore import (
+from polygraph.metrics.base.polygraphdiscrepancy import (
     ClassifierMetric,
     PolyGraphDiscrepancy,
     PolyGraphDiscrepancyInterval,
@@ -99,7 +99,7 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
     Args:
         reference_graphs: Collection of reference networkx graphs.
         subsample_size: Size of each subsample, should be consistent with the number
-            of reference and generated graphs passed to [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy]
+            of reference and generated graphs passed to [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy]
             for point estimates.
         num_samples: Number of samples to draw for uncertainty quantification.
     """

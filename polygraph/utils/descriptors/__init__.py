@@ -1,6 +1,6 @@
 """Graph descriptor functions for converting graphs into feature vectors.
 
-This module provides various functions that convert networkx graphs into numerical
+This module provides various functions that convert graphs into numerical
 representations suitable for kernel methods. Each descriptor is callable with an iterable of graphs and returns either a dense
 `numpy.ndarray` or sparse `scipy.sparse.csr_array` of shape `(n_graphs, n_features)`.
 They implement the [`GraphDescriptor`][polygraph.utils.descriptors.GraphDescriptor] interface.

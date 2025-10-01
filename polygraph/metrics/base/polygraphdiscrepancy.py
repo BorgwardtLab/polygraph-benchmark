@@ -1,20 +1,21 @@
 """
-PolyGraphDiscrepancys compare generated graphs to reference graphs by fitting a binary classifier to discriminate between the two.
+PolyGraph discrepancy metrics compare generated graphs to reference graphs by fitting a binary classifier to discriminate between the two.
 Performance metrics of this classifier lower-bound intrinsic probability metrics.
-Multiple graph descriptors may be combined within PolyGraphDiscrepancys to yield a theoretically grounded summary metric.
+Multiple graph descriptors may be combined within the metric to yield a theoretically grounded summary metric.
 
-Either logistic regression or TabPFN may be used for classification.
-The classifiers may be then be evaluated by:
+Any binary classifier implementing the standard scikit-learn interface (as defined in [`ClassifierProtocol`][polygraph.metrics.base.polygraphdiscrepancy.ClassifierProtocol])
+may be used for classification. By default, we use [TabPFN](https://github.com/PriorLabs/TabPFN).
+The classifiers may be then be evaluated by either:
 
-- Data log-likelihood - Provides a lower bound on the Jensen-Shannon distance, or
+- Data log-likelihood (default) - Provides a lower bound on the Jensen-Shannon distance, or
 - Informedness - Provides a lower bound on the total variation distance.
 
-The [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy] class combines metrics across multiple graph descriptors,
+The [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy] class combines metrics across multiple graph descriptors,
 providing the tightest lower-bound on the probability metrics.
-The [`ClassifierMetric`][polygraph.metrics.base.polygraphscore.ClassifierMetric] class, on the other hand, computes a lower bound
+The [`ClassifierMetric`][polygraph.metrics.base.polygraphdiscrepancy.ClassifierMetric] class, on the other hand, computes a lower bound
 for a single graph descriptor.
 
-The [`PolyGraphDiscrepancyInterval`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancyInterval] class implements a variant of the PolyGraphDiscrepancy
+The [`PolyGraphDiscrepancyInterval`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancyInterval] class implements a variant of the PolyGraphDiscrepancy
 with uncertainty quantification.
 
 Example:
@@ -33,7 +34,7 @@ Example:
             "degree": SparseDegreeHistogram(),
         },
     )
-    print(benchmark.compute(generated))         # {'polygraphscore': 0.9975117559449073, 'polygraphscore_descriptor': 'degree', 'subscores': {'orbit': 0.9962500491652303, 'degree': 0.9975117559449073}}
+    print(benchmark.compute(generated))         # {'pgd': 0.9975117559449073, 'pgd_descriptor': 'degree', 'subscores': {'orbit': 0.9962500491652303, 'degree': 0.9975117559449073}}
     ```
 
 """
@@ -74,24 +75,46 @@ __all__ = [
 
 
 class ClassifierProtocol(Protocol):
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "ClassifierProtocol": ...
-    def predict_proba(self, X: np.ndarray) -> np.ndarray: ...
+    """Protocol for binary classifiers used in the PolyGraph discrepancy metric."""
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> "ClassifierProtocol":
+        """Fit the classifier to the data.
+
+        Args:
+            X: Feature matrix of shape `(n_samples, n_features)`
+            y: Labels of shape `(n_samples,)`
+
+        Returns:
+            self: The fitted classifier
+        """
+        ...
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """Predict the probability of the positive class.
+
+        Args:
+            X: Feature matrix of shape `(n_samples, n_features)`
+
+        Returns:
+            Probabilities of shape `(n_samples, 2)`
+        """
+        ...
 
 
 class PolyGraphDiscrepancyResult(TypedDict):
     """Return type for PolyGraphDiscrepancy.compute method."""
 
-    polygraphscore: float
-    polygraphscore_descriptor: str
+    pgd: float
+    pgd_descriptor: str
     subscores: Dict[str, float]
 
 
 class PolyGraphDiscrepancyIntervalResult(TypedDict):
-    """Return type for PolyGraphDiscrepancyInterval.compute method."""
+    """Return type for `PolyGraphDiscrepancyInterval.compute` method."""
 
-    polyscore: MetricInterval
+    pgd: MetricInterval
     subscores: Dict[str, MetricInterval]
-    polyscore_descriptor: Dict[str, float]
+    pgd_descriptor: Dict[str, float]
 
 
 def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
@@ -505,8 +528,8 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
         )
         aggregate_metric = all_metrics[optimal_descriptor][1]
         result = {
-            "polygraphscore": aggregate_metric,
-            "polygraphscore_descriptor": optimal_descriptor,
+            "pgd": aggregate_metric,
+            "pgd_descriptor": optimal_descriptor,
             "subscores": {
                 name: metric[1] for name, metric in all_metrics.items()
             },
@@ -517,13 +540,13 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
 class PolyGraphDiscrepancyInterval(
     GenerationMetric[GraphType], Generic[GraphType]
 ):
-    """Uncertainty quantification for [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy].
+    """Uncertainty quantification for [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy].
 
     Args:
         reference_graphs: Reference graphs. Must provide at least `2 * subsample_size` graphs.
         descriptors: Dictionary of descriptor names and descriptor functions
         subsample_size: Size of each subsample, should be consistent with the number
-            of reference and generated graphs passed to [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy]
+            of reference and generated graphs passed to [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy]
             for point estimates.
         num_samples: Number of samples to draw for uncertainty quantification.
     """
@@ -565,8 +588,8 @@ class PolyGraphDiscrepancyInterval(
 
         Returns:
             Typed dictionary of scores.
-                The key `"polygraphscore"` specifies the PolyGraphDiscrepancy, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
-                The key `"polygraphscore_descriptor"` describes which descriptors achieve this score. This is a dictionary mapping descriptor names to the ratio of samples in which the descriptor was chosen.
+                The key `"pgd"` specifies the PolyGraphDiscrepancy, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
+                The key `"pgd_descriptor"` describes which descriptors achieve this score. This is a dictionary mapping descriptor names to the ratio of samples in which the descriptor was chosen.
                 All descritor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
         """
         if len(generated_graphs) < 2 * self._subsample_size:
@@ -601,9 +624,9 @@ class PolyGraphDiscrepancyInterval(
         descriptor_counts = Counter(optimal_descriptors)
 
         result = {
-            "polygraphscore": aggregate_interval,
+            "pgd": aggregate_interval,
             "subscores": all_sub_intervals,
-            "polygraphscore_descriptor": {
+            "pgd_descriptor": {
                 key: descriptor_counts[key] / self._num_samples
                 for key in self._sub_metrics.keys()
             },

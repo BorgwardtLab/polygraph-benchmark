@@ -12,7 +12,7 @@
 We implement the following metrics:
 
 - [MMD](mmd.md) - Classical Maximum Mean Discrepancy
-- [PolyGraphDiscrepancy](polygraphscore.md) - Lower bounds on probability metrics via classification
+- [PolyGraphDiscrepancy](polygraphdiscrepancy.md) - Lower bounds on probability metrics via classification
 - [VUN](../../metrics/vun.md) - Validity, Uniqueness, Novelty
 - [Fréchet Distance](frechet.md) - Optimal transport distance between fitted Gaussians
 

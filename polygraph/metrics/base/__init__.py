@@ -8,7 +8,7 @@ from polygraph.metrics.base.mmd import (
     MaxDescriptorMMD2,
     MaxDescriptorMMD2Interval,
 )
-from polygraph.metrics.base.polygraphscore import (
+from polygraph.metrics.base.polygraphdiscrepancy import (
     PolyGraphDiscrepancy,
     ClassifierMetric,
     PolyGraphDiscrepancyInterval,

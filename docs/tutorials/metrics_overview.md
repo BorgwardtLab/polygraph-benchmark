@@ -78,7 +78,7 @@ In practice the biased estimator is oftentimes used. We refer to the documentati
 
 ## PolyGraphDiscrepancy
 
-The [PolyGraphDiscrepancy metric](../api_reference/metrics/polygraphscore.md) compares two graph distributions by determining how well they can be distinguished by a binary classifier.
+The [PolyGraphDiscrepancy metric](../api_reference/metrics/polygraphdiscrepancy.md) compares two graph distributions by determining how well they can be distinguished by a binary classifier.
 It aims to make metrics comparable across graph descriptors and produces interpretable values between 0 and 1.
 The PolyGraphDiscrepancy is computed for several graph descriptors and produces a summary metric for these descriptors.
 This summary metric is an estimated lower bound on a probability metric that is intrinsic to the graph distributions and independent of the descriptors
@@ -90,7 +90,7 @@ from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
 from polygraph.metrics import StandardPGD
 
 metric = StandardPGD(reference_graphs=PlanarGraphDataset("test").to_nx())
-metric.compute(SBMGraphDataset("test").to_nx()) # {'polygraphscore': 0.999301797449604, 'polygraphscore_descriptor': 'degree', 'subscores': {'orbit': 0.9986018004713674, 'clustering': 0.9933180272388359, 'degree': 0.999301797449604, 'spectral': 0.9690467491487502, 'gin': 0.9984711185804029}}
+metric.compute(SBMGraphDataset("test").to_nx()) # {'pgd': 0.999301797449604, 'pgd_descriptor': 'degree', 'subscores': {'orbit': 0.9986018004713674, 'clustering': 0.9933180272388359, 'degree': 0.999301797449604, 'spectral': 0.9690467491487502, 'gin': 0.9984711185804029}}
 ```
 
 As with MMD metrics, you may also construct custom PolyGraphDiscrepancy variants using other graph descriptors, evaluation metrics, or binary classification approaches.
@@ -110,10 +110,10 @@ metric = PolyGraphDiscrepancy(
     classifier=LogisticRegression(),
     variant="informedness",
 )
-metric.compute(SBMGraphDataset("test").to_nx())         # {'polygraphscore': 0.9, 'polygraphscore_descriptor': 'orbit', 'subscores': {'orbit': 0.9, 'degree': 0.9}}
+metric.compute(SBMGraphDataset("test").to_nx())         # {'pgd': 0.9, 'pgd_descriptor': 'orbit', 'subscores': {'orbit': 0.9, 'degree': 0.9}}
 ```
 
-We refer to the [API reference](../api_reference/metrics/polygraphscore.md) for further details.
+We refer to the [API reference](../api_reference/metrics/polygraphdiscrepancy.md) for further details.
 
 ## Validity, Uniqueness, Novelty
 

@@ -1,6 +1,6 @@
 # PolyGraphDiscrepancy
 
-::: polygraph.metrics.base.polygraphscore
+::: polygraph.metrics.base.polygraphdiscrepancy
     options:
         show_root_heading: false
         show_root_toc_entry: false
@@ -28,6 +28,15 @@
 ## Estimating Distances with a Single Descriptor
 
 ::: polygraph.metrics.base.ClassifierMetric
+    options:
+        show_root_heading: true
+        show_full_path: true
+        show_source: false
+        heading_level: 3
+
+## Classifier Interface
+
+::: polygraph.metrics.base.polygraphdiscrepancy.ClassifierProtocol
     options:
         show_root_heading: true
         show_full_path: true

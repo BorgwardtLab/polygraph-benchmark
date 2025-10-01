@@ -1,4 +1,4 @@
-"""MoleculePGD is a [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphscore.PolyGraphDiscrepancy] metric based on different molecule descriptors.
+"""MoleculePGD is a [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy] metric based on different molecule descriptors.
 
 - [`TopoChemicalDescriptor`][polygraph.utils.descriptors.molecule_descriptors.TopoChemicalDescriptor]: Topological features based on bond structure
 - [`FingerprintDescriptor`][polygraph.utils.descriptors.molecule_descriptors.FingerprintDescriptor]: Molecular fingerprints

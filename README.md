@@ -83,10 +83,10 @@ Similarly, you can compute our proposed PolyGraphDiscrepancy, like so:
 from polygraph.metrics import StandardPGD
 
 pgd = StandardPGD(reference)
-print(pgd.compute(generated)) # {'polygraphscore': ..., 'polygraphscore_descriptor': ..., 'subscores': {'orbit': ..., }}
+print(pgd.compute(generated)) # {'pgd': ..., 'pgd_descriptor': ..., 'subscores': {'orbit': ..., }}
 ```
 
-`polygraphscore_descriptor` provides the best descriptor used to report the final score.
+`pgd_descriptor` provides the best descriptor used to report the final score.
 
 #### Validity, uniqueness and novelty
 VUN values follow a similar interface:

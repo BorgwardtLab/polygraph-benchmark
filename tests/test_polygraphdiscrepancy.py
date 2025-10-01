@@ -62,7 +62,7 @@ def test_classifier_metric(
 
 @pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
+def test_polygraphdiscrepancy(classifier, variant, dense_graphs, sparse_graphs):
     descriptors = {
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
@@ -73,34 +73,29 @@ def test_polygraphscore(classifier, variant, dense_graphs, sparse_graphs):
     else:
         classifier = LogisticRegression()
 
-    polygraphscore = PolyGraphDiscrepancy(
-        dense_graphs, descriptors, variant, classifier
-    )
-    result = polygraphscore.compute(sparse_graphs)
+    pgd = PolyGraphDiscrepancy(dense_graphs, descriptors, variant, classifier)
+    result = pgd.compute(sparse_graphs)
 
     assert isinstance(result, dict)
-    assert "polygraphscore" in result
-    assert "polygraphscore_descriptor" in result
+    assert "pgd" in result
+    assert "pgd_descriptor" in result
     assert "subscores" in result
     assert len(result["subscores"]) == len(descriptors)
-    assert (
-        result["polygraphscore"]
-        == result["subscores"][result["polygraphscore_descriptor"]]
+    assert result["pgd"] == result["subscores"][result["pgd_descriptor"]]
+
+    assert result["pgd"] >= 0.8, (
+        f"PolyGraphDiscrepancy {result['pgd']} is less than 0.8"
     )
 
-    assert result["polygraphscore"] >= 0.8, (
-        f"PolyGraphDiscrepancy {result['polygraphscore']} is less than 0.8"
-    )
-
-    result = polygraphscore.compute(dense_graphs)
-    assert result["polygraphscore"] <= 0.2, (
-        f"PolyGraphDiscrepancy {result['polygraphscore']} is greater than 0.2"
+    result = pgd.compute(dense_graphs)
+    assert result["pgd"] <= 0.2, (
+        f"PolyGraphDiscrepancy {result['pgd']} is greater than 0.2"
     )
 
 
 @pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_polygraphscore_interval(
+def test_polygraphdiscrepancy_interval(
     classifier, variant, dense_graphs, sparse_graphs
 ):
     descriptors = {
@@ -112,7 +107,7 @@ def test_polygraphscore_interval(
     else:
         classifier = LogisticRegression()
 
-    polygraphscore = PolyGraphDiscrepancyInterval(
+    pgd = PolyGraphDiscrepancyInterval(
         dense_graphs,
         descriptors,
         subsample_size=10,
@@ -120,14 +115,14 @@ def test_polygraphscore_interval(
         variant=variant,
         classifier=classifier,
     )
-    result = polygraphscore.compute(sparse_graphs)
+    result = pgd.compute(sparse_graphs)
     assert isinstance(result, dict)
-    assert "polygraphscore" in result
-    assert "polygraphscore_descriptor" in result
+    assert "pgd" in result
+    assert "pgd_descriptor" in result
     assert "subscores" in result
     assert len(result["subscores"]) == len(descriptors)
-    assert isinstance(result["polygraphscore"], MetricInterval)
-    assert isinstance(result["polygraphscore_descriptor"], dict)
+    assert isinstance(result["pgd"], MetricInterval)
+    assert isinstance(result["pgd_descriptor"], dict)
 
 
 def test_standard_pgd(dense_graphs, sparse_graphs):
@@ -168,9 +163,9 @@ def test_standard_pgd(dense_graphs, sparse_graphs):
     metric = StandardPGDInterval(dense_graphs, subsample_size=10, num_samples=4)
     result = metric.compute(sparse_graphs)
     assert isinstance(result, dict)
-    assert "polygraphscore" in result
-    assert "polygraphscore_descriptor" in result
+    assert "pgd" in result
+    assert "pgd_descriptor" in result
     assert "subscores" in result
     assert len(result["subscores"]) == len(individual_metrics)
-    assert isinstance(result["polygraphscore"], MetricInterval)
-    assert isinstance(result["polygraphscore_descriptor"], dict)
+    assert isinstance(result["pgd"], MetricInterval)
+    assert isinstance(result["pgd_descriptor"], dict)
