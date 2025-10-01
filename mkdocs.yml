@@ -16,7 +16,7 @@ nav:
     - polygraph.metrics:
       - Interface: api_reference/metrics/interface.md
       - MMD: api_reference/metrics/mmd.md
-      - PolyGraphDiscrepancy: api_reference/metrics/polygraphscore.md
+      - PolyGraphDiscrepancy: api_reference/metrics/polygraphdiscrepancy.md
       - Frechet: api_reference/metrics/frechet.md
     - polygraph.datasets:
       - Dataset Base Classes: api_reference/datasets/dataset_base_classes.md
