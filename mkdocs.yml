@@ -1,0 +1,61 @@
+site_name: polygraph
+theme:
+  name: readthedocs  # Optional, but makes docs look better
+  features:
+    - navigation.expand  # Expands all sections by default
+    - navigation.side.indexes
+
+nav:
+  - index.md
+  - Installation: installation.md
+  - Tutorials:
+    - Basic Usage: tutorials/basic_usage.md
+    - Metrics Overview: tutorials/metrics_overview.md
+    - Custom Datasets: tutorials/custom_datasets.md
+  - Base API Reference:
+    - polygraph.metrics:
+      - Interface: api_reference/metrics/interface.md
+      - MMD: api_reference/metrics/mmd.md
+      - PolyGraphDiscrepancy: api_reference/metrics/polygraphdiscrepancy.md
+      - Frechet: api_reference/metrics/frechet.md
+    - polygraph.datasets:
+      - Dataset Base Classes: api_reference/datasets/dataset_base_classes.md
+      - NetworkX View: api_reference/datasets/networkx_view.md
+      - Graph Serialization: api_reference/datasets/graph_serialization.md
+    - polygraph.utils:
+      - Graph Descriptors: api_reference/utils/graph_descriptors.md
+      - Graph Kernels: api_reference/utils/graph_kernels.md
+  - Standardized Metrics:
+    - StandardPGD: metrics/standard_pgd.md
+    - MoleculePGD: metrics/molecule_pgd.md
+    - Gaussian TV MMD: metrics/gaussian_tv_mmd.md
+    - RBF MMD: metrics/rbf_mmd.md
+    - VUN: metrics/vun.md
+  - Datasets:
+    - Small Synthetic Datasets: datasets/small_synthetic.md
+    - Procedural Datasets: datasets/procedural.md
+    - Real-World Datasets: datasets/real_world_topologies.md
+  - Utils:
+    - Graph Descriptors: utils/descriptors.md
+    - Graph Kernels: utils/kernels.md
+    - MMD Utilities: utils/mmd_utils.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            extensions:
+              - scripts/griffe_extension.py:JinjaDocstringExtension
+      paths: [polygraph]
+
+markdown_extensions:
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+
+
+extra_javascript:
+  - javascript/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

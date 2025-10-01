@@ -1,0 +1,27 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+  - id: check-yaml
+  - id: check-added-large-files
+  - id: debug-statements
+    name: Check for IPython embed
+    entry: from IPython import embed; embed()
+    language: pygrep
+    types: [python]
+
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.11.5
+  hooks:
+    # Run the linter.
+    - id: ruff
+      types_or: [ python, pyi ]
+      args: [--config=pyproject.toml]
+    # Run the formatter.
+    - id: ruff-format
+      types_or: [ python, pyi ]
+      args: [--config=pyproject.toml ]

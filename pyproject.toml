@@ -1,0 +1,92 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "polygraph"
+version = "0.1"
+description = "Evaluation benchmarks for graph generative models"
+authors = [
+    { name = "Markus Krimmel", email = "krimmel@biochem.mpg.de" },
+    { name = "Philip Hartout", email = "hartout@biochem.mpg.de" },
+    { name = "Dexiong Chen", email = "dchen@biochem.mpg.de" },
+    { name = "Karsten Borgwardt", email = "borgwardt@biochem.mpg.de" },
+]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=1.26.4,<3.0",
+    "torch>=2.4.0,<3.0",
+    "torch_geometric>=2.6.1,<3.0",
+    "rich",
+    "scipy>=1.14.0,<2.0",
+    "pydantic~=2.11.7",
+    "networkx>=3.4,<4.0",
+    "joblib",
+    "appdirs",
+    "loguru",
+    "rdkit",
+    "pandas",
+    "orbit-count",
+    "numba~=0.61.2",
+    "scikit-learn>=1.6.1,<2.0",
+    "tabpfn==2.0.9",
+    "fcd~=1.2.2"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-xdist",
+    "pyprojroot",
+    "ipython",
+    "ruff",
+    "pre-commit",
+    "eden-kernel @ git+https://github.com/fabriziocosta/EDeN.git", # Required for testing equivalence to Thompson et al.
+    "ipykernel",
+    "grakel",
+    "pytest-profiling",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocs-material",
+    "mkdocstrings-python",
+    "mkdocs-terminal",
+    "tabulate",
+    "jinja2",
+    "seaborn",
+    "tueplots",
+    "typer"
+]
+gpu = [
+    "dgl @ https://data.dgl.ai/wheels/torch-2.4/cu124/dgl-2.4.0%2Bcu124-cp311-cp311-manylinux1_x86_64.whl",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]  # look for packages in the current directory
+include = ["polygraph*"]  # include all packages starting with polygraph
+exclude = ["conversion"]  # keep your existing exclude
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 80
+target-version = "py310"
+exclude = ["tests/ggm_implementation", "tests/gran_mmd_implementation"]
+
+[tool.ruff.lint]
+ignore = ["E731"]
+
+[tool.ruff.lint.per-file-ignores]
+"polygraph/utils/kernels.py" = ["D102"]
+"polygraph/datasets/*.py" = ["D102"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pyright]
+include = ["polygraph"]
+exclude = [
+  "polygraph/datasets/base/molecules.py",
+  "polygraph/datasets/molecules.py"
+]

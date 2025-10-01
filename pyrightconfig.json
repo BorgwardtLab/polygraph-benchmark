@@ -1,0 +1,5 @@
+{
+    "typeCheckingMode": "basic",
+    "reportIncompatibleVariableOverride": "error",
+    "exclude": ["polygraph/datasets/molecules.py", "polygraph/datasets/base/molecules.py"]
+  }
