@@ -10,10 +10,11 @@ python:
   install:
     - method: pip
       path: .
+    - requirements: requirements-docs.txt
+
 
 sphinx: 
 mkdocs:
   configuration: mkdocs.yml
 
-formats:
-  - html
+formats: []

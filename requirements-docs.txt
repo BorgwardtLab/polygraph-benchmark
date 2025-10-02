@@ -3,3 +3,5 @@ mkdocs-material
 mkdocstrings
 mkdocstrings-python
 mkdocs-terminal
+jinja2
+tabulate
