@@ -465,7 +465,7 @@ class WeisfeilerLehmanDescriptor(GraphDescriptor[nx.Graph]):
     def _assign_node_degree_labels(self, graphs: List[nx.Graph]) -> None:
         for graph in graphs:
             for node in graph.nodes():
-                graph.nodes[node][self._node_label_key] = graph.degree(node)
+                graph.nodes[node][self._node_label_key] = graph.degree(node)  # pyright: ignore
 
     def _compute_wl_features_worker(self, graphs: List[nx.Graph]) -> List[dict]:
         return [self._compute_wl_features(graph) for graph in graphs]

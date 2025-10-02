@@ -168,7 +168,6 @@ class LobsterGraphDataset(SplitGraphDataset):
         return self._HASH_FOR_SPLIT[split]
 
 
-
 class LobsterLGraphDataset(ProceduralLobsterGraphDataset):
     def __init__(
         self,
