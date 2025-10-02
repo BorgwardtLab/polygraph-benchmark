@@ -5,3 +5,5 @@ mkdocstrings-python
 mkdocs-terminal
 jinja2
 tabulate
+matplotlib
+networkx
