@@ -134,7 +134,6 @@ class PlanarGraphDataset(SplitGraphDataset):
         return self._HASH_FOR_SPLIT[split]
 
 
-
 class PlanarLGraphDataset(ProceduralPlanarGraphDataset):
     def __init__(
         self,

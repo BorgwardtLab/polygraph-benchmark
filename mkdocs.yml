@@ -1,4 +1,5 @@
-site_name: polygraph
+site_name: polygraph-benchmark
+repo_url: https://github.com/BorgwardtLab/polygraph-benchmark
 theme:
   name: readthedocs  # Optional, but makes docs look better
   features:
