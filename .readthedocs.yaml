@@ -9,7 +9,8 @@ build:
     build:
       html:
         - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml 
-        - cp -r docs/images $READTHEDOCS_OUTPUT/html
+        - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml # Execute twice to make links to /images work
+        - ls -la $READTHEDOCS_OUTPUT/html
 
 python:
   install:
@@ -20,5 +21,4 @@ python:
 mkdocs:
   configuration: mkdocs.yml
 
-formats: 
-  - htmlzip
+formats: []
