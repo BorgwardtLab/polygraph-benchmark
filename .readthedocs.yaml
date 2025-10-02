@@ -7,8 +7,9 @@ build:
     python: "3.10"
   jobs:
     build:
-      - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml 
-      - cp -r docs/images $READTHEDOCS_OUTPUT/html
+      html:
+        - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml 
+        - cp -r docs/images $READTHEDOCS_OUTPUT/html
 
 python:
   install:
