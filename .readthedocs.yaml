@@ -13,7 +13,6 @@ python:
     - requirements: requirements-docs.txt
 
 
-sphinx: 
 mkdocs:
   configuration: mkdocs.yml
 
