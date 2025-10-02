@@ -147,4 +147,4 @@ def plot_first_k_graphs(
     plt.savefig(f"docs/images/{filename}", dpi=150, bbox_inches="tight")
     plt.close()
 
-    return f"![First {k} graphs](/images/{filename})\n\n"
+    return f"![First {k} graphs](../images/{filename})\n\n"
