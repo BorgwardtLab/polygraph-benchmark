@@ -6,7 +6,8 @@ build:
   tools:
     python: "3.10"
   jobs:
-    post_build:
+    build:
+      - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml 
       - cp -r docs/images $READTHEDOCS_OUTPUT/html
 
 python:
@@ -18,4 +19,5 @@ python:
 mkdocs:
   configuration: mkdocs.yml
 
-formats: []
+formats: 
+  - htmlzip
