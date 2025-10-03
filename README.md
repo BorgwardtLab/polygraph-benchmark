@@ -3,6 +3,16 @@
 PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics
 (including PolyGraphDiscrepancy).
 
+## Installation
+
+```bash
+pip install polygraph-benchmark
+```
+
+No manual compilation of ORCA is required. For details on interaction with `graph_tool`, see the more detailed installation instructions in the docs.
+
+If you'd like to use SBM graph dataset validation with graph tools, use a mamba or pixi environment. More information is available in the documentation.
+
 ## At a glance
 
 Here are a set of datasets and metrics this library provides:
@@ -36,16 +46,6 @@ We provide larger datasets that should be used instead:
 - `LobsterLGraphDataset`
 
 </details>
-
-## Installation
-
-```bash
-pip install polygraph-benchmark
-```
-
-No manual compilation of ORCA is required. For details on interaction with `graph_tool`, see the more detailed installation instructions in the docs.
-
-If you'd like to use SBM graph dataset validation with graph tools, use a mamba or pixi environment. More information is available in the documentation.
 
 
 ## Tutorial
