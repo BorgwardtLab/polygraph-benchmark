@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "polygraph-benchmark"
-version = "0.2.0"
+version = "1.0.0"
 description = "Evaluation benchmarks for graph generative models"
+readme = "README.md"
 authors = [
     { name = "Markus Krimmel", email = "krimmel@biochem.mpg.de" },
     { name = "Philip Hartout", email = "hartout@biochem.mpg.de" },
