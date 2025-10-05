@@ -1,0 +1,542 @@
+\documentclass[tikz,border=5pt]{standalone}
+
+% PolyGraph Benchmark logo (TikZ)
+% - Hex icon + styled title
+% - Tweak colors and layout in the "User Tweaks" section
+% - Select palettes via \SelectPalette{Name}
+
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning}
+
+% ===== User Tweaks (edit here) =====
+% Color palettes
+% - Define palettes as commands named \DefinePalette<Name>
+% - Each palette must set: vertexFill, vertexStroke, vertexText, edgeAColor, edgeBColor, edgeCColor, labelColor
+% - To switch palettes, call \SelectPalette{Name}
+
+% Palette selector (do not edit)
+\newcommand{\SelectPalette}[1]{\csname DefinePalette#1\endcsname}
+
+% --- Theme selector (Light/Dark) ---
+% A Theme maps to a palette and vertex/text colors appropriate for light or dark backgrounds.
+% Usage: \SelectTheme{Light} or \SelectTheme{Dark}
+\newcommand{\SelectTheme}[1]{\csname DefineTheme#1\endcsname}
+
+% Base-color appliers (used to reassert theme vertex/text colors after palette overrides)
+\newcommand{\ApplyThemeBaseColorsLight}{%
+  % Light theme: vertices use darkest shade
+  \definecolor{vertexFill}{HTML}{3C4C68}
+  \definecolor{vertexStroke}{HTML}{3C4C68}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{labelColor}{HTML}{3C4C68}
+}
+\newcommand{\ApplyThemeBaseColorsDark}{%
+  % Dark theme: vertices use lightest shade
+  \definecolor{vertexFill}{HTML}{CBD3E1}
+  \definecolor{vertexStroke}{HTML}{CBD3E1}
+  \definecolor{vertexText}{HTML}{0F172A}
+  \definecolor{labelColor}{HTML}{CBD3E1}
+}
+
+% Light theme: light background contexts (papers, web light mode)
+% - Vertices dark with light text for contrast, labels darker slate
+% - Choose a vivid, accessible palette
+\newcommand{\DefineThemeLight}{%
+  % Vertex and label colors tuned for light backgrounds
+  \ApplyThemeBaseColorsLight
+}
+
+% Dark theme: dark background contexts (web dark mode, slides)
+% - Vertices light with dark text for contrast, labels light slate
+% - Use slightly brighter lane hues for visibility on dark bg
+\newcommand{\DefineThemeDark}{%
+  % Vertex and label colors tuned for dark backgrounds
+  \ApplyThemeBaseColorsDark
+}
+
+% --- Built-in palettes ---
+% A/B/C lanes map to: edgeAColor (lane A), edgeBColor (lane B), edgeCColor (lane C)
+
+% 1) Indigo / Emerald / Amber (current default)
+\newcommand{\DefinePaletteIndigoEmeraldAmber}{%
+  \definecolor{vertexFill}{HTML}{000000}% black
+  \definecolor{vertexStroke}{HTML}{000000}% black
+  \definecolor{vertexText}{HTML}{FFFFFF}% white
+  \definecolor{edgeAColor}{HTML}{4F46E5}% indigo 600
+  \definecolor{edgeBColor}{HTML}{10B981}% emerald 500
+  \definecolor{edgeCColor}{HTML}{F59E0B}% amber 500
+  \definecolor{labelColor}{HTML}{2C3E50}% slate-like
+}
+
+% 2) Blue / Pink / Lime
+\newcommand{\DefinePaletteBluePinkLime}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{2563EB}% blue 600
+  \definecolor{edgeBColor}{HTML}{EC4899}% pink 500
+  \definecolor{edgeCColor}{HTML}{84CC16}% lime 500
+  \definecolor{labelColor}{HTML}{2C3E50}
+}
+
+% 3) Slate / Teal / Orange
+\newcommand{\DefinePaletteSlateTealOrange}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{334155}% slate 700
+  \definecolor{edgeBColor}{HTML}{14B8A6}% teal 500
+  \definecolor{edgeCColor}{HTML}{F97316}% orange 500
+  \definecolor{labelColor}{HTML}{2C3E50}
+}
+
+% 4) Navy / Gold / Crimson
+\newcommand{\DefinePaletteNavyGoldCrimson}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{1E3A8A}% navy 800
+  \definecolor{edgeBColor}{HTML}{D4AF37}% metallic gold
+  \definecolor{edgeCColor}{HTML}{DC2626}% crimson 600
+  \definecolor{labelColor}{HTML}{2C3E50}
+}
+
+% 5) Gray Trio (monochrome variants)
+\newcommand{\DefinePaletteGrayTrio}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{555555}% dark gray
+  \definecolor{edgeBColor}{HTML}{888888}% medium gray
+  \definecolor{edgeCColor}{HTML}{BBBBBB}% light gray
+  \definecolor{labelColor}{HTML}{444444}
+}
+
+% 6) Colorblind-safe (Okabe–Ito subset)
+\newcommand{\DefinePaletteColorblindSafe}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{0072B2}% blue
+  \definecolor{edgeBColor}{HTML}{009E73}% bluish green
+  \definecolor{edgeCColor}{HTML}{D55E00}% vermillion
+  \definecolor{labelColor}{HTML}{2C3E50}
+}
+
+% 7) Nord (final) palettes using user-specified trios
+% Light background: darker trio
+\newcommand{\DefinePaletteNordLight}{%
+  \definecolor{vertexFill}{HTML}{000000}% overridden by theme base
+  \definecolor{vertexStroke}{HTML}{000000}% overridden by theme base
+  \definecolor{vertexText}{HTML}{FFFFFF}% overridden by theme base
+  % Mapping: A=P, C=G, B=B (same for both themes)
+  \definecolor{edgeAColor}{HTML}{CBD3E1}% P
+  \definecolor{edgeCColor}{HTML}{7187AD}% G
+  \definecolor{edgeBColor}{HTML}{3C4C68}% B
+  \definecolor{labelColor}{HTML}{3C4C68}
+}
+% Dark background: lighter trio
+\newcommand{\DefinePaletteNordDark}{%
+  \definecolor{vertexFill}{HTML}{000000}% overridden by theme base
+  \definecolor{vertexStroke}{HTML}{000000}% overridden by theme base
+  \definecolor{vertexText}{HTML}{FFFFFF}% overridden by theme base
+  % Mapping: A=P, C=G, B=B (same for both themes)
+  \definecolor{edgeAColor}{HTML}{CBD3E1}% P
+  \definecolor{edgeCColor}{HTML}{7187AD}% G
+  \definecolor{edgeBColor}{HTML}{3C4C68}% B
+  \definecolor{labelColor}{HTML}{CBD3E1}
+}
+
+% Select the active theme here (overrides vertex/label colors as needed):
+% Options: Light, Dark. Can be overridden by defining \THEME at compile time.
+% Optional palette override via \PALETTE (e.g., IndigoEmeraldAmber, ...)
+\makeatletter
+\@ifundefined{THEME}{\def\THEME{Light}}{}
+\SelectTheme{\THEME}
+% Choose Nord palette to match THEME by default, then re-apply theme base colors
+\SelectPalette{Nord\THEME}
+\csname ApplyThemeBaseColors\THEME\endcsname
+% If PALETTE is provided, apply it and then re-apply theme base colors again
+\@ifundefined{PALETTE}{}{\SelectPalette{\PALETTE}\csname ApplyThemeBaseColors\THEME\endcsname}
+\makeatother
+
+% Geometry & sizing
+\newcommand{\VertexSize}{1.98mm}                 % Node diameter (+10% from 1.8mm)
+\newcommand{\HexagonRadius}{1.0cm}            % Distance from center to each corner (50% smaller)
+\newcommand{\EdgeThickness}{2.4pt}            % Base edge thickness (20% thinner)
+\newcommand{\ParallelBend}{26}                % Degrees for left/right parallel bends
+\newcommand{\EdgeOffset}{1.0mm}               % Perpendicular offset for parallel straight edges (smaller for main logo)
+\newcommand{\EdgeCurve}{18}                   % Bend amount (degrees) for curved lanes (triple-lane outer)
+\newcommand{\EdgeCurveDouble}{12}             % Softer bend for double-lane pairs
+
+% ===== Glyph (letter) rendering configuration =====
+% Match glyph height (4 units) to hexagon height (2*\HexagonRadius)
+% This sets each glyph unit to half the hexagon radius
+\pgfmathsetlengthmacro{\GlyphUnit}{0.5*\HexagonRadius}
+\newcommand{\LogoTextFont}{\sffamily\bfseries\fontsize{40pt}{44pt}\selectfont}
+\newcommand{\IconScale}{1.00}                 % Scale factor for the left icon only
+\newcommand{\GlyphAdvance}{4}                 % X-advance (in units) per letter
+\newcommand{\WordGap}{2}                      % (legacy) extra units between words
+\newcommand{\PolyGraphGap}{2}                 % Extra units between "Poly" and "Graph" (more space after 'oly')
+\newcommand{\GraphBenchGap}{4.5}                % Extra units between "Graph" and "Benchmark" (more spacing)
+\newcommand{\TextStartX}{2cm}                 % Absolute shift for the title (0 for text-only)
+\newcommand{\TextBaselineY}{-\HexagonRadius} % Vertical baseline (align with logo bottom)
+\newcommand{\GlyphTextScale}{0.70}
+
+% Fine-tunable gaps (in multiples of \GlyphUnit) between custom glyphs and text
+\newcommand{\GapPToOly}{-0.75}                 % Gap between custom P and "oly"
+\newcommand{\GapGToRaph}{0.2}                % Gap between custom G and "raph"
+\newcommand{\GapBToEnchmark}{0.2}            % Gap between custom B and "enchmark"
+
+% Node and edge styles
+% Node style (change once here to affect all nodes)
+\tikzset{vertex/.style={circle, draw=vertexStroke, fill=vertexFill, text=vertexText, minimum size=\VertexSize, inner sep=0pt, line width=\EdgeThickness}}
+
+% Label styles (unused by default)
+%\tikzset{vertexLabel/.style={font=\footnotesize\bfseries, text=labelColor}}
+%\tikzset{edgeLabel/.style={font=\scriptsize\bfseries, text=labelColor, fill=white, fill opacity=0.85, text opacity=1, inner sep=1pt, rounded corners=1pt}}
+%\tikzset{edgeLabelStraight/.style={edgeLabel, sloped, above}}
+%\tikzset{edgeLabelLeft/.style={edgeLabel, sloped}}
+%\tikzset{edgeLabelRight/.style={edgeLabel, sloped, below}}
+
+% Four edge types (choose per edge)
+\tikzset{edgeA/.style={draw=edgeAColor, line width=\EdgeThickness}}
+\tikzset{edgeB/.style={draw=edgeBColor, line width=\EdgeThickness, dashed}}
+\tikzset{edgeC/.style={draw=edgeCColor, line width=\EdgeThickness, densely dotted}}
+\tikzset{edgeTransparent/.style={draw opacity=0, line width=\EdgeThickness}}
+
+% Helpers to create three parallel edges between two nodes
+\tikzset{straightEdge/.style={}}
+\tikzset{bendLeftEdge/.style={bend left=\ParallelBend}}
+\tikzset{bendRightEdge/.style={bend right=\ParallelBend}}
+
+% Draw one straight edge offset perpendicularly by a given amount
+% Usage: \DrawOffsetEdge{nodeA}{nodeB}{offset}{style}
+\newcommand{\DrawOffsetEdge}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) -- ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+
+% Curved variants (left/right bend) with perpendicular offset
+\newcommand{\DrawCurvedEdgeL}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend left=\EdgeCurve] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+\newcommand{\DrawCurvedEdgeR}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend right=\EdgeCurve] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+
+% Curved variants specifically for double-lane pairs (softer bend)
+\newcommand{\DrawCurvedEdgeLDouble}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend left=\EdgeCurveDouble] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+\newcommand{\DrawCurvedEdgeRDouble}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend right=\EdgeCurveDouble] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+
+% Draw three parallel straight edges (centered, plus/minus offset) with independent styles
+% Usage: \TripleEdgesTypes{nodeA}{nodeB}{styleStraight}{styleOffsetPlus}{styleOffsetMinus}
+\newcommand{\TripleEdgesTypes}[5]{%
+  \DrawOffsetEdge{#1}{#2}{0pt}{#3}%
+  \DrawOffsetEdge{#1}{#2}{\EdgeOffset}{#4}%
+  \DrawOffsetEdge{#1}{#2}{-\EdgeOffset}{#5}%
+}
+
+% Convenience: use the same style for all three parallel edges
+% Usage: \TripleEdges{nodeA}{nodeB}{style}
+\newcommand{\TripleEdges}[3]{%
+  \TripleEdgesTypes{#1}{#2}{#3}{#3}{#3}%
+}
+
+% ===== Letter (glyph) helpers =====
+% Each letter macro expects a unique prefix name and an integer x-offset in glyph units.
+% It uses a color-agnostic edge macro \UseEdge{nodeA}{nodeB} set by the caller.
+
+% Default no-op; will be overridden per word with a color-specific drawer
+\newcommand{\UseEdge}[2]{}
+
+% Hex-based glyph setup: creates 6 outer vertices and a center, all as nodes
+% Orientation matches the main logo (pointy-top hex). Height = 4 units.
+% Vertices are named: <prefix>-v1..v6 (angles: 90,150,210,270,330,30) and center <prefix>-c
+\newcommand{\HexGlyphSetup}[1]{%
+  \coordinate (#1-c) at (0,2);
+  \foreach \k/\ang in {1/90,2/150,3/210,4/270,5/330,6/30} {\path ($(#1-c)+(\ang:2)$) coordinate (#1-v\k);}%
+}
+
+% Helper: place a coordinate and a node
+\newcommand{\GlyphPoint}[3]{% prefix, x, y (grid coords)
+  \coordinate (#1-#2-#3) at (#2,#3);\node[vertex] at (#1-#2-#3) {};%
+}
+% Helper: draw one segment using the active color macro
+\newcommand{\Seg}[3]{% prefix, (x1,y1)--(x2,y2)
+  \UseEdge{#1-#2}{#1-#3}%
+}
+
+% Letter P
+\newcommand{\LetterP}[2]{% prefix, baseX (three-stroke P from hex outline)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    % Strokes: left vertical, top, mid
+    \UseEdge{#1-v2}{#1-v3}% left side
+    \UseEdge{#1-v2}{#1-v6}% top arc
+    \UseEdge{#1-v6}{#1-v1}% mid arc
+  \end{scope}%
+}
+
+% Letter o
+\newcommand{\Lettero}[2]{% prefix, baseX (full hexagon)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    \UseEdge{#1-v1}{#1-v2}\UseEdge{#1-v2}{#1-v3}\UseEdge{#1-v3}{#1-v4}%
+    \UseEdge{#1-v4}{#1-v5}\UseEdge{#1-v5}{#1-v6}\UseEdge{#1-v6}{#1-v1}
+  \end{scope}%
+}
+
+% Letter l
+\newcommand{\Letterl}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{0}{4}\GlyphPoint{#1}{2}{0}
+    \UseEdge{#1-0-0}{#1-0-4}\UseEdge{#1-0-0}{#1-2-0}
+  \end{scope}%
+}
+
+% Letter y
+\newcommand{\Lettery}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{3}\GlyphPoint{#1}{1}{2}\GlyphPoint{#1}{2}{3}\GlyphPoint{#1}{1}{0}
+    \UseEdge{#1-0-3}{#1-1-2}\UseEdge{#1-2-3}{#1-1-2}\UseEdge{#1-1-2}{#1-1-0}
+  \end{scope}%
+}
+
+% Letter G
+\newcommand{\LetterG}[2]{% prefix, baseX (hex with slanted link to center)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    \UseEdge{#1-v1}{#1-v2}\UseEdge{#1-v2}{#1-v3}\UseEdge{#1-v3}{#1-v4}%
+    \UseEdge{#1-v4}{#1-v5}\UseEdge{#1-v5}{#1-v6}% leave v6->v1 open
+    \UseEdge{#1-v6}{#1-c}% slanted to center
+  \end{scope}%
+}
+
+% Letter r
+\newcommand{\Letterr}[2]{% prefix, baseX (like P + down-right edge)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    \UseEdge{#1-v2}{#1-v3}% left
+    \UseEdge{#1-v2}{#1-v6}% top
+    \UseEdge{#1-v6}{#1-v1}% mid
+    \UseEdge{#1-v1}{#1-v5}% down-right leg along hex outline
+  \end{scope}%
+}
+
+% Letter a
+\newcommand{\Lettera}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{2}{0}\GlyphPoint{#1}{2}{3}\GlyphPoint{#1}{0}{3}\GlyphPoint{#1}{0}{1}\GlyphPoint{#1}{2}{1}
+    \UseEdge{#1-0-0}{#1-2-0}\UseEdge{#1-2-0}{#1-2-3}\UseEdge{#1-2-3}{#1-0-3}\UseEdge{#1-0-3}{#1-0-0}
+    \UseEdge{#1-0-1}{#1-2-1}
+  \end{scope}%
+}
+
+% Letter p
+\newcommand{\Letterp}[2]{% prefix, baseX (lowercase p, 3-stroke like P with descender)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    \UseEdge{#1-v2}{#1-v4}% stem with descender
+    \UseEdge{#1-v2}{#1-v6}% top arc
+    \UseEdge{#1-v6}{#1-v1}% mid arc
+  \end{scope}%
+}
+
+% Letter h
+\newcommand{\LetterH}[2]{% prefix, baseX (capital H, hex-derived)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    \UseEdge{#1-v2}{#1-v3}% left pillar
+    \UseEdge{#1-v1}{#1-v4}% right pillar
+    \UseEdge{#1-v6}{#1-v5}% crossbar
+  \end{scope}%
+}
+
+% Letter B
+\newcommand{\LetterB}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{0}{4}\GlyphPoint{#1}{2}{4}\GlyphPoint{#1}{2}{3}\GlyphPoint{#1}{0}{3}
+    \GlyphPoint{#1}{2}{2}\GlyphPoint{#1}{2}{0}\GlyphPoint{#1}{0}{2}
+    \UseEdge{#1-0-0}{#1-0-4}
+    \UseEdge{#1-0-4}{#1-2-4}\UseEdge{#1-2-4}{#1-2-3}\UseEdge{#1-2-3}{#1-0-3}
+    \UseEdge{#1-0-2}{#1-2-2}\UseEdge{#1-2-2}{#1-2-0}\UseEdge{#1-2-0}{#1-0-0}
+  \end{scope}%
+}
+
+% Letter e
+\newcommand{\Letttere}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{0}{3}\GlyphPoint{#1}{2}{3}\GlyphPoint{#1}{2}{0}\GlyphPoint{#1}{2}{2}\GlyphPoint{#1}{0}{2}
+    \UseEdge{#1-0-3}{#1-2-3}\UseEdge{#1-0-0}{#1-2-0}\UseEdge{#1-0-0}{#1-0-3}\UseEdge{#1-0-2}{#1-2-2}
+  \end{scope}%
+}
+
+% Letter n
+\newcommand{\Lettern}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{0}{3}\GlyphPoint{#1}{2}{0}\GlyphPoint{#1}{2}{3}
+    \UseEdge{#1-0-0}{#1-0-3}\UseEdge{#1-0-3}{#1-2-3}\UseEdge{#1-2-0}{#1-2-3}
+  \end{scope}%
+}
+
+% Letter c
+\newcommand{\Letterc}[2]{% prefix, baseX
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{0}{3}\GlyphPoint{#1}{2}{0}\GlyphPoint{#1}{2}{3}
+    \UseEdge{#1-0-0}{#1-2-0}\UseEdge{#1-0-3}{#1-2-3}\UseEdge{#1-0-0}{#1-0-3}
+  \end{scope}%
+}
+
+% Letter m
+\newcommand{\Letterm}[2]{% prefix, baseX (note: width 3 units)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \GlyphPoint{#1}{0}{0}\GlyphPoint{#1}{0}{3}\GlyphPoint{#1}{1}{0}\GlyphPoint{#1}{1}{3}\GlyphPoint{#1}{2}{0}\GlyphPoint{#1}{2}{3}
+    \UseEdge{#1-0-0}{#1-0-3}\UseEdge{#1-1-0}{#1-1-3}\UseEdge{#1-2-0}{#1-2-3}\UseEdge{#1-0-3}{#1-1-3}\UseEdge{#1-1-3}{#1-2-3}
+  \end{scope}%
+}
+
+% Letter k
+\newcommand{\Letterk}[2]{% prefix, baseX (hex-derived K: stem + two diagonals)
+  \begin{scope}[x=\GlyphUnit,y=\GlyphUnit,shift={(#2,0)}]
+    \HexGlyphSetup{#1}
+    \UseEdge{#1-v2}{#1-v4}% stem
+    \UseEdge{#1-v1}{#1-v2}% upper diagonal (approx)
+    \UseEdge{#1-v4}{#1-v5}% lower diagonal (approx)
+  \end{scope}%
+}
+
+% Draw labels along the three straight, offset parallel edges between two nodes
+% Usage: \LabelTripleEdgesTypes{nodeA}{nodeB}{labelStraight}{labelPlus}{labelMinus}
+\newcommand{\LabelTripleEdgesTypes}[5]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[draw=none] ($ (#1) + (0,0pt) $) -- node[midway,edgeLabelStraight] {#3} ($ (#2) + (0,0pt) $);
+    \draw[draw=none] ($ (#1) + (0,\EdgeOffset) $) -- node[midway,edgeLabelLeft] {#4} ($ (#2) + (0,\EdgeOffset) $);
+    \draw[draw=none] ($ (#1) + (0,-\EdgeOffset) $) -- node[midway,edgeLabelRight] {#5} ($ (#2) + (0,-\EdgeOffset) $);
+  \end{scope}%
+}
+% Convenience: same label for all three parallel edges
+% Usage: \LabelTripleEdges{nodeA}{nodeB}{label}
+\newcommand{\LabelTripleEdges}[3]{%
+  \LabelTripleEdgesTypes{#1}{#2}{#3}{#3}{#3}%
+}
+
+\begin{document}
+\begin{tikzpicture}[scale=1]
+  % (text-only build) No icon coordinates
+
+  % --- EDGES (color-specific lanes) ---
+  % Straight lane drawers
+  \newcommand{\DrawRedEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeAColor, line width=\EdgeThickness}}
+  \newcommand{\DrawGreenEdge}[2]{\DrawOffsetEdge{#1}{#2}{\EdgeOffset}{draw=edgeBColor, line width=\EdgeThickness}}
+  \newcommand{\DrawBlueEdge}[2]{\DrawOffsetEdge{#1}{#2}{-\EdgeOffset}{draw=edgeCColor, line width=\EdgeThickness}}
+  % Curved lane drawers (no endpoint offsets when curved)
+  % Triple-lane outer (use \EdgeCurve)
+  \newcommand{\DrawRedEdgeCurveL}[2]{\DrawCurvedEdgeL{#1}{#2}{0pt}{draw=edgeAColor, line width=\EdgeThickness}}
+  \newcommand{\DrawGreenEdgeCurveL}[2]{\DrawCurvedEdgeL{#1}{#2}{0pt}{draw=edgeBColor, line width=\EdgeThickness}}
+  \newcommand{\DrawBlueEdgeCurveR}[2]{\DrawCurvedEdgeR{#1}{#2}{0pt}{draw=edgeCColor, line width=\EdgeThickness}}
+  % Double-lane (use softer curvature)
+  \newcommand{\DrawRedEdgeCurveLDouble}[2]{\DrawCurvedEdgeLDouble{#1}{#2}{0pt}{draw=edgeAColor, line width=\EdgeThickness}}
+  \newcommand{\DrawGreenEdgeCurveLDouble}[2]{\DrawCurvedEdgeLDouble{#1}{#2}{0pt}{draw=edgeBColor, line width=\EdgeThickness}}
+  \newcommand{\DrawGreenEdgeCurveRDouble}[2]{\DrawCurvedEdgeRDouble{#1}{#2}{0pt}{draw=edgeBColor, line width=\EdgeThickness}}
+  \newcommand{\DrawBlueEdgeCurveRDouble}[2]{\DrawCurvedEdgeRDouble{#1}{#2}{0pt}{draw=edgeCColor, line width=\EdgeThickness}}
+
+% --- EDGE LABELS (disabled) ---
+
+  % (text-only build) No icon edges
+
+  % (text-only build) No icon nodes
+
+  % ===== Title to the right of the logo =====
+  % Define which color lane to use for the following word
+  % Red for "Poly" (baseline aligned to bottom of logo)
+  \renewcommand{\UseEdge}[2]{\DrawRedEdge{#1}{#2}}
+  \begin{scope}[shift={(\TextStartX,\TextBaselineY)}, x=\GlyphUnit, y=\GlyphUnit, scale=\GlyphTextScale, local bounding box=polybox]
+    % P edges: 4-c, c-1, 1-6, c-6
+    \HexGlyphSetup{polyP}
+    \renewcommand{\UseEdge}[2]{\DrawRedEdge{#1}{#2}}
+    \UseEdge{polyP-v4}{polyP-c}
+    \UseEdge{polyP-c}{polyP-v1}
+    \UseEdge{polyP-v1}{polyP-v6}
+    \UseEdge{polyP-c}{polyP-v6}
+    % Nodes used in P
+    \foreach \p in {polyP-v4,polyP-c,polyP-v1,polyP-v6} {\node[vertex] at (\p) {};}
+  \end{scope}
+  % Set text gap to the right of custom glyph
+  \pgfmathsetlengthmacro{\PolyTextGapLen}{\GapPToOly*\GlyphUnit}
+  % Place remaining text for "Poly"
+  \node (olytext) [anchor=base west, text=edgeAColor, inner sep=0pt, font=\LogoTextFont] at ($(polybox.east |- 0,\TextBaselineY) + (\PolyTextGapLen,0)$) {oly};
+
+  % Blue for "Graph"
+  \renewcommand{\UseEdge}[2]{\DrawBlueEdge{#1}{#2}}
+  \pgfmathsetlengthmacro{\PolyGapLen}{\PolyGraphGap*\GlyphUnit}
+  \begin{scope}[shift={(olytext.base east)}, xshift=\PolyGapLen, yshift=0pt, x=\GlyphUnit, y=\GlyphUnit, scale=\GlyphTextScale, local bounding box=graphbox]
+    % G edges: 1-2, 2-3, 3-4, 4-5, 5-c + 1-6
+    \HexGlyphSetup{graphG}
+    % Center edges with blue color, solid (continuous) style for letters
+    \renewcommand{\UseEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeCColor, line width=\EdgeThickness}}
+    \UseEdge{graphG-v1}{graphG-v2}
+    \UseEdge{graphG-v2}{graphG-v3}
+    \UseEdge{graphG-v3}{graphG-v4}
+    \UseEdge{graphG-v4}{graphG-v5}
+    \UseEdge{graphG-v5}{graphG-c}
+    \UseEdge{graphG-v1}{graphG-v6}
+    % Nodes used in G
+    \foreach \p in {graphG-v1,graphG-v2,graphG-v3,graphG-v4,graphG-v5,graphG-v6,graphG-c} {\node[vertex] at (\p) {};}
+  \end{scope}
+  \pgfmathsetlengthmacro{\GraphTextGapLen}{\GapGToRaph*\GlyphUnit}
+  \node[anchor=base west, text=edgeCColor, inner sep=0pt, font=\LogoTextFont] at ($(graphbox.east |- 0,\TextBaselineY) + (\GraphTextGapLen,0)$) {raph};
+
+  % Green for "Benchmark"
+  \renewcommand{\UseEdge}[2]{\DrawGreenEdge{#1}{#2}}
+  \pgfmathsetlengthmacro{\GreenShift}{(4+\PolyGraphGap + 5+\GraphBenchGap)*\GlyphUnit}
+  \pgfmathsetlengthmacro{\GraphGapLen}{\GraphBenchGap*\GlyphUnit}
+  \begin{scope}[shift={($(graphbox.south east |- 0,\TextBaselineY)$)}, xshift=\GraphGapLen, x=\GlyphUnit, y=\GlyphUnit, scale=\GlyphTextScale, local bounding box=benchbbox]
+    % B edges: partial hexagon + inner connections
+    \HexGlyphSetup{benchB}
+    % Center edges with green color, solid (continuous) style for letters
+    \renewcommand{\UseEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeBColor, line width=\EdgeThickness}}
+    % Hexagon edges (kept): 4-5, 6-1
+    \UseEdge{benchB-v4}{benchB-v5}
+    \UseEdge{benchB-v6}{benchB-v1}
+    % Inner connections
+    \UseEdge{benchB-v1}{benchB-v6}
+    \UseEdge{benchB-v1}{benchB-c}
+    \UseEdge{benchB-c}{benchB-v4}
+    \UseEdge{benchB-c}{benchB-v5}
+    \UseEdge{benchB-c}{benchB-v6}
+    % Nodes used in B
+    \foreach \p in {benchB-v1,benchB-v4,benchB-v5,benchB-v6,benchB-c} {\node[vertex] at (\p) {};}
+  \end{scope}
+  \pgfmathsetlengthmacro{\BenchTextGapLen}{\GapBToEnchmark*\GlyphUnit}
+  \node[anchor=base west, text=edgeBColor, inner sep=0pt, font=\LogoTextFont] at ($(benchbbox.east |- 0,\TextBaselineY) + (\BenchTextGapLen,0)$) {enchmark};
+\end{tikzpicture}
+\end{document}
+
+

@@ -1,0 +1,172 @@
+\documentclass[tikz,border=5pt]{standalone}
+
+% PolyGraph Benchmark icon only
+
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning}
+
+% Palettes (copied from main for consistency)
+\newcommand{\SelectPalette}[1]{\csname DefinePalette#1\endcsname}
+\newcommand{\DefinePaletteSlateTealOrange}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{334155}
+  \definecolor{edgeBColor}{HTML}{14B8A6}
+  \definecolor{edgeCColor}{HTML}{F97316}
+  \definecolor{labelColor}{HTML}{2C3E50}
+}
+\newcommand{\DefinePaletteIndigoEmeraldAmber}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{4F46E5}
+  \definecolor{edgeBColor}{HTML}{10B981}
+  \definecolor{edgeCColor}{HTML}{F59E0B}
+  \definecolor{labelColor}{HTML}{2C3E50}
+}
+
+% Grayscale trio
+\newcommand{\DefinePaletteGrayTrio}{%
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{555555}
+  \definecolor{edgeBColor}{HTML}{888888}
+  \definecolor{edgeCColor}{HTML}{BBBBBB}
+  \definecolor{labelColor}{HTML}{444444}
+}
+
+% Nord palettes (Aurora accents)
+\newcommand{\DefinePaletteNordLight}{%
+  % Unified trio mapping: A=P, C=G, B=B
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{CBD3E1}% P
+  \definecolor{edgeCColor}{HTML}{7187AD}% G
+  \definecolor{edgeBColor}{HTML}{3C4C68}% B
+  \definecolor{labelColor}{HTML}{3C4C68}
+}
+\newcommand{\DefinePaletteNordDark}{%
+  % Unified trio mapping: A=P, C=G, B=B
+  \definecolor{vertexFill}{HTML}{000000}
+  \definecolor{vertexStroke}{HTML}{000000}
+  \definecolor{vertexText}{HTML}{FFFFFF}
+  \definecolor{edgeAColor}{HTML}{CBD3E1}% P
+  \definecolor{edgeCColor}{HTML}{7187AD}% G
+  \definecolor{edgeBColor}{HTML}{3C4C68}% B
+  \definecolor{labelColor}{HTML}{CBD3E1}
+}
+
+% Theme selector (Light/Dark) to unify with other files
+\newcommand{\SelectTheme}[1]{\csname DefineTheme#1\endcsname}
+\newcommand{\ApplyThemeBaseColorsLight}{\definecolor{vertexFill}{HTML}{3C4C68}\definecolor{vertexStroke}{HTML}{3C4C68}\definecolor{vertexText}{HTML}{FFFFFF}\definecolor{labelColor}{HTML}{3C4C68}}
+\newcommand{\ApplyThemeBaseColorsDark}{\definecolor{vertexFill}{HTML}{CBD3E1}\definecolor{vertexStroke}{HTML}{CBD3E1}\definecolor{vertexText}{HTML}{0F172A}\definecolor{labelColor}{HTML}{CBD3E1}}
+\newcommand{\DefineThemeLight}{% Only base colors
+  \ApplyThemeBaseColorsLight
+}
+\newcommand{\DefineThemeDark}{% Only base colors
+  \ApplyThemeBaseColorsDark
+}
+% Select theme; can be overridden via \\THEME and optional \\PALETTE
+\makeatletter
+\newcommand{\DefaultPalette}{NordLight}
+\@ifundefined{THEME}{\def\THEME{Light}\SelectTheme{Light}}{\SelectTheme{\THEME}}
+% Apply default palette first, then override if provided
+\SelectPalette{\DefaultPalette}
+\@ifundefined{PALETTE}{}{\SelectPalette{\PALETTE}\csname ApplyThemeBaseColors\THEME\endcsname}
+\makeatother
+
+% Geometry
+\newcommand{\VertexSize}{1.98mm}
+\newcommand{\HexagonRadius}{1.0cm}
+\newcommand{\EdgeThickness}{2.4pt}
+% Slightly thinner edges for the standalone icon
+\newcommand{\IconEdgeThickness}{0.85*\EdgeThickness}
+\newcommand{\EdgeCurve}{18}
+\newcommand{\EdgeCurveDouble}{12}
+
+\tikzset{vertex/.style={circle, draw=vertexStroke, fill=vertexFill, text=vertexText, minimum size=\VertexSize, inner sep=0pt, line width=\EdgeThickness, line join=round}}
+
+% Offset/curved helpers
+\newcommand{\DrawOffsetEdge}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) -- ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+\newcommand{\DrawCurvedEdgeL}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend left=\EdgeCurve] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+\newcommand{\DrawCurvedEdgeR}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend right=\EdgeCurve] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+\newcommand{\DrawCurvedEdgeLDouble}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend left=\EdgeCurveDouble] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+\newcommand{\DrawCurvedEdgeRDouble}[4]{%
+  \pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}{\pgfpointanchor{#2}{center}}%
+  \let\AngleTmp\pgfmathresult%
+  \begin{scope}[rotate around={\AngleTmp:(#1)}]
+    \draw[#4] ($ (#1) + (0,#3) $) to[bend right=\EdgeCurveDouble] ($ (#2) + (0,#3) $);
+  \end{scope}%
+}
+
+\begin{document}
+\begin{tikzpicture}[scale=1]
+  % Coordinates
+  \path (0,0) coordinate (c);
+  \foreach \i [evaluate=\i as \ang using 90 + 60*(\i-1)] in {1,...,6} {\path (\ang:\HexagonRadius) coordinate (v\i);} 
+
+  % Lane drawers
+  \newcommand{\DrawRedEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeAColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawGreenEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeBColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawBlueEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeCColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawRedEdgeCurveL}[2]{\DrawCurvedEdgeL{#1}{#2}{0pt}{draw=edgeAColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawGreenEdgeCurveL}[2]{\DrawCurvedEdgeL{#1}{#2}{0pt}{draw=edgeBColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawBlueEdgeCurveR}[2]{\DrawCurvedEdgeR{#1}{#2}{0pt}{draw=edgeCColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawRedEdgeCurveLDouble}[2]{\DrawCurvedEdgeLDouble{#1}{#2}{0pt}{draw=edgeAColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawGreenEdgeCurveLDouble}[2]{\DrawCurvedEdgeLDouble{#1}{#2}{0pt}{draw=edgeBColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawGreenEdgeCurveRDouble}[2]{\DrawCurvedEdgeRDouble{#1}{#2}{0pt}{draw=edgeBColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+  \newcommand{\DrawBlueEdgeCurveRDouble}[2]{\DrawCurvedEdgeRDouble{#1}{#2}{0pt}{draw=edgeCColor, line width=\IconEdgeThickness, line cap=round, line join=round}}
+
+  % Icon edges (same as main file)
+  \begin{scope}[scale=1]
+    % Red
+    \foreach \a/\b in {v1/c, c/v4} {\DrawRedEdgeCurveLDouble{\a}{\b};}
+    \DrawRedEdgeCurveLDouble{c}{v6}
+    \DrawRedEdge{v6}{v1}
+
+    % Blue
+    \foreach \a/\b in {v1/v2, v2/v3, v3/v4} {\DrawBlueEdge{\a}{\b};}
+    \foreach \a/\b in {v4/v5, v5/c} {\DrawBlueEdgeCurveRDouble{\a}{\b};}
+    \DrawBlueEdgeCurveR{v6}{v1}
+
+    % Green
+    \DrawGreenEdgeCurveRDouble{c}{v4}
+    \DrawGreenEdgeCurveLDouble{v4}{v5}
+    \DrawGreenEdgeCurveLDouble{v5}{c}
+    \DrawGreenEdgeCurveRDouble{c}{v6}
+    \DrawGreenEdgeCurveRDouble{v1}{c}
+    \DrawGreenEdgeCurveL{v6}{v1}
+  \end{scope}
+
+  % Nodes
+  \foreach \p in {v1,c,v4,v6,v1,v2,v3,v5} {\node[vertex] at (\p) {};}
+\end{tikzpicture}
+\end{document}
