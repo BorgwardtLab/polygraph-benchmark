@@ -2,13 +2,13 @@
   <picture>
   <source media="(prefers-color-scheme: dark)" srcset="logo/logo_icon_Dark_NordDark.png">
   <source media="(prefers-color-scheme: light)" srcset="logo/logo_icon_Light_NordLight.png">
-  <img src="logo/logo_icon_Light_NordLight.png" alt="PolyGraph icon" height="128">
+  <img src="https://raw.githubusercontent.com/BorgwardtLab/polygraph-benchmark/refs/heads/master/logo/logo_Light_NordLight.png" alt="PolyGraph icon" height="128">
   </picture>
   <br>
   <picture>
   <source media="(prefers-color-scheme: dark)" srcset="logo/logo_Dark_NordDark.png">
   <source media="(prefers-color-scheme: light)" srcset="logo/logo_Light_NordLight.png">
-  <img src="logo/logo_Light_NordLight.png" alt="PolyGraph logo" height="100">
+  <img src="https://raw.githubusercontent.com/BorgwardtLab/polygraph-benchmark/refs/heads/master/logo/logo_icon_Light_NordLight.png" alt="PolyGraph logo" height="100">
   </picture>
 </p>
 
