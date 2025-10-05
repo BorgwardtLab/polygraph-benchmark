@@ -1,3 +1,17 @@
+<p align="center">
+  <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo/logo_icon_Dark_NordDark.png">
+  <source media="(prefers-color-scheme: light)" srcset="logo/logo_icon_Light_NordLight.png">
+  <img src="logo/logo_icon_Light_NordLight.png" alt="PolyGraph icon" height="128">
+  </picture>
+  <br>
+  <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo/logo_Dark_NordDark.png">
+  <source media="(prefers-color-scheme: light)" srcset="logo/logo_Light_NordLight.png">
+  <img src="logo/logo_Light_NordLight.png" alt="PolyGraph logo" height="100">
+  </picture>
+</p>
+
 # PolyGraph
 
 PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics
