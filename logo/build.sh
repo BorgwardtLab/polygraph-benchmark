@@ -10,7 +10,8 @@ set -euo pipefail
 # Requires: pdflatex, dvisvgm
 # Optional for PNG: rsvg-convert OR inkscape OR ImageMagick (magick/convert)
 #
-# Usage: ./build_svgs.sh
+# Usage: ./build.sh
+# After build, PNGs are moved into this logo directory.
 
 cd "$(dirname "$0")"
 
@@ -116,4 +117,11 @@ if [[ "$KEEP_INTERMEDIATE" -eq 0 ]]; then
   cleanup_intermediates
 fi
 
-echo "Done. PDFs: $OUT_PDF_DIR, SVGs: $OUT_SVG_DIR, PNGs: $OUT_PNG_DIR."
+echo "==> Moving PNGs to $(pwd)"
+if compgen -G "$OUT_PNG_DIR/*.png" >/dev/null; then
+  mv -f "$OUT_PNG_DIR"/*.png .
+else
+  echo "No PNGs to move from $OUT_PNG_DIR"
+fi
+
+echo "Done. PDFs: $OUT_PDF_DIR, SVGs: $OUT_SVG_DIR, PNGs moved to $(pwd)."
