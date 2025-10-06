@@ -16,19 +16,6 @@ PolyGraph is a Python library for evaluating graph generative models by providin
 (including PolyGraph Discrepancy).
 
 PolyGraph discrepancy is a new metric we introduced, which provides the following advantages over maxmimum mean discrepancy (MMD):
-<style>
-table {
-  font-size: 90%;
-  margin: 0 auto;
-}
-th, td {
-  text-align: center;
-  padding: 4px 8px;
-}
-th:first-child, td:first-child {
-  text-align: left;
-}
-</style>
 
 <table>
 <thead>
@@ -116,24 +103,6 @@ We provide larger datasets that should be used instead:
 ## Benchmarking snapshot
 
 Here is an example benchmark one can generate with this library using multiple different models and datasets. The details of the generation of this benchmark are given in our paper.
-
-<style>
-table {
-  font-size: 85%;
-  border-collapse: collapse;
-}
-th, td {
-  text-align: center;
-  padding: 4px 6px;
-  border: 1px solid #ddd;
-}
-th:first-child, td:first-child {
-  text-align: left;
-}
-th:nth-child(2), td:nth-child(2) {
-  text-align: left;
-}
-</style>
 
 <table>
 <thead>
