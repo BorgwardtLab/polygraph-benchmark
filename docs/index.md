@@ -92,7 +92,7 @@ PGD and its motivation are described in more detail in the paper and API docs.
 
 ### Benchmarking snapshot
 
-The table below shows an example benchmark generated with this library across multiple datasets and models. Values illustrate typical outputs from the implemented metrics (VUN, PGD, and PGD subscores) and are for demonstration and reproduction of results discussed in our paper.
+The table below shows an example benchmark generated with this library across multiple datasets and models. Values illustrate typical outputs from the implemented metrics (VUN, PGD, and PGD subscores). For completeness, this library and our paper also implements and provides various MMD estimates on the datasets below.
 
 <style>
 table {
