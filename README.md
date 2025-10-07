@@ -17,6 +17,7 @@ PolyGraph is a Python library for evaluating graph generative models by providin
 
 PolyGraph discrepancy is a new metric we introduced, which provides the following advantages over maxmimum mean discrepancy (MMD):
 
+<div align="center">
 <table>
 <thead>
 <tr>
@@ -53,6 +54,7 @@ PolyGraph discrepancy is a new metric we introduced, which provides the followin
 </tr>
 </tbody>
 </table>
+</div>
 
 It also provides a number of other advantages over MMD which we discuss in our paper.
 
@@ -176,6 +178,7 @@ for metric in tqdm(metrics):
 
 The following results mirror the tables from our paper. Bold indicates best, and underlined indicates second-best. Values are multiplied by 100 for legibility. Standard deviations are obtained with subsampling using `StandardPGDInterval` and `MoleculePGDInterval`. Specific parameters are discussed in the paper.
 
+<div align="center">
 <table>
   <thead>
     <tr>
@@ -236,5 +239,6 @@ The following results mirror the tables from our paper. Bold indicates best, and
     </tr>
   </tbody>
   </table>
+</div>
 
 <sub>* AutoGraph* denotes a variant that leverages additional training heuristics as described in the paper.</sub>
