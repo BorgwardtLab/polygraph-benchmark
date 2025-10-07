@@ -176,8 +176,6 @@ for metric in tqdm(metrics):
 
 The following results mirror the tables from our paper. Bold indicates best, and underlined indicates second-best. Values are multiplied by 100 for legibility. Standard deviations are obtained with subsampling using `StandardPGDInterval` and `MoleculePGDInterval`. Specific parameters are discussed in the paper.
 
-### All datasets
-
 <table>
   <thead>
     <tr>
