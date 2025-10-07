@@ -172,3 +172,69 @@ for metric in tqdm(metrics):
     generated,
   )
 ```
+## Example Benchmark
+
+The following results mirror the tables from our paper. Bold indicates best, and underlined indicates second-best. Values are multiplied by 100 for legibility. Standard deviations are obtained with subsampling using `StandardPGDInterval` and `MoleculePGDInterval`. Specific parameters are discussed in the paper.
+
+<table>
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th style="text-align:right;">Planar-L</th>
+      <th style="text-align:right;">Lobster-L</th>
+      <th style="text-align:right;">SBM-L</th>
+      <th style="text-align:right;">Proteins</th>
+      <th style="text-align:right;">Guacamol</th>
+      <th style="text-align:right;">Moses</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AutoGraph</td>
+      <td style="text-align:right;"><strong>34.0 ± 1.8</strong></td>
+      <td style="text-align:right;"><u>18.0 ± 1.6</u></td>
+      <td style="text-align:right;"><strong>5.6 ± 1.5</strong></td>
+      <td style="text-align:right;"><strong>67.7 ± 7.4</strong></td>
+      <td style="text-align:right;"><u>22.9 ± 0.5</u></td>
+      <td style="text-align:right;"><strong>29.6 ± 0.4</strong></td>
+    </tr>
+    <tr>
+      <td>AutoGraph*</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:right;"><strong>10.4 ± 1.2</strong></td>
+      <td style="text-align:right;">—</td>
+    </tr>
+    <tr>
+      <td>DiGress</td>
+      <td style="text-align:right;">45.2 ± 1.8</td>
+      <td style="text-align:right;"><strong>3.2 ± 2.6</strong></td>
+      <td style="text-align:right;"><u>17.4 ± 2.3</u></td>
+      <td style="text-align:right;">88.1 ± 3.1</td>
+      <td style="text-align:right;">32.7 ± 0.5</td>
+      <td style="text-align:right;"><u>33.4 ± 0.5</u></td>
+    </tr>
+    <tr>
+      <td>GRAN</td>
+      <td style="text-align:right;">99.7 ± 0.2</td>
+      <td style="text-align:right;">85.4 ± 0.5</td>
+      <td style="text-align:right;">69.1 ± 1.4</td>
+      <td style="text-align:right;">89.7 ± 2.7</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:right;">—</td>
+    </tr>
+    <tr>
+      <td>ESGG</td>
+      <td style="text-align:right;"><u>45.0 ± 1.4</u></td>
+      <td style="text-align:right;">69.9 ± 0.6</td>
+      <td style="text-align:right;">99.4 ± 0.2</td>
+      <td style="text-align:right;"><u>79.2 ± 4.3</u></td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:right;">—</td>
+    </tr>
+  </tbody>
+  </table>
+
+<sub>* AutoGraph* denotes a variant that leverages additional training heuristics as described in the paper.</sub>
