@@ -56,7 +56,7 @@ PolyGraph discrepancy is a new metric we introduced, which provides the followin
 </table>
 </div>
 
-It also provides a number of other advantages over MMD which we discuss in our paper.
+It also provides a number of other advantages over MMD which we discuss in [our paper](https://arxiv.org/abs/2510.06122).
 
 ## Installation
 
@@ -93,7 +93,7 @@ Here are a set of datasets and metrics this library provides:
 - `SBMGraphDataset`
 - `LobsterGraphDataset`
 
-But they should not be used for benchmarking, due to unreliable metric estimates (see our paper for more details).
+But they should not be used for benchmarking, due to unreliable metric estimates (see [our paper](https://arxiv.org/abs/2510.06122) for more details).
 
 We provide larger datasets that should be used instead:
 - `PlanarLGraphDataset`
@@ -176,7 +176,7 @@ for metric in tqdm(metrics):
 ```
 ## Example Benchmark
 
-The following results mirror the tables from our paper. Bold indicates best, and underlined indicates second-best. Values are multiplied by 100 for legibility. Standard deviations are obtained with subsampling using `StandardPGDInterval` and `MoleculePGDInterval`. Specific parameters are discussed in the paper.
+The following results mirror the tables from [our paper](https://arxiv.org/abs/2510.06122). Bold indicates best, and underlined indicates second-best. Values are multiplied by 100 for legibility. Standard deviations are obtained with subsampling using `StandardPGDInterval` and `MoleculePGDInterval`. Specific parameters are discussed in [the paper](https://arxiv.org/abs/2510.06122).
 
 <div align="center">
 <table>
@@ -241,4 +241,21 @@ The following results mirror the tables from our paper. Bold indicates best, and
   </table>
 </div>
 
-<sub>* AutoGraph* denotes a variant that leverages additional training heuristics as described in the paper.</sub>
+<sub>* AutoGraph* denotes a variant that leverages additional training heuristics as described in the [paper](https://arxiv.org/abs/2510.06122).</sub>
+
+
+## Citing
+
+To cite our paper:
+
+```latex
+@misc{krimmel2025polygraph,
+  title={PolyGraph Discrepancy: a classifier-based metric for graph generation}, 
+  author={Markus Krimmel and Philip Hartout and Karsten Borgwardt and Dexiong Chen},
+  year={2025},
+  eprint={2510.06122},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG},
+  url={https://arxiv.org/abs/2510.06122}, 
+}
+```
