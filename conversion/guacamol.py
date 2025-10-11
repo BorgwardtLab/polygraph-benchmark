@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Union
 
 import torch
 from loguru import logger
@@ -108,7 +109,11 @@ def check_smiles_graph_mapping_worker(smile_idx, smile):
 
 
 def process(
-    split: str, raw_dir: str, n_jobs: int, limit: int | None, chunk_size: int
+    split: str,
+    raw_dir: str,
+    n_jobs: int,
+    limit: Union[int, None],
+    chunk_size: int,
 ) -> None:
     path = os.path.join(raw_dir, f"guacamol_v1_{split}.smiles")
     smile_list = [

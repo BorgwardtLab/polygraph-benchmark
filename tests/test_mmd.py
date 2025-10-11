@@ -48,8 +48,6 @@ from polygraph.utils.descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.mmd_utils import mmd_from_gram
 from polygraph.metrics.base.metric_interval import MetricInterval
 
-import grakel
-
 
 class WeisfeilerLehmanMMD2(DescriptorMMD2):
     def __init__(self, reference_graphs, iterations=3):
@@ -67,6 +65,8 @@ class WeisfeilerLehmanMMD2(DescriptorMMD2):
 def grakel_wl_mmd(
     reference_graphs, test_graphs, is_parallel=False, iterations=3
 ):
+    import grakel
+
     grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
     all_graphs = reference_graphs + test_graphs
     for g in all_graphs:
