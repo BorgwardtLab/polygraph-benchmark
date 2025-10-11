@@ -251,7 +251,7 @@ def _descriptions_to_classifier_metric(
     variant: Literal["informedness", "jsd"] = "jsd",
     classifier: Optional[ClassifierProtocol] = None,
     rng: Optional[np.random.Generator] = None,
-) -> Tuple[float, int | float]:
+) -> Tuple[float, Union[int, float]]:
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
