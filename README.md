@@ -13,7 +13,7 @@
 </p>
 
 PolyGraph is a Python library for evaluating graph generative models by providing standardized datasets and metrics
-(including PolyGraph Discrepancy).
+(including PolyGraph Discrepancy). Full documentation for this library can be found [here](https://polygraph-benchmark.readthedocs.io/).
 
 PolyGraph discrepancy is a new metric we introduced, which provides the following advantages over maxmimum mean discrepancy (MMD):
 
