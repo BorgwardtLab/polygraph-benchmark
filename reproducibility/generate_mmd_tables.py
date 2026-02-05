@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+"""Generate MMD tables (Appendix) from pre-generated graphs.
+
+This script computes MMD² metrics for all models and datasets,
+then formats the results as LaTeX tables.
+
+Usage:
+    python generate_mmd_tables.py
+    python generate_mmd_tables.py --subset  # Use smaller sample for testing
+"""
+
+import pickle
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import pandas as pd
+import typer
+from tqdm import tqdm
+
+app = typer.Typer()
+
+# Paths
+REPO_ROOT = Path(__file__).parent.parent
+DATA_DIR = REPO_ROOT / "polygraph_graphs"
+OUTPUT_DIR = Path(__file__).parent / "tables"
+
+# Configuration
+MODELS = ["AUTOGRAPH", "DIGRESS", "GRAN"]
+DATASETS = ["planar", "lobster", "sbm", "proteins"]
+
+DATASET_DISPLAY = {
+    "planar": "\\textsc{Planar-L}",
+    "lobster": "\\textsc{Lobster-L}",
+    "sbm": "\\textsc{SBM-L}",
+    "proteins": "Proteins",
+}
+
+MODEL_DISPLAY = {
+    "AUTOGRAPH": "AutoGraph",
+    "DIGRESS": "\\textsc{DiGress}",
+    "GRAN": "GRAN",
+}
+
+
+def load_graphs(model: str, dataset: str) -> List:
+    """Load generated graphs from pickle file and convert to networkx."""
+    import networkx as nx
+    import torch
+
+    pkl_path = DATA_DIR / model / f"{dataset}.pkl"
+    if not pkl_path.exists():
+        print(f"Warning: {pkl_path} not found")
+        return []
+    with open(pkl_path, "rb") as f:
+        graphs = pickle.load(f)
+
+    # Convert to simple undirected graphs
+    cleaned = []
+    for g in graphs:
+        if isinstance(g, nx.Graph):
+            simple = nx.Graph(g)
+        elif isinstance(g, (list, tuple)) and len(g) == 2:
+            # DIGRESS format: [node_feat, adj_matrix]
+            try:
+                node_feat, adj = g
+                if isinstance(adj, torch.Tensor):
+                    adj = adj.numpy()
+                simple = nx.from_numpy_array(adj)
+            except Exception as e:
+                print(f"    Warning: Could not convert graph: {e}")
+                continue
+        else:
+            print(f"    Warning: Unknown graph format: {type(g)}")
+            continue
+
+        simple.remove_edges_from(nx.selfloop_edges(simple))
+        cleaned.append(simple)
+    return cleaned
+
+
+def get_reference_dataset(dataset: str, split: str = "test"):
+    """Get reference dataset from polygraph library."""
+    from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
+    from polygraph.datasets.planar import ProceduralPlanarGraphDataset
+    from polygraph.datasets.proteins import DobsonDoigGraphDataset
+    from polygraph.datasets.sbm import ProceduralSBMGraphDataset
+
+    if dataset == "planar":
+        return list(ProceduralPlanarGraphDataset(split=split, num_graphs=4096).to_nx())
+    elif dataset == "lobster":
+        return list(ProceduralLobsterGraphDataset(split=split, num_graphs=4096).to_nx())
+    elif dataset == "sbm":
+        return list(ProceduralSBMGraphDataset(split=split, num_graphs=4096).to_nx())
+    elif dataset == "proteins":
+        return list(DobsonDoigGraphDataset(split=split).to_nx())
+    else:
+        raise ValueError(f"Unknown dataset: {dataset}")
+
+
+def compute_mmd_metrics(reference_graphs: List, generated_graphs: List, subset: bool = False) -> Dict:
+    """Compute MMD² metrics using the polygraph library."""
+    from polygraph.metrics.gaussian_tv_mmd import (
+        GaussianTVClusteringMMD2Interval,
+        GaussianTVDegreeMMD2Interval,
+        GaussianTVOrbitMMD2Interval,
+        GaussianTVSpectralMMD2Interval,
+    )
+    from polygraph.metrics.rbf_mmd import (
+        RBFClusteringMMD2Interval,
+        RBFDegreeMMD2Interval,
+        RBFOrbitMMD2Interval,
+        RBFSpectralMMD2Interval,
+    )
+
+    # Limit samples for subset mode
+    if subset:
+        reference_graphs = reference_graphs[:50]
+        generated_graphs = generated_graphs[:50]
+        subsample_size = 20
+        num_samples = 5
+    else:
+        subsample_size = min(len(reference_graphs), len(generated_graphs)) // 4
+        num_samples = 100
+
+    results = {}
+
+    # RBF MMD² metrics (biased by default in the implementation)
+    rbf_metrics = {
+        "rbf_degree": RBFDegreeMMD2Interval,
+        "rbf_clustering": RBFClusteringMMD2Interval,
+        "rbf_orbit": RBFOrbitMMD2Interval,
+        "rbf_spectral": RBFSpectralMMD2Interval,
+    }
+
+    for name, MetricClass in rbf_metrics.items():
+        try:
+            metric = MetricClass(reference_graphs, subsample_size=subsample_size, num_samples=num_samples)
+            result = metric.compute(generated_graphs)
+            # Result has MetricInterval objects with .mean and .std attributes
+            results[f"{name}_mean"] = result.mean
+            results[f"{name}_std"] = result.std
+        except Exception as e:
+            print(f"    Error computing {name}: {e}")
+            results[f"{name}_mean"] = float("nan")
+            results[f"{name}_std"] = float("nan")
+
+    # GTV (Gaussian Total Variation) MMD² metrics
+    gtv_metrics = {
+        "gtv_degree": GaussianTVDegreeMMD2Interval,
+        "gtv_clustering": GaussianTVClusteringMMD2Interval,
+        "gtv_orbit": GaussianTVOrbitMMD2Interval,
+        "gtv_spectral": GaussianTVSpectralMMD2Interval,
+    }
+
+    for name, MetricClass in gtv_metrics.items():
+        try:
+            metric = MetricClass(reference_graphs, subsample_size=subsample_size, num_samples=num_samples)
+            result = metric.compute(generated_graphs)
+            # Result has MetricInterval objects with .mean and .std attributes
+            results[f"{name}_mean"] = result.mean
+            results[f"{name}_std"] = result.std
+        except Exception as e:
+            print(f"    Error computing {name}: {e}")
+            results[f"{name}_mean"] = float("nan")
+            results[f"{name}_std"] = float("nan")
+
+    return results
+
+
+def format_value(mean: float, std: float, is_best: bool = False, is_second: bool = False) -> str:
+    """Format a metric value in scientific notation with optional styling."""
+    if pd.isna(mean):
+        return "-"
+
+    text = f"{mean:.3e} $\\pm\\,\\scriptstyle{{{std:.3e}}}$"
+
+    if is_best:
+        return f"\\textbf{{{text}}}"
+    elif is_second:
+        return f"\\underline{{{text}}}"
+    return text
+
+
+def find_best_models(results: Dict[str, Dict], metric_key: str) -> Tuple[Optional[str], Optional[str]]:
+    """Find best and second-best models for a metric (lower is better for MMD)."""
+    values = {}
+    for model, metrics in results.items():
+        if metric_key in metrics and not pd.isna(metrics[metric_key]):
+            values[model] = metrics[metric_key]
+
+    if not values:
+        return None, None
+
+    sorted_models = sorted(values.keys(), key=lambda m: values[m])  # Lower is better
+    best = sorted_models[0] if len(sorted_models) > 0 else None
+    second = sorted_models[1] if len(sorted_models) > 1 else None
+    return best, second
+
+
+def generate_latex_table(
+    all_results: Dict,
+    metrics: List[str],
+    metric_display: Dict[str, str],
+    caption: str,
+    label: str,
+) -> str:
+    """Generate LaTeX table from results."""
+    lines = []
+    lines.append("\\begin{table*}")
+    lines.append("\\centering")
+    lines.append("\\setlength{\\tabcolsep}{4pt}")
+    lines.append("\\renewcommand{\\arraystretch}{0.9}")
+    lines.append("\\scalebox{0.7}{")
+    lines.append("\\begin{minipage}{\\textwidth}")
+    lines.append(f"\\caption{{{caption}}}")
+    lines.append(f"\\label{{{label}}}")
+    lines.append("\\begin{tabular}{ll" + "c" * len(metrics) + "}")
+    lines.append("\\toprule")
+
+    # Header
+    header = ["\\textbf{Dataset}", "\\textbf{Model}"]
+    for m in metrics:
+        header.append(f"\\textbf{{{metric_display.get(m, m)} ($\\downarrow$)}}")
+    lines.append(" & ".join(header) + " \\\\")
+    lines.append("\\midrule")
+
+    for dataset in DATASETS:
+        dataset_results = all_results.get(dataset, {})
+
+        # Find best models for each metric
+        best_models = {}
+        second_best_models = {}
+        for m in metrics:
+            best_models[m], second_best_models[m] = find_best_models(dataset_results, f"{m}_mean")
+
+        first_model = True
+        for model in MODELS:
+            if model not in dataset_results:
+                continue
+
+            results = dataset_results[model]
+
+            row = []
+            if first_model:
+                row.append(DATASET_DISPLAY.get(dataset, dataset))
+                first_model = False
+            else:
+                row.append("")
+
+            row.append(MODEL_DISPLAY.get(model, model))
+
+            for m in metrics:
+                mean_val = results.get(f"{m}_mean", float("nan"))
+                std_val = results.get(f"{m}_std", float("nan"))
+                is_best = model == best_models.get(m)
+                is_second = model == second_best_models.get(m)
+                row.append(format_value(mean_val, std_val, is_best, is_second))
+
+            lines.append(" & ".join(row) + " \\\\")
+
+        if dataset != DATASETS[-1]:
+            lines.append("\\midrule")
+
+    lines.append("\\bottomrule")
+    lines.append("\\end{tabular}")
+    lines.append("\\end{minipage}")
+    lines.append("}")
+    lines.append("\\end{table*}")
+
+    return "\n".join(lines)
+
+
+@app.command()
+def main(
+    subset: bool = typer.Option(False, "--subset", help="Use smaller sample for quick testing"),
+):
+    """Generate MMD tables from pre-generated graphs."""
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    all_results = {}
+
+    for dataset in tqdm(DATASETS, desc="Datasets"):
+        print(f"\nProcessing {dataset}...")
+
+        # Load reference dataset
+        try:
+            reference_graphs = get_reference_dataset(dataset, split="test")
+        except Exception as e:
+            print(f"  Error loading reference dataset: {e}")
+            continue
+
+        all_results[dataset] = {}
+
+        for model in tqdm(MODELS, desc="Models", leave=False):
+            print(f"  {model}...")
+
+            # Load generated graphs
+            generated_graphs = load_graphs(model, dataset)
+            if not generated_graphs:
+                print(f"    No graphs found for {model}/{dataset}")
+                continue
+
+            # Limit to reference size
+            generated_graphs = generated_graphs[:len(reference_graphs)]
+
+            # Compute MMD metrics
+            try:
+                results = compute_mmd_metrics(reference_graphs, generated_graphs, subset=subset)
+                all_results[dataset][model] = results
+            except Exception as e:
+                print(f"    Error computing MMD: {e}")
+
+    # Generate GTV MMD table
+    gtv_metrics = ["gtv_degree", "gtv_clustering", "gtv_orbit", "gtv_spectral"]
+    gtv_display = {
+        "gtv_degree": "GTV Deg.",
+        "gtv_clustering": "GTV Clust.",
+        "gtv_orbit": "GTV Orb.",
+        "gtv_spectral": "GTV Eig.",
+    }
+    gtv_table = generate_latex_table(
+        all_results,
+        gtv_metrics,
+        gtv_display,
+        caption="GTV MMD² metrics with confidence intervals.",
+        label="tab:mmd_gtv",
+    )
+    with open(OUTPUT_DIR / "mmd_gtv.tex", "w") as f:
+        f.write(gtv_table)
+    print(f"\nTable saved to: {OUTPUT_DIR / 'mmd_gtv.tex'}")
+
+    # Generate RBF MMD table (biased)
+    rbf_metrics = ["rbf_degree", "rbf_clustering", "rbf_orbit", "rbf_spectral"]
+    rbf_display = {
+        "rbf_degree": "RBF Deg.",
+        "rbf_clustering": "RBF Clust.",
+        "rbf_orbit": "RBF Orb.",
+        "rbf_spectral": "RBF Eig.",
+    }
+    rbf_table = generate_latex_table(
+        all_results,
+        rbf_metrics,
+        rbf_display,
+        caption="RBF MMD² (biased) metrics with confidence intervals.",
+        label="tab:mmd_rbf_biased",
+    )
+    with open(OUTPUT_DIR / "mmd_rbf_biased.tex", "w") as f:
+        f.write(rbf_table)
+    print(f"Table saved to: {OUTPUT_DIR / 'mmd_rbf_biased.tex'}")
+
+
+if __name__ == "__main__":
+    app()
