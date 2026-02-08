@@ -17,11 +17,18 @@ import pandas as pd
 import typer
 from tqdm import tqdm
 
+from cluster import (
+    SlurmConfig,
+    collect_results,
+    save_job_metadata,
+    submit_jobs,
+)
+
 app = typer.Typer()
 
 # Paths
 REPO_ROOT = Path(__file__).parent.parent
-DATA_DIR = REPO_ROOT / "polygraph_graphs"
+DATA_DIR = REPO_ROOT / "data" / "polygraph_graphs"
 OUTPUT_DIR = Path(__file__).parent / "tables"
 
 # Configuration
@@ -167,6 +174,40 @@ def compute_mmd_metrics(reference_graphs: List, generated_graphs: List, subset: 
     return results
 
 
+def compute_mmd_task(
+    dataset: str, model: str, subset: bool
+) -> Dict:
+    """Compute MMD metrics for one (dataset, model) pair.
+
+    Designed to run as a SLURM job via submitit.
+    """
+    reference_graphs = get_reference_dataset(
+        dataset, split="test"
+    )
+    generated_graphs = load_graphs(model, dataset)
+    if not generated_graphs:
+        return {
+            "dataset": dataset,
+            "model": model,
+            "error": "no graphs",
+        }
+
+    generated_graphs = generated_graphs[
+        : len(reference_graphs)
+    ]
+    results: Dict = {"dataset": dataset, "model": model}
+
+    try:
+        mmd_results = compute_mmd_metrics(
+            reference_graphs, generated_graphs, subset=subset
+        )
+        results.update(mmd_results)
+    except Exception as e:
+        print(f"Error computing MMD for {model}/{dataset}: {e}")
+
+    return results
+
+
 def format_value(mean: float, std: float, is_best: bool = False, is_second: bool = False) -> str:
     """Format a metric value in scientific notation with optional styling."""
     if pd.isna(mean):
@@ -270,48 +311,24 @@ def generate_latex_table(
     return "\n".join(lines)
 
 
-@app.command()
-def main(
-    subset: bool = typer.Option(False, "--subset", help="Use smaller sample for quick testing"),
-):
-    """Generate MMD tables from pre-generated graphs."""
+def _reshape_results(
+    result_list: List[Dict],
+) -> Dict[str, Dict]:
+    """Reshape a flat list of result dicts into nested dict."""
+    all_results: Dict[str, Dict] = {}
+    for r in result_list:
+        ds = r.pop("dataset", None)
+        model = r.pop("model", None)
+        r.pop("error", None)
+        if ds and model:
+            all_results.setdefault(ds, {})[model] = r
+    return all_results
 
+
+def _save_tables(all_results: Dict) -> None:
+    """Generate and save both GTV and RBF MMD tables."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    all_results = {}
-
-    for dataset in tqdm(DATASETS, desc="Datasets"):
-        print(f"\nProcessing {dataset}...")
-
-        # Load reference dataset
-        try:
-            reference_graphs = get_reference_dataset(dataset, split="test")
-        except Exception as e:
-            print(f"  Error loading reference dataset: {e}")
-            continue
-
-        all_results[dataset] = {}
-
-        for model in tqdm(MODELS, desc="Models", leave=False):
-            print(f"  {model}...")
-
-            # Load generated graphs
-            generated_graphs = load_graphs(model, dataset)
-            if not generated_graphs:
-                print(f"    No graphs found for {model}/{dataset}")
-                continue
-
-            # Limit to reference size
-            generated_graphs = generated_graphs[:len(reference_graphs)]
-
-            # Compute MMD metrics
-            try:
-                results = compute_mmd_metrics(reference_graphs, generated_graphs, subset=subset)
-                all_results[dataset][model] = results
-            except Exception as e:
-                print(f"    Error computing MMD: {e}")
-
-    # Generate GTV MMD table
     gtv_metrics = ["gtv_degree", "gtv_clustering", "gtv_orbit", "gtv_spectral"]
     gtv_display = {
         "gtv_degree": "GTV Deg.",
@@ -330,7 +347,6 @@ def main(
         f.write(gtv_table)
     print(f"\nTable saved to: {OUTPUT_DIR / 'mmd_gtv.tex'}")
 
-    # Generate RBF MMD table (biased)
     rbf_metrics = ["rbf_degree", "rbf_clustering", "rbf_orbit", "rbf_spectral"]
     rbf_display = {
         "rbf_degree": "RBF Deg.",
@@ -348,6 +364,104 @@ def main(
     with open(OUTPUT_DIR / "mmd_rbf_biased.tex", "w") as f:
         f.write(rbf_table)
     print(f"Table saved to: {OUTPUT_DIR / 'mmd_rbf_biased.tex'}")
+
+
+LOG_DIR = Path(__file__).parent / "logs" / "mmd"
+JOBS_FILE = LOG_DIR / "jobs.json"
+
+
+@app.command()
+def main(
+    subset: bool = typer.Option(
+        False,
+        "--subset",
+        help="Use smaller sample for quick testing",
+    ),
+    slurm_config: Optional[Path] = typer.Option(
+        None,
+        "--slurm-config",
+        help="Path to SLURM YAML config. Submits jobs to cluster.",
+    ),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Run submitit jobs in-process (for debugging).",
+    ),
+    collect: bool = typer.Option(
+        False,
+        "--collect",
+        help="Collect results from previously submitted SLURM jobs.",
+    ),
+):
+    """Generate MMD tables from pre-generated graphs."""
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Collect mode
+    if collect:
+        result_list = collect_results(JOBS_FILE, LOG_DIR)
+        all_results = _reshape_results(result_list)
+        _save_tables(all_results)
+        return
+
+    # SLURM submission mode
+    if slurm_config is not None:
+        config = SlurmConfig.from_yaml(slurm_config)
+        args_list = [
+            (dataset, model, subset)
+            for dataset in DATASETS
+            for model in MODELS
+        ]
+        jobs = submit_jobs(
+            compute_mmd_task,
+            args_list,
+            config,
+            log_dir=LOG_DIR,
+            local=local,
+        )
+
+        if local:
+            result_list = [job.result() for job in jobs]
+            all_results = _reshape_results(result_list)
+            _save_tables(all_results)
+        else:
+            save_job_metadata(jobs, args_list, JOBS_FILE)
+            print(
+                "\nRun with --collect after jobs complete."
+            )
+        return
+
+    # Default: run locally without submitit
+    all_results = {}
+
+    for dataset in tqdm(DATASETS, desc="Datasets"):
+        print(f"\nProcessing {dataset}...")
+
+        try:
+            reference_graphs = get_reference_dataset(dataset, split="test")
+        except Exception as e:
+            print(f"  Error loading reference dataset: {e}")
+            continue
+
+        all_results[dataset] = {}
+
+        for model in tqdm(MODELS, desc="Models", leave=False):
+            print(f"  {model}...")
+
+            generated_graphs = load_graphs(model, dataset)
+            if not generated_graphs:
+                print(f"    No graphs found for {model}/{dataset}")
+                continue
+
+            generated_graphs = generated_graphs[:len(reference_graphs)]
+
+            try:
+                results = compute_mmd_metrics(reference_graphs, generated_graphs, subset=subset)
+                all_results[dataset][model] = results
+            except Exception as e:
+                print(f"    Error computing MMD: {e}")
+
+    _save_tables(all_results)
 
 
 if __name__ == "__main__":

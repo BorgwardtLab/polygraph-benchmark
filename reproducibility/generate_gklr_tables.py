@@ -17,11 +17,18 @@ import pandas as pd
 import typer
 from tqdm import tqdm
 
+from cluster import (
+    SlurmConfig,
+    collect_results,
+    save_job_metadata,
+    submit_jobs,
+)
+
 app = typer.Typer()
 
 # Paths
 REPO_ROOT = Path(__file__).parent.parent
-DATA_DIR = REPO_ROOT / "polygraph_graphs"
+DATA_DIR = REPO_ROOT / "data" / "polygraph_graphs"
 OUTPUT_DIR = Path(__file__).parent / "tables"
 
 # Configuration
@@ -156,6 +163,55 @@ def compute_gklr_metrics(reference_graphs: List, generated_graphs: List, subset:
     }
 
 
+def compute_gklr_task(
+    dataset: str, model: str, subset: bool
+) -> Dict:
+    """Compute GKLR metrics for one (dataset, model) pair.
+
+    Designed to run as a SLURM job via submitit.
+    """
+    reference_graphs = get_reference_dataset(
+        dataset, split="test"
+    )
+    generated_graphs = load_graphs(model, dataset)
+    if not generated_graphs:
+        return {
+            "dataset": dataset,
+            "model": model,
+            "error": "no graphs",
+        }
+
+    generated_graphs = generated_graphs[
+        : len(reference_graphs)
+    ]
+    results: Dict = {"dataset": dataset, "model": model}
+
+    try:
+        gklr_results = compute_gklr_metrics(
+            reference_graphs, generated_graphs, subset=subset
+        )
+        results["pgs_mean"] = gklr_results.get(
+            "pgd_mean", float("nan")
+        )
+        results["pgs_std"] = gklr_results.get(
+            "pgd_std", float("nan")
+        )
+        for key, value in gklr_results.get(
+            "subscores", {}
+        ).items():
+            if isinstance(value, dict):
+                results[f"{key}_mean"] = value.get(
+                    "mean", float("nan")
+                )
+                results[f"{key}_std"] = value.get(
+                    "std", float("nan")
+                )
+    except Exception as e:
+        print(f"Error computing GKLR for {model}/{dataset}: {e}")
+
+    return results
+
+
 def format_value(mean: float, std: float, is_best: bool = False, is_second: bool = False) -> str:
     """Format a metric value with optional styling."""
     if pd.isna(mean):
@@ -270,21 +326,100 @@ def generate_latex_table(all_results: Dict) -> str:
     return "\n".join(lines)
 
 
+def _reshape_results(
+    result_list: List[Dict],
+) -> Dict[str, Dict]:
+    """Reshape a flat list of result dicts into nested dict."""
+    all_results: Dict[str, Dict] = {}
+    for r in result_list:
+        ds = r.pop("dataset", None)
+        model = r.pop("model", None)
+        r.pop("error", None)
+        if ds and model:
+            all_results.setdefault(ds, {})[model] = r
+    return all_results
+
+
+LOG_DIR = Path(__file__).parent / "logs" / "gklr"
+JOBS_FILE = LOG_DIR / "jobs.json"
+
+
 @app.command()
 def main(
-    subset: bool = typer.Option(False, "--subset", help="Use smaller sample for quick testing"),
-    output: Path = typer.Option(OUTPUT_DIR / "gklr.tex", "--output", "-o"),
+    subset: bool = typer.Option(
+        False,
+        "--subset",
+        help="Use smaller sample for quick testing",
+    ),
+    output: Path = typer.Option(
+        OUTPUT_DIR / "gklr.tex", "--output", "-o"
+    ),
+    slurm_config: Optional[Path] = typer.Option(
+        None,
+        "--slurm-config",
+        help="Path to SLURM YAML config. Submits jobs to cluster.",
+    ),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Run submitit jobs in-process (for debugging).",
+    ),
+    collect: bool = typer.Option(
+        False,
+        "--collect",
+        help="Collect results from previously submitted SLURM jobs.",
+    ),
 ):
     """Generate GKLR tables from pre-generated graphs."""
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Collect mode
+    if collect:
+        result_list = collect_results(JOBS_FILE, LOG_DIR)
+        all_results = _reshape_results(result_list)
+        latex_table = generate_latex_table(all_results)
+        with open(output, "w") as f:
+            f.write(latex_table)
+        print(f"\nTable saved to: {output}")
+        return
+
+    # SLURM submission mode
+    if slurm_config is not None:
+        config = SlurmConfig.from_yaml(slurm_config)
+        args_list = [
+            (dataset, model, subset)
+            for dataset in DATASETS
+            for model in MODELS
+        ]
+        jobs = submit_jobs(
+            compute_gklr_task,
+            args_list,
+            config,
+            log_dir=LOG_DIR,
+            local=local,
+        )
+
+        if local:
+            result_list = [job.result() for job in jobs]
+            all_results = _reshape_results(result_list)
+            latex_table = generate_latex_table(all_results)
+            with open(output, "w") as f:
+                f.write(latex_table)
+            print(f"\nTable saved to: {output}")
+        else:
+            save_job_metadata(jobs, args_list, JOBS_FILE)
+            print(
+                "\nRun with --collect after jobs complete."
+            )
+        return
+
+    # Default: run locally without submitit
     all_results = {}
 
     for dataset in tqdm(DATASETS, desc="Datasets"):
         print(f"\nProcessing {dataset}...")
 
-        # Load reference dataset
         try:
             reference_graphs = get_reference_dataset(dataset, split="test")
         except Exception as e:
@@ -296,24 +431,20 @@ def main(
         for model in tqdm(MODELS, desc="Models", leave=False):
             print(f"  {model}...")
 
-            # Load generated graphs
             generated_graphs = load_graphs(model, dataset)
             if not generated_graphs:
                 print(f"    No graphs found for {model}/{dataset}")
                 continue
 
-            # Limit to reference size
             generated_graphs = generated_graphs[:len(reference_graphs)]
 
             results = {}
 
-            # Compute GKLR metrics
             try:
                 gklr_results = compute_gklr_metrics(reference_graphs, generated_graphs, subset=subset)
                 results["pgs_mean"] = gklr_results.get("pgd_mean", float("nan"))
                 results["pgs_std"] = gklr_results.get("pgd_std", float("nan"))
 
-                # Extract subscores
                 subscores = gklr_results.get("subscores", {})
                 for key, value in subscores.items():
                     if isinstance(value, dict):
@@ -326,7 +457,6 @@ def main(
 
             all_results[dataset][model] = results
 
-    # Generate and save LaTeX table
     latex_table = generate_latex_table(all_results)
 
     with open(output, "w") as f:

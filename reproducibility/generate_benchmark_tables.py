@@ -17,11 +17,18 @@ import pandas as pd
 import typer
 from tqdm import tqdm
 
+from cluster import (
+    SlurmConfig,
+    collect_results,
+    save_job_metadata,
+    submit_jobs,
+)
+
 app = typer.Typer()
 
 # Paths
 REPO_ROOT = Path(__file__).parent.parent
-DATA_DIR = REPO_ROOT / "polygraph_graphs"
+DATA_DIR = REPO_ROOT / "data" / "polygraph_graphs"
 OUTPUT_DIR = Path(__file__).parent / "tables"
 
 # Configuration
@@ -192,6 +199,72 @@ def find_best_models(results: Dict[str, Dict], metric_key: str, higher_is_better
     return best, second
 
 
+def compute_benchmark_task(
+    dataset: str, model: str, subset: bool
+) -> Dict:
+    """Compute benchmark metrics for one (dataset, model) pair.
+
+    Designed to run as a SLURM job via submitit.
+    """
+    reference_graphs = get_reference_dataset(
+        dataset, split="test"
+    )
+    train_graphs = get_reference_dataset(
+        dataset, split="train"
+    )
+    generated_graphs = load_graphs(model, dataset)
+    if not generated_graphs:
+        return {
+            "dataset": dataset,
+            "model": model,
+            "error": "no graphs",
+        }
+
+    generated_graphs = generated_graphs[
+        : len(reference_graphs)
+    ]
+    results: Dict = {"dataset": dataset, "model": model}
+
+    try:
+        pgs_results = compute_pgs_metrics(
+            reference_graphs, generated_graphs, subset=subset
+        )
+        results["pgs_mean"] = pgs_results.get(
+            "polyscore_mean", float("nan")
+        )
+        results["pgs_std"] = pgs_results.get(
+            "polyscore_std", float("nan")
+        )
+        for key, value in pgs_results.get(
+            "subscores", {}
+        ).items():
+            if isinstance(value, dict):
+                results[f"{key}_mean"] = value.get(
+                    "mean", float("nan")
+                )
+                results[f"{key}_std"] = value.get(
+                    "std", float("nan")
+                )
+    except Exception as e:
+        print(f"Error computing PGD for {model}/{dataset}: {e}")
+
+    try:
+        vun_results = compute_vun_metrics(
+            train_graphs,
+            generated_graphs,
+            dataset,
+            subset=subset,
+        )
+        if vun_results:
+            results["vun"] = vun_results.get(
+                "valid_unique_novel_mle", float("nan")
+            )
+    except Exception as e:
+        print(f"Error computing VUN for {model}/{dataset}: {e}")
+
+    return results
+
+
 def generate_latex_table(all_results: Dict) -> str:
     """Generate LaTeX table from results."""
     lines = []
@@ -266,21 +339,102 @@ def generate_latex_table(all_results: Dict) -> str:
     return "\n".join(lines)
 
 
+def _reshape_results(
+    result_list: List[Dict],
+) -> Dict[str, Dict]:
+    """Reshape a flat list of result dicts into nested dict."""
+    all_results: Dict[str, Dict] = {}
+    for r in result_list:
+        ds = r.pop("dataset", None)
+        model = r.pop("model", None)
+        r.pop("error", None)
+        if ds and model:
+            all_results.setdefault(ds, {})[model] = r
+    return all_results
+
+
+LOG_DIR = Path(__file__).parent / "logs" / "benchmark"
+JOBS_FILE = LOG_DIR / "jobs.json"
+
+
 @app.command()
 def main(
-    subset: bool = typer.Option(False, "--subset", help="Use smaller sample for quick testing"),
-    output: Path = typer.Option(OUTPUT_DIR / "benchmark_results.tex", "--output", "-o"),
+    subset: bool = typer.Option(
+        False,
+        "--subset",
+        help="Use smaller sample for quick testing",
+    ),
+    output: Path = typer.Option(
+        OUTPUT_DIR / "benchmark_results.tex",
+        "--output",
+        "-o",
+    ),
+    slurm_config: Optional[Path] = typer.Option(
+        None,
+        "--slurm-config",
+        help="Path to SLURM YAML config. Submits jobs to cluster.",
+    ),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Run submitit jobs in-process (for debugging).",
+    ),
+    collect: bool = typer.Option(
+        False,
+        "--collect",
+        help="Collect results from previously submitted SLURM jobs.",
+    ),
 ):
     """Generate benchmark tables from pre-generated graphs."""
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Collect mode: gather results from completed SLURM jobs
+    if collect:
+        result_list = collect_results(JOBS_FILE, LOG_DIR)
+        all_results = _reshape_results(result_list)
+        latex_table = generate_latex_table(all_results)
+        with open(output, "w") as f:
+            f.write(latex_table)
+        print(f"\nTable saved to: {output}")
+        return
+
+    # SLURM submission mode
+    if slurm_config is not None:
+        config = SlurmConfig.from_yaml(slurm_config)
+        args_list = [
+            (dataset, model, subset)
+            for dataset in DATASETS
+            for model in MODELS
+        ]
+        jobs = submit_jobs(
+            compute_benchmark_task,
+            args_list,
+            config,
+            log_dir=LOG_DIR,
+            local=local,
+        )
+
+        if local:
+            result_list = [job.result() for job in jobs]
+            all_results = _reshape_results(result_list)
+            latex_table = generate_latex_table(all_results)
+            with open(output, "w") as f:
+                f.write(latex_table)
+            print(f"\nTable saved to: {output}")
+        else:
+            save_job_metadata(jobs, args_list, JOBS_FILE)
+            print(
+                "\nRun with --collect after jobs complete."
+            )
+        return
+
+    # Default: run locally without submitit
     all_results = {}
 
     for dataset in tqdm(DATASETS, desc="Datasets"):
         print(f"\nProcessing {dataset}...")
 
-        # Load reference dataset
         try:
             reference_graphs = get_reference_dataset(dataset, split="test")
             train_graphs = get_reference_dataset(dataset, split="train")
@@ -293,24 +447,20 @@ def main(
         for model in tqdm(MODELS, desc="Models", leave=False):
             print(f"  {model}...")
 
-            # Load generated graphs
             generated_graphs = load_graphs(model, dataset)
             if not generated_graphs:
                 print(f"    No graphs found for {model}/{dataset}")
                 continue
 
-            # Limit to reference size
             generated_graphs = generated_graphs[:len(reference_graphs)]
 
             results = {}
 
-            # Compute PGD metrics
             try:
                 pgs_results = compute_pgs_metrics(reference_graphs, generated_graphs, subset=subset)
                 results["pgs_mean"] = pgs_results.get("polyscore_mean", float("nan"))
                 results["pgs_std"] = pgs_results.get("polyscore_std", float("nan"))
 
-                # Extract subscores
                 subscores = pgs_results.get("subscores", {})
                 for key, value in subscores.items():
                     if isinstance(value, dict):
@@ -319,7 +469,6 @@ def main(
             except Exception as e:
                 print(f"    Error computing PGD: {e}")
 
-            # Compute VUN metrics
             try:
                 vun_results = compute_vun_metrics(train_graphs, generated_graphs, dataset, subset=subset)
                 if vun_results:
@@ -329,7 +478,6 @@ def main(
 
             all_results[dataset][model] = results
 
-    # Generate and save LaTeX table
     latex_table = generate_latex_table(all_results)
 
     with open(output, "w") as f:

@@ -1,7 +1,7 @@
-# Makefile for ICLR 2026 reproducibility package
+# Makefile paper reproduction
 # Usage: make [target]
 
-.PHONY: all tables figures download download-subset clean help
+.PHONY: all tables figures download download-subset tables-submit tables-collect clean help
 
 # Default target
 all: tables figures
@@ -27,6 +27,21 @@ tables/gklr.tex:
 
 tables/concatenation.tex:
 	python generate_concatenation_tables.py
+
+# SLURM cluster submission (requires: pip install -e ".[cluster]")
+SLURM_CONFIG ?= configs/slurm_default.yaml
+
+tables-submit:
+	python generate_benchmark_tables.py --slurm-config $(SLURM_CONFIG)
+	python generate_mmd_tables.py --slurm-config $(SLURM_CONFIG)
+	python generate_gklr_tables.py --slurm-config $(SLURM_CONFIG)
+	python generate_concatenation_tables.py --slurm-config $(SLURM_CONFIG)
+
+tables-collect:
+	python generate_benchmark_tables.py --collect
+	python generate_mmd_tables.py --collect
+	python generate_gklr_tables.py --collect
+	python generate_concatenation_tables.py --collect
 
 # Figure generation
 figures: figures/subsampling figures/perturbation figures/model_quality figures/phase_plot
@@ -54,6 +69,8 @@ help:
 	@echo "  all              - Generate all tables and figures"
 	@echo "  tables           - Generate all LaTeX tables"
 	@echo "  figures          - Generate all figures"
+	@echo "  tables-submit    - Submit table jobs to SLURM cluster"
+	@echo "  tables-collect   - Collect results from completed SLURM jobs"
 	@echo "  download         - Download full dataset from Proton Drive"
 	@echo "  download-subset  - Download small subset for CI testing"
 	@echo "  clean            - Remove all generated outputs"
