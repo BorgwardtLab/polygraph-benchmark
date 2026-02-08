@@ -1,0 +1,30 @@
+\begin{table*}
+\centering
+\caption{Comparison of standard PGD (max over descriptors) vs concatenated PGD (single classifier on all features).}
+\label{tab:concatenation}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Dataset} & \textbf{Model} & \textbf{PGD-Standard ($\downarrow$)} & \textbf{PGD-Concat ($\downarrow$)} \\
+\midrule
+\textsc{Planar-L} & AutoGraph & \underline{98.6 $\pm\,\scriptstyle{1.2}$} & 99.1 $\pm\,\scriptstyle{0.0}$ \\
+ & \textsc{DiGress} & 99.0 $\pm\,\scriptstyle{0.3}$ & \underline{99.1 $\pm\,\scriptstyle{0.0}$} \\
+ & GRAN & \textbf{98.2 $\pm\,\scriptstyle{0.6}$} & 99.1 $\pm\,\scriptstyle{0.0}$ \\
+ & ESGG & 99.1 $\pm\,\scriptstyle{0.2}$ & \textbf{99.1 $\pm\,\scriptstyle{0.0}$} \\
+\midrule
+\textsc{Lobster-L} & AutoGraph & \underline{88.6 $\pm\,\scriptstyle{5.1}$} & \underline{98.4 $\pm\,\scriptstyle{0.3}$} \\
+ & \textsc{DiGress} & 90.1 $\pm\,\scriptstyle{3.1}$ & \textbf{98.1 $\pm\,\scriptstyle{0.5}$} \\
+ & GRAN & \textbf{88.0 $\pm\,\scriptstyle{3.1}$} & 98.5 $\pm\,\scriptstyle{0.6}$ \\
+ & ESGG & 96.1 $\pm\,\scriptstyle{0.7}$ & 98.8 $\pm\,\scriptstyle{0.2}$ \\
+\midrule
+\textsc{SBM-L} & AutoGraph & \textbf{58.1 $\pm\,\scriptstyle{41.1}$} & \underline{96.9 $\pm\,\scriptstyle{0.3}$} \\
+ & \textsc{DiGress} & 90.1 $\pm\,\scriptstyle{4.4}$ & 97.2 $\pm\,\scriptstyle{0.7}$ \\
+ & GRAN & \underline{58.2 $\pm\,\scriptstyle{41.2}$} & \textbf{96.5 $\pm\,\scriptstyle{0.2}$} \\
+ & ESGG & 90.4 $\pm\,\scriptstyle{4.8}$ & 97.0 $\pm\,\scriptstyle{0.4}$ \\
+\midrule
+Proteins & AutoGraph & 33.0 $\pm\,\scriptstyle{46.7}$ & \textbf{92.0 $\pm\,\scriptstyle{3.3}$} \\
+ & \textsc{DiGress} & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & \underline{95.1 $\pm\,\scriptstyle{1.6}$} \\
+ & GRAN & \underline{32.9 $\pm\,\scriptstyle{46.5}$} & 96.9 $\pm\,\scriptstyle{1.8}$ \\
+ & ESGG & 32.9 $\pm\,\scriptstyle{46.5}$ & 97.9 $\pm\,\scriptstyle{0.9}$ \\
+\bottomrule
+\end{tabular}
+\end{table*}

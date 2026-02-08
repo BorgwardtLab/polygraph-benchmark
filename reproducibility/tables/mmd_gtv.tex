@@ -1,0 +1,32 @@
+\begin{table*}
+\centering
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.9}
+\scalebox{0.7}{
+\begin{minipage}{\textwidth}
+\caption{GTV MMD² metrics with confidence intervals.}
+\label{tab:mmd_gtv}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Dataset} & \textbf{Model} & \textbf{GTV Deg. ($\downarrow$)} & \textbf{GTV Clust. ($\downarrow$)} & \textbf{GTV Orb. ($\downarrow$)} & \textbf{GTV Eig. ($\downarrow$)} \\
+\midrule
+\textsc{Planar-L} & AutoGraph & 3.132e-03 $\pm\,\scriptstyle{3.263e-03}$ & 1.022e-01 $\pm\,\scriptstyle{3.279e-02}$ & \underline{1.624e-03 $\pm\,\scriptstyle{1.747e-03}$} & \textbf{1.410e-02 $\pm\,\scriptstyle{3.039e-03}$} \\
+ & \textsc{DiGress} & \underline{2.425e-03 $\pm\,\scriptstyle{1.263e-03}$} & \underline{9.431e-02 $\pm\,\scriptstyle{2.241e-02}$} & 1.898e-03 $\pm\,\scriptstyle{1.292e-03}$ & \underline{1.513e-02 $\pm\,\scriptstyle{3.471e-03}$} \\
+ & GRAN & \textbf{1.955e-03 $\pm\,\scriptstyle{1.266e-03}$} & \textbf{7.898e-02 $\pm\,\scriptstyle{1.957e-02}$} & \textbf{4.303e-04 $\pm\,\scriptstyle{5.359e-04}$} & 1.674e-02 $\pm\,\scriptstyle{2.658e-03}$ \\
+\midrule
+\textsc{Lobster-L} & AutoGraph & \underline{1.791e-03 $\pm\,\scriptstyle{1.156e-03}$} & \textbf{0.000e+00 $\pm\,\scriptstyle{0.000e+00}$} & \underline{1.039e-02 $\pm\,\scriptstyle{4.285e-03}$} & \textbf{8.889e-03 $\pm\,\scriptstyle{8.360e-04}$} \\
+ & \textsc{DiGress} & \textbf{1.418e-03 $\pm\,\scriptstyle{5.301e-04}$} & \underline{0.000e+00 $\pm\,\scriptstyle{0.000e+00}$} & \textbf{7.866e-03 $\pm\,\scriptstyle{6.466e-03}$} & \underline{1.287e-02 $\pm\,\scriptstyle{1.211e-03}$} \\
+ & GRAN & 1.867e-02 $\pm\,\scriptstyle{3.101e-03}$ & 4.554e-03 $\pm\,\scriptstyle{2.981e-03}$ & 2.363e-01 $\pm\,\scriptstyle{5.169e-02}$ & 4.347e-02 $\pm\,\scriptstyle{8.886e-03}$ \\
+\midrule
+\textsc{SBM-L} & AutoGraph & \underline{1.019e-02 $\pm\,\scriptstyle{3.953e-03}$} & \textbf{9.893e-02 $\pm\,\scriptstyle{6.907e-04}$} & \textbf{8.350e-02 $\pm\,\scriptstyle{1.496e-02}$} & \underline{1.130e-02 $\pm\,\scriptstyle{1.160e-03}$} \\
+ & \textsc{DiGress} & \textbf{4.861e-03 $\pm\,\scriptstyle{1.711e-03}$} & \underline{1.007e-01 $\pm\,\scriptstyle{1.391e-03}$} & \underline{8.732e-02 $\pm\,\scriptstyle{1.439e-02}$} & \textbf{1.028e-02 $\pm\,\scriptstyle{1.163e-03}$} \\
+ & GRAN & 2.006e-02 $\pm\,\scriptstyle{9.025e-03}$ & 1.018e-01 $\pm\,\scriptstyle{1.694e-03}$ & 1.245e-01 $\pm\,\scriptstyle{2.375e-02}$ & 1.159e-02 $\pm\,\scriptstyle{1.181e-03}$ \\
+\midrule
+Proteins & AutoGraph & \underline{6.595e-03 $\pm\,\scriptstyle{4.534e-03}$} & \underline{1.169e-01 $\pm\,\scriptstyle{1.166e-02}$} & \textbf{4.775e-02 $\pm\,\scriptstyle{2.544e-02}$} & \underline{9.090e-03 $\pm\,\scriptstyle{1.130e-03}$} \\
+ & \textsc{DiGress} & \textbf{1.252e-03 $\pm\,\scriptstyle{6.646e-04}$} & \textbf{1.086e-01 $\pm\,\scriptstyle{8.209e-03}$} & \underline{4.852e-02 $\pm\,\scriptstyle{2.039e-02}$} & \textbf{7.572e-03 $\pm\,\scriptstyle{3.676e-04}$} \\
+ & GRAN & 3.590e-02 $\pm\,\scriptstyle{8.059e-03}$ & 1.821e-01 $\pm\,\scriptstyle{6.616e-03}$ & 2.912e-01 $\pm\,\scriptstyle{8.290e-02}$ & 1.641e-02 $\pm\,\scriptstyle{1.548e-03}$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+}
+\end{table*}

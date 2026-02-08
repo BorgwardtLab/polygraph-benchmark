@@ -1,0 +1,30 @@
+\begin{table*}
+\centering
+\caption{Mean PGD $\pm$ standard deviation across synthetic and real-world graphs. Values are multiplied by 100 for readability.}
+\label{tab:pgs_benchmark}
+\begin{tabular}{llccccccc}
+\toprule
+\textbf{Dataset} & \textbf{Model} & \textbf{VUN ($\uparrow$)} & \textbf{PGD ($\downarrow$)} & \textbf{Clust.} & \textbf{Deg.} & \textbf{GIN} & \textbf{Orb5.} & \textbf{Eig.} \\
+\midrule
+\textsc{Planar-L} & AutoGraph & nan & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
+ & \textsc{DiGress} & nan & 8.8 $\pm\,\scriptstyle{7.9}$ & - & - & - & - & - \\
+ & GRAN & nan & \underline{5.5 $\pm\,\scriptstyle{7.6}$} & - & - & - & - & - \\
+ & ESGG & nan & 16.2 $\pm\,\scriptstyle{13.3}$ & - & - & - & - & - \\
+\midrule
+\textsc{Lobster-L} & AutoGraph & nan & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
+ & \textsc{DiGress} & nan & \underline{9.3 $\pm\,\scriptstyle{8.2}$} & - & - & - & - & - \\
+ & GRAN & nan & 78.5 $\pm\,\scriptstyle{6.5}$ & - & - & - & - & - \\
+ & ESGG & nan & 52.8 $\pm\,\scriptstyle{7.1}$ & - & - & - & - & - \\
+\midrule
+\textsc{SBM-L} & AutoGraph & - & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
+ & \textsc{DiGress} & - & \underline{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
+ & GRAN & - & 19.7 $\pm\,\scriptstyle{21.3}$ & - & - & - & - & - \\
+ & ESGG & - & 70.2 $\pm\,\scriptstyle{11.7}$ & - & - & - & - & - \\
+\midrule
+Proteins & AutoGraph & - & \textbf{27.2 $\pm\,\scriptstyle{23.1}$} & - & - & - & - & - \\
+ & \textsc{DiGress} & - & 55.2 $\pm\,\scriptstyle{18.9}$ & - & - & - & - & - \\
+ & GRAN & - & 62.8 $\pm\,\scriptstyle{29.3}$ & - & - & - & - & - \\
+ & ESGG & - & \underline{50.0 $\pm\,\scriptstyle{17.4}$} & - & - & - & - & - \\
+\bottomrule
+\end{tabular}
+\end{table*}
