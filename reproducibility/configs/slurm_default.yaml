@@ -1,0 +1,16 @@
+# Default SLURM configuration for reproducibility scripts.
+# Copy and modify for your cluster.
+#
+# Usage:
+#   python generate_benchmark_tables.py --slurm-config configs/slurm_default.yaml
+
+slurm:
+  partition: "cpu"
+  timeout_min: 360          # 6 hours per job
+  nodes: 1
+  ntasks_per_node: 1
+  cpus_per_task: 8
+  gpus_per_node: 0
+  mem_gb: 32
+  setup: []
+  additional_parameters: {}

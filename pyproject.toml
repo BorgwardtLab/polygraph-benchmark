@@ -35,6 +35,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+cluster = [
+    "submitit",
+    "pyyaml",
+]
 dev = [
     "pytest",
     "pytest-xdist",

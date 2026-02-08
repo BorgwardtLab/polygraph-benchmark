@@ -1,0 +1,16 @@
+# SLURM configuration with GPU for TabPFN acceleration.
+# Use with generate_benchmark_tables.py which uses TabPFN as classifier.
+#
+# Usage:
+#   python generate_benchmark_tables.py --slurm-config configs/slurm_gpu.yaml
+
+slurm:
+  partition: "gpu"
+  timeout_min: 120
+  nodes: 1
+  ntasks_per_node: 1
+  cpus_per_task: 8
+  gpus_per_node: 1
+  mem_gb: 32
+  setup: []
+  additional_parameters: {}
