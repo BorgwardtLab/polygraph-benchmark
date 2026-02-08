@@ -23,7 +23,7 @@ app = typer.Typer()
 
 # Paths
 REPO_ROOT = Path(__file__).parent.parent
-DATA_DIR = REPO_ROOT / "polygraph_graphs"
+DATA_DIR = REPO_ROOT / "data" / "polygraph_graphs"
 OUTPUT_DIR = Path(__file__).parent / "figures" / "model_quality"
 
 # Styling

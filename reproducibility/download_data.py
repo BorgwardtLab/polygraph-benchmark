@@ -20,7 +20,7 @@ DATA_URL = "https://drive.proton.me/urls/VM4NWYBQD0#3sqmZtmSgWTB"
 
 # Target directory (relative to repo root)
 REPO_ROOT = Path(__file__).parent.parent
-DATA_DIR = REPO_ROOT / "polygraph_graphs"
+DATA_DIR = REPO_ROOT / "data" / "polygraph_graphs"
 
 
 def check_data_exists() -> bool:
@@ -63,7 +63,7 @@ def download(
     print(f"  3. Extract to: {DATA_DIR}")
     print()
     print("Expected structure after extraction:")
-    print("  polygraph_graphs/")
+    print("  data/polygraph_graphs/")
     print("  ├── AUTOGRAPH/")
     print("  ├── DIGRESS/")
     print("  ├── ESGG/")
