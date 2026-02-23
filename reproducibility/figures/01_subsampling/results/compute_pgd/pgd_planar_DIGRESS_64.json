@@ -1,0 +1,22 @@
+{
+  "dataset": "planar",
+  "model": "DIGRESS",
+  "subsample_size": 64,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.16321266509592533,
+  "pgd_std": 0.143006009496293,
+  "pgd_runtime_seconds": 10149.104135,
+  "pgd_runtime_perf_seconds": 10149.104135,
+  "orbit4_mean": 0.20224729690700768,
+  "orbit4_std": 0.12880182302360393,
+  "orbit5_mean": 0.19685877855867148,
+  "orbit5_std": 0.1288935717940827,
+  "clustering_mean": 0.11179554183036089,
+  "clustering_std": 0.10153219260710637,
+  "degree_mean": 0.12898149928078056,
+  "degree_std": 0.10982525014466063,
+  "spectral_mean": 0.12395735213533043,
+  "spectral_std": 0.09735345937541046,
+  "gin_mean": 0.18105111207813024,
+  "gin_std": 0.1297653587950239
+}

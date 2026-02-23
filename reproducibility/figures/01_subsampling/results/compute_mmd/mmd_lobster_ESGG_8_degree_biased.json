@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "ESGG",
+  "subsample_size": 8,
+  "descriptor": "degree",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.28121739744645785,
+  "mmd_std": 0.06317621734079643,
+  "mmd_low": 0.25,
+  "mmd_high": 0.468166842702584,
+  "mmd_runtime_seconds": 2.251311,
+  "mmd_runtime_perf_seconds": 2.251311
+}

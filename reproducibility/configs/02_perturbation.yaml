@@ -1,0 +1,27 @@
+# Config for 02_perturbation/compute.py
+dataset: sbm
+perturbation: edge_rewiring
+num_graphs: 2048
+seed: 42
+num_steps: 100
+max_noise_level: 1.0
+subset: false
+classifiers:
+  - tabpfn
+  - lr
+variants:
+  - informedness
+  - jsd
+
+hydra:
+  job:
+    name: exp02_perturb
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: sbm,planar,lobster,proteins,ego
+      perturbation: edge_rewiring,edge_swapping,mixing,edge_deletion,edge_addition

@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "ESGG",
+  "subsample_size": 64,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.005634429663690629,
+  "mmd_std": 0.006399849320539282,
+  "mmd_low": -1.6962900785052917e-50,
+  "mmd_high": 0.023234665412810558,
+  "mmd_runtime_seconds": 4.971131,
+  "mmd_runtime_perf_seconds": 4.971131
+}

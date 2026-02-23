@@ -1,30 +1,25 @@
-\begin{table*}
-\centering
-\caption{Comparison of standard PGD (max over descriptors) vs concatenated PGD (single classifier on all features).}
-\label{tab:concatenation}
-\begin{tabular}{llcc}
+\begin{tabular}{llccc}
 \toprule
-\textbf{Dataset} & \textbf{Model} & \textbf{PGD-Standard ($\downarrow$)} & \textbf{PGD-Concat ($\downarrow$)} \\
+\textbf{Dataset} & \textbf{Model} & \textbf{VUN ($\uparrow$)} & \textbf{PGD ($\downarrow$)} & \textbf{PGD-Concat. ($\downarrow$)} \\
 \midrule
-\textsc{Planar-L} & AutoGraph & \underline{98.6 $\pm\,\scriptstyle{1.2}$} & 99.1 $\pm\,\scriptstyle{0.0}$ \\
- & \textsc{DiGress} & 99.0 $\pm\,\scriptstyle{0.3}$ & \underline{99.1 $\pm\,\scriptstyle{0.0}$} \\
- & GRAN & \textbf{98.2 $\pm\,\scriptstyle{0.6}$} & 99.1 $\pm\,\scriptstyle{0.0}$ \\
- & ESGG & 99.1 $\pm\,\scriptstyle{0.2}$ & \textbf{99.1 $\pm\,\scriptstyle{0.0}$} \\
+\textsc{Planar-L} & AutoGraph & - & \textbf{31.4 $\pm\,\scriptstyle{2.2}$} & \textbf{81.5 $\pm\,\scriptstyle{0.7}$} \\
+ & \textsc{DiGress} & - & \underline{43.0 $\pm\,\scriptstyle{1.9}$} & 84.8 $\pm\,\scriptstyle{0.6}$ \\
+ & GRAN & - & 94.1 $\pm\,\scriptstyle{3.0}$ & 95.1 $\pm\,\scriptstyle{2.4}$ \\
+ & ESGG & - & 44.3 $\pm\,\scriptstyle{2.6}$ & \underline{83.5 $\pm\,\scriptstyle{0.6}$} \\
 \midrule
-\textsc{Lobster-L} & AutoGraph & \underline{88.6 $\pm\,\scriptstyle{5.1}$} & \underline{98.4 $\pm\,\scriptstyle{0.3}$} \\
- & \textsc{DiGress} & 90.1 $\pm\,\scriptstyle{3.1}$ & \textbf{98.1 $\pm\,\scriptstyle{0.5}$} \\
- & GRAN & \textbf{88.0 $\pm\,\scriptstyle{3.1}$} & 98.5 $\pm\,\scriptstyle{0.6}$ \\
- & ESGG & 96.1 $\pm\,\scriptstyle{0.7}$ & 98.8 $\pm\,\scriptstyle{0.2}$ \\
+\textsc{Lobster-L} & AutoGraph & - & \underline{14.7 $\pm\,\scriptstyle{3.1}$} & 99.3 $\pm\,\scriptstyle{0.5}$ \\
+ & \textsc{DiGress} & - & \textbf{1.9 $\pm\,\scriptstyle{2.1}$} & \underline{99.1 $\pm\,\scriptstyle{0.4}$} \\
+ & GRAN & - & 85.9 $\pm\,\scriptstyle{1.4}$ & \textbf{99.1 $\pm\,\scriptstyle{0.6}$} \\
+ & ESGG & - & 70.5 $\pm\,\scriptstyle{1.0}$ & 99.3 $\pm\,\scriptstyle{0.4}$ \\
 \midrule
-\textsc{SBM-L} & AutoGraph & \textbf{58.1 $\pm\,\scriptstyle{41.1}$} & \underline{96.9 $\pm\,\scriptstyle{0.3}$} \\
- & \textsc{DiGress} & 90.1 $\pm\,\scriptstyle{4.4}$ & 97.2 $\pm\,\scriptstyle{0.7}$ \\
- & GRAN & \underline{58.2 $\pm\,\scriptstyle{41.2}$} & \textbf{96.5 $\pm\,\scriptstyle{0.2}$} \\
- & ESGG & 90.4 $\pm\,\scriptstyle{4.8}$ & 97.0 $\pm\,\scriptstyle{0.4}$ \\
+\textsc{SBM-L} & AutoGraph & - & \textbf{4.4 $\pm\,\scriptstyle{3.0}$} & \textbf{83.0 $\pm\,\scriptstyle{9.8}$} \\
+ & \textsc{DiGress} & - & \underline{9.5 $\pm\,\scriptstyle{4.0}$} & \underline{85.2 $\pm\,\scriptstyle{10.7}$} \\
+ & GRAN & - & 67.2 $\pm\,\scriptstyle{1.4}$ & 91.2 $\pm\,\scriptstyle{0.4}$ \\
+ & ESGG & - & 99.1 $\pm\,\scriptstyle{0.8}$ & 99.4 $\pm\,\scriptstyle{0.2}$ \\
 \midrule
-Proteins & AutoGraph & 33.0 $\pm\,\scriptstyle{46.7}$ & \textbf{92.0 $\pm\,\scriptstyle{3.3}$} \\
- & \textsc{DiGress} & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & \underline{95.1 $\pm\,\scriptstyle{1.6}$} \\
- & GRAN & \underline{32.9 $\pm\,\scriptstyle{46.5}$} & 96.9 $\pm\,\scriptstyle{1.8}$ \\
- & ESGG & 32.9 $\pm\,\scriptstyle{46.5}$ & 97.9 $\pm\,\scriptstyle{0.9}$ \\
+Proteins & AutoGraph & - & \textbf{39.4 $\pm\,\scriptstyle{17.8}$} & \textbf{61.2 $\pm\,\scriptstyle{14.3}$} \\
+ & \textsc{DiGress} & - & 77.3 $\pm\,\scriptstyle{6.9}$ & 87.2 $\pm\,\scriptstyle{6.9}$ \\
+ & GRAN & - & 83.7 $\pm\,\scriptstyle{5.8}$ & 91.7 $\pm\,\scriptstyle{3.3}$ \\
+ & ESGG & - & \underline{65.9 $\pm\,\scriptstyle{6.9}$} & \underline{84.0 $\pm\,\scriptstyle{7.4}$} \\
 \bottomrule
 \end{tabular}
-\end{table*}

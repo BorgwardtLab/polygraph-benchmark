@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "AUTOGRAPH",
+  "subsample_size": 512,
+  "descriptor": "clustering",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 6.992302135270246e-05,
+  "mmd_std": 6.361872471840679e-05,
+  "mmd_low": 7.62939453125e-06,
+  "mmd_high": 0.00023121770105671846,
+  "mmd_runtime_seconds": 19.370311,
+  "mmd_runtime_perf_seconds": 19.370311
+}

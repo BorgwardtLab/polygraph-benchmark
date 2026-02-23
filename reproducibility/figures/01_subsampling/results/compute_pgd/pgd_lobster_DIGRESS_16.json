@@ -1,0 +1,22 @@
+{
+  "dataset": "lobster",
+  "model": "DIGRESS",
+  "subsample_size": 16,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.05609213946387172,
+  "pgd_std": 0.11223183701863942,
+  "pgd_runtime_seconds": 3228.123336,
+  "pgd_runtime_perf_seconds": 3228.123336,
+  "orbit4_mean": 0.06286658637225628,
+  "orbit4_std": 0.1094374594773557,
+  "orbit5_mean": 0.06053906697779894,
+  "orbit5_std": 0.10555205207325262,
+  "clustering_mean": 1.647684501957131e-05,
+  "clustering_std": 2.8976692827396914e-06,
+  "degree_mean": 0.0685957884043455,
+  "degree_std": 0.10182796379698542,
+  "spectral_mean": 0.05542489172890783,
+  "spectral_std": 0.08283677241439169,
+  "gin_mean": 0.0666125694476068,
+  "gin_std": 0.10159205118917886
+}

@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "AUTOGRAPH",
+  "subsample_size": 64,
+  "descriptor": "clustering",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0313795561285922,
+  "mmd_std": 0.000306294433573506,
+  "mmd_low": 0.03125,
+  "mmd_high": 0.03238226006367052,
+  "mmd_runtime_seconds": 23.089391,
+  "mmd_runtime_perf_seconds": 23.089391
+}

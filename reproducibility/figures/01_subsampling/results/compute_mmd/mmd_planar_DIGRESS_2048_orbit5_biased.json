@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "DIGRESS",
+  "subsample_size": 2048,
+  "descriptor": "orbit5",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.04001604547737667,
+  "mmd_std": 0.0037786019301995865,
+  "mmd_low": 0.033436104271445125,
+  "mmd_high": 0.04781393385631078,
+  "mmd_runtime_seconds": 195.094118,
+  "mmd_runtime_perf_seconds": 195.094118
+}

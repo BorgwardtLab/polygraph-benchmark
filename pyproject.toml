@@ -36,8 +36,7 @@ dependencies = [
 
 [project.optional-dependencies]
 cluster = [
-    "submitit",
-    "pyyaml",
+    "hydra-submitit-launcher",
 ]
 dev = [
     "pytest",
@@ -58,7 +57,10 @@ dev = [
     "jinja2",
     "seaborn",
     "tueplots",
-    "typer"
+    "typer",
+    "hydra-core",
+    "matplotlib",
+    "tqdm"
 ]
 
 [tool.setuptools.packages.find]

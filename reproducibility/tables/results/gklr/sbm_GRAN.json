@@ -1,0 +1,12 @@
+{
+  "dataset": "sbm",
+  "model": "GRAN",
+  "pgs_mean": 0.31575973162767346,
+  "pgs_std": 0.03997756878552456,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.22381202193767522,
+  "shortest_path_std": 0.032062031922648664,
+  "pyramid_match_mean": 0.31575973162767346,
+  "pyramid_match_std": 0.03997756878552456
+}

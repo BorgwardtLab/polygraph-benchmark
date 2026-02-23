@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 256,
+  "descriptor": "degree",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.00017399485961842965,
+  "mmd_std": 0.0004891086372680372,
+  "mmd_low": -1.848981653638227e-94,
+  "mmd_high": 0.0016841253093735757,
+  "mmd_runtime_seconds": 5.612726,
+  "mmd_runtime_perf_seconds": 5.612726
+}

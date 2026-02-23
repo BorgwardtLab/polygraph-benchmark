@@ -1,0 +1,12 @@
+{
+  "dataset": "lobster",
+  "model": "AUTOGRAPH",
+  "pgs_mean": 0.05304710130631022,
+  "pgs_std": 0.039857060283713844,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.06565215694771821,
+  "shortest_path_std": 0.0457564160836608,
+  "pyramid_match_mean": 0.03302645466658385,
+  "pyramid_match_std": 0.02821423289839528
+}

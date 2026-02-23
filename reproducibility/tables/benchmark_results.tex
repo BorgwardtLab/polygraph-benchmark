@@ -1,30 +1,27 @@
-\begin{table*}
-\centering
-\caption{Mean PGD $\pm$ standard deviation across synthetic and real-world graphs. Values are multiplied by 100 for readability.}
-\label{tab:pgs_benchmark}
-\begin{tabular}{llccccccc}
+\begin{tabular}{llccp{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}}
 \toprule
-\textbf{Dataset} & \textbf{Model} & \textbf{VUN ($\uparrow$)} & \textbf{PGD ($\downarrow$)} & \textbf{Clust.} & \textbf{Deg.} & \textbf{GIN} & \textbf{Orb5.} & \textbf{Eig.} \\
+\textbf{Dataset} & \textbf{Model} &  &  & \multicolumn{6}{c}{\textbf{PGD subscores}} \\
+\cmidrule(lr){5-10}
+ &  & \textbf{VUN ($\uparrow$)} & \textbf{PGD ($\downarrow$)} & \textbf{Clust. ($\downarrow$)} & \textbf{Deg. ($\downarrow$)} & \textbf{GIN ($\downarrow$)} & \textbf{Orb5. ($\downarrow$)} & \textbf{Orb4. ($\downarrow$)} & \textbf{Eig. ($\downarrow$)} \\
 \midrule
-\textsc{Planar-L} & AutoGraph & nan & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
- & \textsc{DiGress} & nan & 8.8 $\pm\,\scriptstyle{7.9}$ & - & - & - & - & - \\
- & GRAN & nan & \underline{5.5 $\pm\,\scriptstyle{7.6}$} & - & - & - & - & - \\
- & ESGG & nan & 16.2 $\pm\,\scriptstyle{13.3}$ & - & - & - & - & - \\
+\textsc{Planar-L} & AutoGraph & - & \textbf{33.5 $\pm\,\scriptstyle{1.3}$} & 6.1 $\pm\,\scriptstyle{3.7}$ & 8.2 $\pm\,\scriptstyle{1.9}$ & 8.4 $\pm\,\scriptstyle{1.8}$ & 33.5 $\pm\,\scriptstyle{1.3}$ & 28.1 $\pm\,\scriptstyle{1.1}$ & 27.6 $\pm\,\scriptstyle{2.2}$ \\
+ & \textsc{DiGress} & - & 45.4 $\pm\,\scriptstyle{1.8}$ & 24.0 $\pm\,\scriptstyle{2.2}$ & 23.7 $\pm\,\scriptstyle{1.9}$ & 29.3 $\pm\,\scriptstyle{2.1}$ & 45.4 $\pm\,\scriptstyle{1.8}$ & 41.1 $\pm\,\scriptstyle{1.8}$ & 39.4 $\pm\,\scriptstyle{1.9}$ \\
+ & GRAN & - & 99.3 $\pm\,\scriptstyle{1.1}$ & 99.1 $\pm\,\scriptstyle{0.4}$ & 98.2 $\pm\,\scriptstyle{0.7}$ & 98.1 $\pm\,\scriptstyle{0.8}$ & 99.3 $\pm\,\scriptstyle{1.1}$ & 98.9 $\pm\,\scriptstyle{0.9}$ & 98.2 $\pm\,\scriptstyle{0.6}$ \\
+ & ESGG & - & \underline{45.0 $\pm\,\scriptstyle{1.4}$} & 10.9 $\pm\,\scriptstyle{3.2}$ & 21.7 $\pm\,\scriptstyle{3.0}$ & 32.9 $\pm\,\scriptstyle{2.1}$ & 45.0 $\pm\,\scriptstyle{1.4}$ & 42.8 $\pm\,\scriptstyle{1.8}$ & 29.6 $\pm\,\scriptstyle{1.7}$ \\
 \midrule
-\textsc{Lobster-L} & AutoGraph & nan & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
- & \textsc{DiGress} & nan & \underline{9.3 $\pm\,\scriptstyle{8.2}$} & - & - & - & - & - \\
- & GRAN & nan & 78.5 $\pm\,\scriptstyle{6.5}$ & - & - & - & - & - \\
- & ESGG & nan & 52.8 $\pm\,\scriptstyle{7.1}$ & - & - & - & - & - \\
+\textsc{Lobster-L} & AutoGraph & - & \underline{16.4 $\pm\,\scriptstyle{1.8}$} & 5.2 $\pm\,\scriptstyle{1.0}$ & 11.0 $\pm\,\scriptstyle{1.5}$ & 12.6 $\pm\,\scriptstyle{1.4}$ & 16.4 $\pm\,\scriptstyle{1.8}$ & 14.5 $\pm\,\scriptstyle{2.4}$ & 11.8 $\pm\,\scriptstyle{1.9}$ \\
+ & \textsc{DiGress} & - & \textbf{3.9 $\pm\,\scriptstyle{3.2}$} & 1.7 $\pm\,\scriptstyle{0.4}$ & 1.4 $\pm\,\scriptstyle{1.5}$ & 2.5 $\pm\,\scriptstyle{2.2}$ & 5.1 $\pm\,\scriptstyle{2.4}$ & 5.0 $\pm\,\scriptstyle{2.5}$ & 0.6 $\pm\,\scriptstyle{1.1}$ \\
+ & GRAN & - & - & - & - & - & - & - & - \\
+ & ESGG & - & 69.9 $\pm\,\scriptstyle{0.6}$ & 0.0 $\pm\,\scriptstyle{0.0}$ & 63.4 $\pm\,\scriptstyle{1.1}$ & 66.8 $\pm\,\scriptstyle{1.0}$ & 69.9 $\pm\,\scriptstyle{0.6}$ & 66.0 $\pm\,\scriptstyle{0.6}$ & 51.7 $\pm\,\scriptstyle{1.8}$ \\
 \midrule
-\textsc{SBM-L} & AutoGraph & - & \textbf{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
- & \textsc{DiGress} & - & \underline{0.0 $\pm\,\scriptstyle{0.0}$} & - & - & - & - & - \\
- & GRAN & - & 19.7 $\pm\,\scriptstyle{21.3}$ & - & - & - & - & - \\
- & ESGG & - & 70.2 $\pm\,\scriptstyle{11.7}$ & - & - & - & - & - \\
+\textsc{SBM-L} & AutoGraph & - & - & - & - & - & - & - & - \\
+ & \textsc{DiGress} & - & \textbf{16.7 $\pm\,\scriptstyle{1.7}$} & 5.3 $\pm\,\scriptstyle{3.3}$ & 10.1 $\pm\,\scriptstyle{2.5}$ & 14.3 $\pm\,\scriptstyle{1.8}$ & 16.7 $\pm\,\scriptstyle{1.7}$ & 14.7 $\pm\,\scriptstyle{1.8}$ & 7.6 $\pm\,\scriptstyle{3.2}$ \\
+ & GRAN & - & - & - & - & - & - & - & - \\
+ & ESGG & - & \underline{99.4 $\pm\,\scriptstyle{0.2}$} & 97.9 $\pm\,\scriptstyle{0.5}$ & 97.5 $\pm\,\scriptstyle{0.6}$ & 98.3 $\pm\,\scriptstyle{0.4}$ & 96.8 $\pm\,\scriptstyle{0.4}$ & 89.2 $\pm\,\scriptstyle{0.7}$ & 99.4 $\pm\,\scriptstyle{0.2}$ \\
 \midrule
-Proteins & AutoGraph & - & \textbf{27.2 $\pm\,\scriptstyle{23.1}$} & - & - & - & - & - \\
- & \textsc{DiGress} & - & 55.2 $\pm\,\scriptstyle{18.9}$ & - & - & - & - & - \\
- & GRAN & - & 62.8 $\pm\,\scriptstyle{29.3}$ & - & - & - & - & - \\
- & ESGG & - & \underline{50.0 $\pm\,\scriptstyle{17.4}$} & - & - & - & - & - \\
+Proteins & AutoGraph & - & \textbf{55.3 $\pm\,\scriptstyle{12.0}$} & 39.2 $\pm\,\scriptstyle{14.6}$ & 28.5 $\pm\,\scriptstyle{6.8}$ & 43.3 $\pm\,\scriptstyle{7.2}$ & 59.3 $\pm\,\scriptstyle{5.7}$ & 41.4 $\pm\,\scriptstyle{7.1}$ & 48.8 $\pm\,\scriptstyle{11.3}$ \\
+ & \textsc{DiGress} & - & 86.8 $\pm\,\scriptstyle{2.9}$ & 28.9 $\pm\,\scriptstyle{9.0}$ & 14.5 $\pm\,\scriptstyle{11.2}$ & 9.2 $\pm\,\scriptstyle{8.5}$ & 86.8 $\pm\,\scriptstyle{2.9}$ & 57.6 $\pm\,\scriptstyle{5.5}$ & 26.5 $\pm\,\scriptstyle{9.7}$ \\
+ & GRAN & - & 86.1 $\pm\,\scriptstyle{7.2}$ & 80.5 $\pm\,\scriptstyle{6.4}$ & 68.2 $\pm\,\scriptstyle{8.3}$ & 65.3 $\pm\,\scriptstyle{7.2}$ & 89.1 $\pm\,\scriptstyle{4.4}$ & 86.6 $\pm\,\scriptstyle{3.7}$ & 67.9 $\pm\,\scriptstyle{5.4}$ \\
+ & ESGG & - & \underline{77.8 $\pm\,\scriptstyle{5.1}$} & 56.0 $\pm\,\scriptstyle{8.8}$ & 53.1 $\pm\,\scriptstyle{7.8}$ & 48.1 $\pm\,\scriptstyle{10.1}$ & 79.0 $\pm\,\scriptstyle{3.6}$ & 72.9 $\pm\,\scriptstyle{6.5}$ & 29.6 $\pm\,\scriptstyle{11.1}$ \\
 \bottomrule
 \end{tabular}
-\end{table*}

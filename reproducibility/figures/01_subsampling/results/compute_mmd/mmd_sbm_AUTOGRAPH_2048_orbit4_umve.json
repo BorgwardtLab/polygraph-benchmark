@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "AUTOGRAPH",
+  "subsample_size": 2048,
+  "descriptor": "orbit4",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0004200345354760333,
+  "mmd_std": 0.00037424073413298614,
+  "mmd_low": -1.8853406934791963e-06,
+  "mmd_high": 0.0012499753986280392,
+  "mmd_runtime_seconds": 243.666803,
+  "mmd_runtime_perf_seconds": 243.666803
+}

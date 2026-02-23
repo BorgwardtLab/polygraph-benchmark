@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "AUTOGRAPH",
+  "subsample_size": 256,
+  "descriptor": "spectral",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.007833936989874004,
+  "mmd_std": 7.449498547594322e-05,
+  "mmd_low": 0.0078125,
+  "mmd_high": 0.008016347274725538,
+  "mmd_runtime_seconds": 19.186266,
+  "mmd_runtime_perf_seconds": 19.186266
+}

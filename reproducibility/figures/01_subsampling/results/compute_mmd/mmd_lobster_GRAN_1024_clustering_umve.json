@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "GRAN",
+  "subsample_size": 1024,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.007882367402191308,
+  "mmd_std": 0.0015850405249861364,
+  "mmd_low": 0.005167757197123797,
+  "mmd_high": 0.010801684083687224,
+  "mmd_runtime_seconds": 42.930947,
+  "mmd_runtime_perf_seconds": 42.930947
+}

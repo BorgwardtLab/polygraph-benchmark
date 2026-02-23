@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 256,
+  "descriptor": "spectral",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.04454519731181659,
+  "mmd_std": 0.004802274051840609,
+  "mmd_low": 0.036252949807084246,
+  "mmd_high": 0.05443519699693539,
+  "mmd_runtime_seconds": 15.514277,
+  "mmd_runtime_perf_seconds": 15.514277
+}

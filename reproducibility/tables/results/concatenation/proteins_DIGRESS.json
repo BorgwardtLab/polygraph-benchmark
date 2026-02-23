@@ -1,0 +1,8 @@
+{
+  "dataset": "proteins",
+  "model": "DIGRESS",
+  "pgs_standard_mean": 0.7732029497623444,
+  "pgs_standard_std": 0.06879458144271967,
+  "pgs_concatenated_mean": 0.8721780121326447,
+  "pgs_concatenated_std": 0.06882311922490744
+}

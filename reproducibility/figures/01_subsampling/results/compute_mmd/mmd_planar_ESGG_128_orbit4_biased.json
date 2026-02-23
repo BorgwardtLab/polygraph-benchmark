@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "ESGG",
+  "subsample_size": 128,
+  "descriptor": "orbit4",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.04144927801694586,
+  "mmd_std": 0.01395920338168922,
+  "mmd_low": 0.020084740128603434,
+  "mmd_high": 0.06734128512126017,
+  "mmd_runtime_seconds": 2.623307,
+  "mmd_runtime_perf_seconds": 2.623307
+}

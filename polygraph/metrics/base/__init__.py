@@ -2,6 +2,12 @@ from polygraph.metrics.base.frechet_distance import (
     FittedFrechetDistance,
     FrechetDistance,
 )
+from polygraph.metrics.base.interface import (
+    GenerationMetric,
+    MetricCollection,
+)
+from polygraph.metrics.base.kernel_lr import KernelLogisticRegression
+from polygraph.metrics.base.metric_interval import MetricInterval
 from polygraph.metrics.base.mmd import (
     DescriptorMMD2,
     DescriptorMMD2Interval,
@@ -9,14 +15,9 @@ from polygraph.metrics.base.mmd import (
     MaxDescriptorMMD2Interval,
 )
 from polygraph.metrics.base.polygraphdiscrepancy import (
-    PolyGraphDiscrepancy,
     ClassifierMetric,
+    PolyGraphDiscrepancy,
     PolyGraphDiscrepancyInterval,
-)
-from polygraph.metrics.base.metric_interval import MetricInterval
-from polygraph.metrics.base.interface import (
-    GenerationMetric,
-    MetricCollection,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "PolyGraphDiscrepancyInterval",
     "GenerationMetric",
     "MetricCollection",
+    "KernelLogisticRegression",
 ]

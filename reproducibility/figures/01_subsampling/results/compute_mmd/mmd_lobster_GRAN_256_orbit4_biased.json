@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "GRAN",
+  "subsample_size": 256,
+  "descriptor": "orbit4",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.1659496947538798,
+  "mmd_std": 0.023534217321230875,
+  "mmd_low": 0.12725869114245858,
+  "mmd_high": 0.21296799238291542,
+  "mmd_runtime_seconds": 3.528441,
+  "mmd_runtime_perf_seconds": 3.528441
+}

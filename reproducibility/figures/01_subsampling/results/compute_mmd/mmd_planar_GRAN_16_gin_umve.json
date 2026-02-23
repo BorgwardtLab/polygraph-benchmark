@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "GRAN",
+  "subsample_size": 16,
+  "descriptor": "gin",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.03716466429693714,
+  "mmd_std": 0.04173583361429167,
+  "mmd_low": -8.294734295852832e-07,
+  "mmd_high": 0.15928785487864613,
+  "mmd_runtime_seconds": 43.026422,
+  "mmd_runtime_perf_seconds": 43.026422
+}

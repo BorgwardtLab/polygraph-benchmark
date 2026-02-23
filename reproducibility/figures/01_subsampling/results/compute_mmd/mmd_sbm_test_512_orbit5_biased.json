@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 512,
+  "descriptor": "orbit5",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0045623485709834636,
+  "mmd_std": 0.0013318606905459677,
+  "mmd_low": 0.0038772160146779942,
+  "mmd_high": 0.00908226578425718,
+  "mmd_runtime_seconds": 19.332593,
+  "mmd_runtime_perf_seconds": 19.332593
+}

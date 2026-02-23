@@ -1,0 +1,8 @@
+{
+  "dataset": "planar",
+  "model": "ESGG",
+  "pgs_standard_mean": 0.44326321184635165,
+  "pgs_standard_std": 0.026022170605279067,
+  "pgs_concatenated_mean": 0.8345521450042724,
+  "pgs_concatenated_std": 0.006398330788538481
+}

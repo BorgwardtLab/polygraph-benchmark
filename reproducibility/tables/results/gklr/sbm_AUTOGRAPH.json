@@ -1,0 +1,12 @@
+{
+  "dataset": "sbm",
+  "model": "AUTOGRAPH",
+  "pgs_mean": 0.020963971815883515,
+  "pgs_std": 0.042296878074612465,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.033885782314484615,
+  "shortest_path_std": 0.04058946411047344,
+  "pyramid_match_mean": 0.013188481342197952,
+  "pyramid_match_std": 0.027145948059155992
+}

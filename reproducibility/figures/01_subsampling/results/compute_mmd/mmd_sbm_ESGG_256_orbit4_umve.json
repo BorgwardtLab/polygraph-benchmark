@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 256,
+  "descriptor": "orbit4",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.08736872260695495,
+  "mmd_std": 0.020523054492538877,
+  "mmd_low": 0.046651897856974316,
+  "mmd_high": 0.13270966816653954,
+  "mmd_runtime_seconds": 5.861287,
+  "mmd_runtime_perf_seconds": 5.861287
+}

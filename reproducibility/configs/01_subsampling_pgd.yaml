@@ -1,0 +1,15 @@
+defaults:
+  - 01_subsampling
+  - override hydra/launcher: slurm_cpu
+  - _self_
+
+hydra:
+  job:
+    name: exp01_pgd
+  sweeper:
+    params:
+      dataset: planar,lobster,sbm
+      model: AUTOGRAPH,DIGRESS,GRAN,ESGG,test
+      subsample_size: 8,16,32,64,128,256,512,1024,2048,4096
+      descriptor: orbit4
+      variant: biased

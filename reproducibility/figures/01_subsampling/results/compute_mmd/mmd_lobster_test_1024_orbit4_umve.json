@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "test",
+  "subsample_size": 1024,
+  "descriptor": "orbit4",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.00013769198539895894,
+  "mmd_std": 0.00023580171995076104,
+  "mmd_low": -8.815311483267862e-06,
+  "mmd_high": 0.0009453515578670639,
+  "mmd_runtime_seconds": 41.240441,
+  "mmd_runtime_perf_seconds": 41.240441
+}

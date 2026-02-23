@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 32,
+  "descriptor": "gin",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.39898351290909245,
+  "mmd_std": 0.09531889660078867,
+  "mmd_low": 0.2535988976884269,
+  "mmd_high": 0.6044892653208573,
+  "mmd_runtime_seconds": 37.775782,
+  "mmd_runtime_perf_seconds": 37.775782
+}

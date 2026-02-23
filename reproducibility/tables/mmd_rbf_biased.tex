@@ -1,32 +1,26 @@
-\begin{table*}
-\centering
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{0.9}
-\scalebox{0.7}{
-\begin{minipage}{\textwidth}
-\caption{RBF MMD² (biased) metrics with confidence intervals.}
-\label{tab:mmd_rbf_biased}
+\scalebox{0.6}{
 \begin{tabular}{llcccc}
 \toprule
 \textbf{Dataset} & \textbf{Model} & \textbf{RBF Deg. ($\downarrow$)} & \textbf{RBF Clust. ($\downarrow$)} & \textbf{RBF Orb. ($\downarrow$)} & \textbf{RBF Eig. ($\downarrow$)} \\
 \midrule
-\textsc{Planar-L} & AutoGraph & 1.275e-01 $\pm\,\scriptstyle{3.878e-02}$ & 1.183e-01 $\pm\,\scriptstyle{2.624e-02}$ & \textbf{1.014e-01 $\pm\,\scriptstyle{1.151e-03}$} & \textbf{1.000e-01 $\pm\,\scriptstyle{2.527e-05}$} \\
- & \textsc{DiGress} & \textbf{1.067e-01 $\pm\,\scriptstyle{8.009e-03}$} & \underline{1.098e-01 $\pm\,\scriptstyle{8.182e-03}$} & \underline{1.044e-01 $\pm\,\scriptstyle{6.182e-03}$} & \underline{1.000e-01 $\pm\,\scriptstyle{2.401e-05}$} \\
- & GRAN & \underline{1.087e-01 $\pm\,\scriptstyle{5.446e-03}$} & \textbf{1.061e-01 $\pm\,\scriptstyle{3.766e-03}$} & 1.056e-01 $\pm\,\scriptstyle{3.276e-03}$ & 1.050e-01 $\pm\,\scriptstyle{3.169e-03}$ \\
+\textsc{Planar-L} & AutoGraph & \textbf{2.943e-03 $\pm\,\scriptstyle{7.042e-04}$} & \textbf{2.139e-03 $\pm\,\scriptstyle{2.931e-04}$} & \textbf{3.915e-03 $\pm\,\scriptstyle{1.179e-03}$} & \underline{2.509e-03 $\pm\,\scriptstyle{6.142e-05}$} \\
+ & \textsc{DiGress} & 1.528e-02 $\pm\,\scriptstyle{1.632e-03}$ & 1.520e-02 $\pm\,\scriptstyle{2.009e-03}$ & 3.475e-02 $\pm\,\scriptstyle{5.528e-03}$ & 2.946e-03 $\pm\,\scriptstyle{1.258e-04}$ \\
+ & GRAN & 9.743e-03 $\pm\,\scriptstyle{8.840e-05}$ & 9.833e-03 $\pm\,\scriptstyle{1.032e-04}$ & \underline{1.079e-02 $\pm\,\scriptstyle{6.316e-04}$} & 9.752e-03 $\pm\,\scriptstyle{9.332e-05}$ \\
+ & ESGG & \underline{3.152e-03 $\pm\,\scriptstyle{6.404e-04}$} & \underline{5.962e-03 $\pm\,\scriptstyle{1.108e-03}$} & 3.160e-02 $\pm\,\scriptstyle{4.137e-03}$ & \textbf{2.316e-03 $\pm\,\scriptstyle{1.045e-04}$} \\
 \midrule
-\textsc{Lobster-L} & AutoGraph & \underline{1.115e-01 $\pm\,\scriptstyle{1.175e-02}$} & \textbf{0.000e+00 $\pm\,\scriptstyle{0.000e+00}$} & \underline{1.263e-01 $\pm\,\scriptstyle{3.206e-02}$} & \textbf{1.020e-01 $\pm\,\scriptstyle{3.851e-03}$} \\
- & \textsc{DiGress} & \textbf{1.115e-01 $\pm\,\scriptstyle{1.062e-02}$} & \underline{0.000e+00 $\pm\,\scriptstyle{0.000e+00}$} & \textbf{1.011e-01 $\pm\,\scriptstyle{1.158e-03}$} & \underline{1.027e-01 $\pm\,\scriptstyle{4.670e-03}$} \\
- & GRAN & 5.002e-01 $\pm\,\scriptstyle{8.456e-02}$ & 1.135e-02 $\pm\,\scriptstyle{5.223e-03}$ & 2.209e-01 $\pm\,\scriptstyle{6.793e-02}$ & 4.111e-01 $\pm\,\scriptstyle{9.123e-02}$ \\
+\textsc{Lobster-L} & AutoGraph & \underline{7.492e-03 $\pm\,\scriptstyle{2.000e-03}$} & 6.176e-05 $\pm\,\scriptstyle{4.349e-05}$ & \underline{8.102e-03 $\pm\,\scriptstyle{2.507e-03}$} & \underline{8.110e-03 $\pm\,\scriptstyle{1.915e-03}$} \\
+ & \textsc{DiGress} & \textbf{2.121e-03 $\pm\,\scriptstyle{2.611e-04}$} & \underline{1.042e-05 $\pm\,\scriptstyle{5.455e-06}$} & \textbf{2.302e-03 $\pm\,\scriptstyle{5.577e-04}$} & \textbf{2.030e-03 $\pm\,\scriptstyle{2.359e-04}$} \\
+ & GRAN & 3.043e-01 $\pm\,\scriptstyle{9.296e-03}$ & 7.728e-03 $\pm\,\scriptstyle{1.174e-03}$ & 1.619e-01 $\pm\,\scriptstyle{7.680e-03}$ & 2.368e-01 $\pm\,\scriptstyle{5.751e-03}$ \\
+ & ESGG & 8.945e-02 $\pm\,\scriptstyle{5.056e-03}$ & \textbf{0.000e+00 $\pm\,\scriptstyle{0.000e+00}$} & 2.249e-01 $\pm\,\scriptstyle{1.453e-02}$ & 7.052e-02 $\pm\,\scriptstyle{5.446e-03}$ \\
 \midrule
-\textsc{SBM-L} & AutoGraph & \textbf{1.001e-01 $\pm\,\scriptstyle{9.623e-05}$} & \textbf{1.000e-01 $\pm\,\scriptstyle{1.167e-07}$} & \underline{1.040e-01 $\pm\,\scriptstyle{7.601e-03}$} & \textbf{1.001e-01 $\pm\,\scriptstyle{2.509e-04}$} \\
- & \textsc{DiGress} & \underline{1.013e-01 $\pm\,\scriptstyle{1.631e-03}$} & \underline{1.010e-01 $\pm\,\scriptstyle{1.633e-03}$} & \textbf{1.003e-01 $\pm\,\scriptstyle{1.093e-03}$} & \underline{1.004e-01 $\pm\,\scriptstyle{4.572e-04}$} \\
- & GRAN & 1.394e-01 $\pm\,\scriptstyle{2.919e-02}$ & 1.309e-01 $\pm\,\scriptstyle{2.654e-02}$ & 1.473e-01 $\pm\,\scriptstyle{5.337e-02}$ & 1.005e-01 $\pm\,\scriptstyle{5.624e-04}$ \\
+\textsc{SBM-L} & AutoGraph & \textbf{2.174e-03 $\pm\,\scriptstyle{2.651e-04}$} & \textbf{2.114e-03 $\pm\,\scriptstyle{1.887e-04}$} & \textbf{2.345e-03 $\pm\,\scriptstyle{6.156e-04}$} & \underline{1.979e-03 $\pm\,\scriptstyle{2.048e-05}$} \\
+ & \textsc{DiGress} & \underline{4.814e-03 $\pm\,\scriptstyle{1.055e-03}$} & \underline{3.091e-03 $\pm\,\scriptstyle{4.050e-04}$} & \underline{5.155e-03 $\pm\,\scriptstyle{1.641e-03}$} & \textbf{1.959e-03 $\pm\,\scriptstyle{6.636e-06}$} \\
+ & GRAN & 5.168e-02 $\pm\,\scriptstyle{2.770e-03}$ & 4.556e-02 $\pm\,\scriptstyle{1.382e-03}$ & 3.685e-02 $\pm\,\scriptstyle{5.084e-03}$ & 5.610e-03 $\pm\,\scriptstyle{5.368e-04}$ \\
+ & ESGG & 3.347e-02 $\pm\,\scriptstyle{2.302e-03}$ & 5.608e-02 $\pm\,\scriptstyle{2.254e-03}$ & 8.110e-02 $\pm\,\scriptstyle{8.034e-03}$ & 4.926e-02 $\pm\,\scriptstyle{8.573e-04}$ \\
 \midrule
-Proteins & AutoGraph & \textbf{1.042e-01 $\pm\,\scriptstyle{6.148e-03}$} & \underline{1.162e-01 $\pm\,\scriptstyle{1.801e-02}$} & \textbf{7.538e-02 $\pm\,\scriptstyle{3.402e-02}$} & \underline{1.101e-01 $\pm\,\scriptstyle{6.076e-03}$} \\
- & \textsc{DiGress} & \underline{1.205e-01 $\pm\,\scriptstyle{4.281e-03}$} & \textbf{1.087e-01 $\pm\,\scriptstyle{7.917e-03}$} & \underline{1.739e-01 $\pm\,\scriptstyle{3.385e-02}$} & \textbf{1.036e-01 $\pm\,\scriptstyle{2.309e-03}$} \\
- & GRAN & 3.888e-01 $\pm\,\scriptstyle{6.593e-02}$ & 2.962e-01 $\pm\,\scriptstyle{4.467e-02}$ & 4.044e-01 $\pm\,\scriptstyle{8.024e-02}$ & 1.171e-01 $\pm\,\scriptstyle{7.373e-03}$ \\
+Proteins & AutoGraph & \textbf{5.178e-02 $\pm\,\scriptstyle{7.611e-03}$} & \underline{6.716e-02 $\pm\,\scriptstyle{1.571e-02}$} & \textbf{2.369e-02 $\pm\,\scriptstyle{4.492e-03}$} & 5.063e-02 $\pm\,\scriptstyle{4.687e-03}$ \\
+ & \textsc{DiGress} & \underline{5.236e-02 $\pm\,\scriptstyle{7.499e-03}$} & \textbf{5.146e-02 $\pm\,\scriptstyle{6.231e-03}$} & \underline{6.808e-02 $\pm\,\scriptstyle{2.714e-02}$} & \textbf{4.360e-02 $\pm\,\scriptstyle{2.098e-04}$} \\
+ & GRAN & 3.652e-01 $\pm\,\scriptstyle{8.576e-02}$ & 2.913e-01 $\pm\,\scriptstyle{3.995e-02}$ & 4.156e-01 $\pm\,\scriptstyle{8.411e-02}$ & 7.697e-02 $\pm\,\scriptstyle{1.011e-02}$ \\
+ & ESGG & 1.130e-01 $\pm\,\scriptstyle{2.740e-02}$ & 1.098e-01 $\pm\,\scriptstyle{2.652e-02}$ & 8.222e-02 $\pm\,\scriptstyle{2.511e-02}$ & \underline{4.360e-02 $\pm\,\scriptstyle{1.778e-04}$} \\
 \bottomrule
-\end{tabular}
-\end{minipage}
-}
-\end{table*}
+\end{tabular}}

@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "subsample_size": 64,
+  "descriptor": "spectral",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0008634027291799027,
+  "mmd_std": 0.0011820419649395783,
+  "mmd_low": 0.0,
+  "mmd_high": 0.004262219226392795,
+  "mmd_runtime_seconds": 30.959829,
+  "mmd_runtime_perf_seconds": 30.959829
+}

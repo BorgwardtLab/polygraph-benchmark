@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "GRAN",
+  "subsample_size": 4096,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.04385152741452586,
+  "mmd_std": 0.0013036988943835688,
+  "mmd_low": 0.041457762246825104,
+  "mmd_high": 0.04628437431594422,
+  "mmd_runtime_seconds": 763.400402,
+  "mmd_runtime_perf_seconds": 763.400402
+}

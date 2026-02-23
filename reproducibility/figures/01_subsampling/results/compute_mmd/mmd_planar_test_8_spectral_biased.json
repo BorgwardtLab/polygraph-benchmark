@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "test",
+  "subsample_size": 8,
+  "descriptor": "spectral",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.2500339679526873,
+  "mmd_std": 6.677477887187637e-05,
+  "mmd_low": 0.25,
+  "mmd_high": 0.2502064458056864,
+  "mmd_runtime_seconds": 0.190699,
+  "mmd_runtime_perf_seconds": 0.190699
+}

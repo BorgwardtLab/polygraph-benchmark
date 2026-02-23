@@ -43,17 +43,19 @@ Molecule descriptors:
     - [`MolCLRDescriptor`][polygraph.utils.descriptors.molecule_descriptors.MolCLRDescriptor]: Random projection of MolCLR embeddings from a GNN
 """
 
-from polygraph.utils.descriptors.interface import GraphDescriptor
 from polygraph.utils.descriptors.generic_descriptors import (
-    SparseDegreeHistogram,
-    DegreeHistogram,
     ClusteringHistogram,
-    OrbitCounts,
+    DegreeHistogram,
     EigenvalueHistogram,
-    RandomGIN,
-    WeisfeilerLehmanDescriptor,
     NormalizedDescriptor,
+    OrbitCounts,
+    PyramidMatchDescriptor,
+    RandomGIN,
+    ShortestPathHistogramDescriptor,
+    SparseDegreeHistogram,
+    WeisfeilerLehmanDescriptor,
 )
+from polygraph.utils.descriptors.interface import GraphDescriptor
 
 __all__ = [
     "GraphDescriptor",
@@ -65,4 +67,6 @@ __all__ = [
     "RandomGIN",
     "WeisfeilerLehmanDescriptor",
     "NormalizedDescriptor",
+    "ShortestPathHistogramDescriptor",
+    "PyramidMatchDescriptor",
 ]

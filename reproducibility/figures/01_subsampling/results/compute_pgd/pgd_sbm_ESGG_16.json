@@ -1,0 +1,22 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 16,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.7200788280367851,
+  "pgd_std": 0.1708785447192054,
+  "pgd_runtime_seconds": 4501.596197,
+  "pgd_runtime_perf_seconds": 4501.596197,
+  "orbit4_mean": 0.5794521623849869,
+  "orbit4_std": 0.18267835541628027,
+  "orbit5_mean": 0.615711959451437,
+  "orbit5_std": 0.17858680584952558,
+  "clustering_mean": 0.31223495475947854,
+  "clustering_std": 0.15790174750354216,
+  "degree_mean": 0.11990939382463693,
+  "degree_std": 0.12423119762294017,
+  "spectral_mean": 0.7865597108006477,
+  "spectral_std": 0.1207554723795998,
+  "gin_mean": 0.6814766066102311,
+  "gin_std": 0.18697387455439576
+}

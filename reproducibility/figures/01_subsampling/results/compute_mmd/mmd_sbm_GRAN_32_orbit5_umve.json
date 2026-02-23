@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "GRAN",
+  "subsample_size": 32,
+  "descriptor": "orbit5",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.03781702705360833,
+  "mmd_std": 0.03182692007875038,
+  "mmd_low": -6.630056762925413e-05,
+  "mmd_high": 0.11715545370548053,
+  "mmd_runtime_seconds": 15.871708,
+  "mmd_runtime_perf_seconds": 15.871708
+}

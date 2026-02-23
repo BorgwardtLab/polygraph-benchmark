@@ -1,0 +1,22 @@
+# GPU SLURM configuration for TabPFN acceleration.
+# Targets hpcl8 GPU nodes.
+#
+# Usage:
+#   python XX/compute.py --multirun hydra/launcher=slurm_gpu
+
+defaults:
+  - submitit_slurm
+
+partition: p.hpcl8
+timeout_min: 1440
+nodes: 1
+tasks_per_node: 1
+cpus_per_task: 8
+gpus_per_node: 1
+mem_gb: 32
+setup:
+  - "export TABPFN_ALLOW_CPU_LARGE_DATASET=1"
+  - "echo CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+  - "nvidia-smi -L 2>/dev/null || echo 'nvidia-smi not available'"
+  - "python -c 'import torch; print(\"torch.cuda.is_available():\", torch.cuda.is_available()); print(\"CUDA device count:\", torch.cuda.device_count() if torch.cuda.is_available() else 0)' 2>&1 || true"
+array_parallelism: 1024

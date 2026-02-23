@@ -56,7 +56,7 @@ from typing import (
 
 import numpy as np
 import torch
-from scipy.sparse import csr_array
+from scipy.sparse import csr_array, issparse, vstack as sparse_vstack
 from sklearn.metrics import roc_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
@@ -117,6 +117,27 @@ class PolyGraphDiscrepancyIntervalResult(TypedDict):
     pgd_descriptor: Dict[str, float]
 
 
+def _vstack(arrays):
+    """Stack arrays vertically, handling both dense and sparse."""
+    if any(issparse(a) for a in arrays):
+        return sparse_vstack(arrays, format="csr")
+    return np.concatenate(arrays, axis=0)
+
+
+def _is_constant(X) -> bool:
+    """Check if all rows of X are identical."""
+    if issparse(X):
+        if X.shape[0] <= 1:
+            return True
+        first = X[0]
+        for i in range(1, X.shape[0]):
+            diff = X[i] - first
+            if diff.nnz > 0:
+                return False
+        return True
+    return np.all(X == X[0])
+
+
 def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
     """Estimate Jensen-Shannon distance based on classifier probabilities."""
     divergence = 0.5 * (
@@ -162,8 +183,8 @@ def _scores_and_threshold_to_informedness(
 
 def _classifier_cross_validation(
     classifier: ClassifierProtocol,
-    train_ref_descriptions: np.ndarray,
-    train_gen_descriptions: np.ndarray,
+    train_ref_descriptions: Union[np.ndarray, csr_array],
+    train_gen_descriptions: Union[np.ndarray, csr_array],
     variant: Literal["informedness", "jsd"],
     n_folds: int = 4,
 ):
@@ -181,11 +202,11 @@ def _classifier_cross_validation(
         List of scores for each fold
     """
     # Combine data and create labels
-    X = np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
+    X = _vstack([train_ref_descriptions, train_gen_descriptions])
     y = np.concatenate(
         [
-            np.ones(len(train_ref_descriptions)),
-            np.zeros(len(train_gen_descriptions)),
+            np.ones(train_ref_descriptions.shape[0]),
+            np.zeros(train_gen_descriptions.shape[0]),
         ]
     )
 
@@ -193,13 +214,13 @@ def _classifier_cross_validation(
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=0)
     scores = []
 
-    for train_idx, val_idx in skf.split(X, y):
+    for train_idx, val_idx in skf.split(X if not issparse(X) else np.zeros((X.shape[0], 1)), y):
         # Split data
         X_train, X_val = X[train_idx], X[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
 
         # Train model
-        if np.all(X_train == X_train[0]):
+        if _is_constant(X_train):
             warnings.warn(
                 "Input to classifier is constant, setting all scores to 0.5"
             )
@@ -251,12 +272,13 @@ def _descriptions_to_classifier_metric(
     variant: Literal["informedness", "jsd"] = "jsd",
     classifier: Optional[ClassifierProtocol] = None,
     rng: Optional[np.random.Generator] = None,
+    scale: bool = True,
 ) -> Tuple[float, Union[int, float]]:
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
         assert isinstance(gen_descriptions, csr_array)
-        # Convert to dense array
+        # Align sparse dimensions
         num_features = (
             max(
                 ref_descriptions.indices.max(),
@@ -271,7 +293,7 @@ def _descriptions_to_classifier_metric(
                 gen_descriptions.indptr,
             ),
             shape=(gen_descriptions.shape[0], num_features),  # pyright: ignore
-        ).toarray()
+        )
         ref_descriptions = csr_array(
             (
                 ref_descriptions.data,
@@ -279,35 +301,42 @@ def _descriptions_to_classifier_metric(
                 ref_descriptions.indptr,
             ),
             shape=(ref_descriptions.shape[0], num_features),  # pyright: ignore
-        ).toarray()
+        )
+        # Only convert to dense when needed (TabPFN or scaling)
+        if scale or classifier is None:
+            gen_descriptions = gen_descriptions.toarray()
+            ref_descriptions = ref_descriptions.toarray()
 
+    n_ref = ref_descriptions.shape[0]
+    n_gen = gen_descriptions.shape[0]
     ref_train_idx = rng.choice(
-        len(ref_descriptions),
-        size=len(ref_descriptions) // 2,
+        n_ref,
+        size=n_ref // 2,
         replace=False,
     )
-    ref_test_idx = np.setdiff1d(np.arange(len(ref_descriptions)), ref_train_idx)
+    ref_test_idx = np.setdiff1d(np.arange(n_ref), ref_train_idx)
     gen_train_idx = rng.choice(
-        len(gen_descriptions), size=len(gen_descriptions) // 2, replace=False
+        n_gen, size=n_gen // 2, replace=False
     )
-    gen_test_idx = np.setdiff1d(np.arange(len(gen_descriptions)), gen_train_idx)
+    gen_test_idx = np.setdiff1d(np.arange(n_gen), gen_train_idx)
 
-    scaler = StandardScaler()
     train_ref_descriptions = ref_descriptions[ref_train_idx]
     train_gen_descriptions = gen_descriptions[gen_train_idx]
     test_ref_descriptions = ref_descriptions[ref_test_idx]
     test_gen_descriptions = gen_descriptions[gen_test_idx]
-    scaler.fit(
-        np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
-    )
-    test_ref_descriptions = scaler.transform(test_ref_descriptions)
-    test_gen_descriptions = scaler.transform(test_gen_descriptions)
-    train_ref_descriptions = scaler.transform(train_ref_descriptions)
-    train_gen_descriptions = scaler.transform(train_gen_descriptions)
-    assert isinstance(train_ref_descriptions, np.ndarray)
-    assert isinstance(train_gen_descriptions, np.ndarray)
-    assert isinstance(test_ref_descriptions, np.ndarray)
-    assert isinstance(test_gen_descriptions, np.ndarray)
+    if scale:
+        scaler = StandardScaler()
+        scaler.fit(
+            np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
+        )
+        test_ref_descriptions = scaler.transform(test_ref_descriptions)
+        test_gen_descriptions = scaler.transform(test_gen_descriptions)
+        train_ref_descriptions = scaler.transform(train_ref_descriptions)
+        train_gen_descriptions = scaler.transform(train_gen_descriptions)
+    assert isinstance(train_ref_descriptions, (np.ndarray, csr_array))
+    assert isinstance(train_gen_descriptions, (np.ndarray, csr_array))
+    assert isinstance(test_ref_descriptions, (np.ndarray, csr_array))
+    assert isinstance(test_gen_descriptions, (np.ndarray, csr_array))
 
     if classifier is None:
         if version("tabpfn") != "2.0.9":
@@ -332,18 +361,18 @@ def _descriptions_to_classifier_metric(
     train_metric = np.mean(scores).item()
 
     # Refit on all training data
-    train_all_descriptions = np.concatenate(
-        [train_ref_descriptions, train_gen_descriptions], axis=0
+    train_all_descriptions = _vstack(
+        [train_ref_descriptions, train_gen_descriptions]
     )
     train_labels = np.concatenate(
         [
-            np.ones(len(train_ref_descriptions)),
-            np.zeros(len(train_gen_descriptions)),
+            np.ones(train_ref_descriptions.shape[0]),
+            np.zeros(train_gen_descriptions.shape[0]),
         ]
     )
 
     # Check if train_all_descriptions is constant across rows
-    if np.all(train_all_descriptions == train_all_descriptions[0]):
+    if _is_constant(train_all_descriptions):
         warnings.warn(
             "Input to classifier is constant, setting all scores to 0.5"
         )
@@ -439,11 +468,13 @@ class _ClassifierMetricSamples(Generic[GraphType]):
         descriptor: GraphDescriptor[GraphType],
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Optional[ClassifierProtocol] = None,
+        scale: bool = True,
     ):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
         self._classifier = classifier
+        self._scale = scale
 
     def compute(
         self,
@@ -472,6 +503,7 @@ class _ClassifierMetricSamples(Generic[GraphType]):
                     variant=self._variant,
                     rng=rng,
                     classifier=self._classifier,
+                    scale=self._scale,
                 )
             )
         samples = np.array(samples)
@@ -562,6 +594,7 @@ class PolyGraphDiscrepancyInterval(
         num_samples: int = 10,
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Optional[ClassifierProtocol] = None,
+        scale: bool = True,
     ):
         if len(reference_graphs) < 2 * subsample_size:
             raise ValueError(
@@ -570,7 +603,7 @@ class PolyGraphDiscrepancyInterval(
 
         self._sub_metrics = {
             name: _ClassifierMetricSamples(
-                reference_graphs, descriptors[name], variant, classifier
+                reference_graphs, descriptors[name], variant, classifier, scale
             )
             for name in descriptors
         }

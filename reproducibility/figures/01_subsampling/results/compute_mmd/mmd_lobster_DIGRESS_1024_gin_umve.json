@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "DIGRESS",
+  "subsample_size": 1024,
+  "descriptor": "gin",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0006964168080916643,
+  "mmd_std": 0.0007531148452991175,
+  "mmd_low": -6.5348289774724835e-06,
+  "mmd_high": 0.002480104401932866,
+  "mmd_runtime_seconds": 91.698182,
+  "mmd_runtime_perf_seconds": 91.698182
+}

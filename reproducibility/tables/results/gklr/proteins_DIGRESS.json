@@ -1,0 +1,12 @@
+{
+  "dataset": "proteins",
+  "model": "DIGRESS",
+  "pgs_mean": 0.30420139370493143,
+  "pgs_std": 0.05803805926654741,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.30420139370493143,
+  "shortest_path_std": 0.05803805926654741,
+  "pyramid_match_mean": 0.01767986939624113,
+  "pyramid_match_std": 0.03325951101703432
+}

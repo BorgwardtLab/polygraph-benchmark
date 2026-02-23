@@ -1,0 +1,22 @@
+{
+  "dataset": "planar",
+  "model": "AUTOGRAPH",
+  "subsample_size": 128,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.1152217502426356,
+  "pgd_std": 0.0929908004310109,
+  "pgd_runtime_seconds": 13822.549804,
+  "pgd_runtime_perf_seconds": 13822.549804,
+  "orbit4_mean": 0.0984989955369383,
+  "orbit4_std": 0.07253560015269848,
+  "orbit5_mean": 0.14219133753329516,
+  "orbit5_std": 0.0821566985233603,
+  "clustering_mean": 0.04159197381697595,
+  "clustering_std": 0.043088173076687886,
+  "degree_mean": 0.04027313538827002,
+  "degree_std": 0.055275263107049215,
+  "spectral_mean": 0.08362694004084915,
+  "spectral_std": 0.06629948945503031,
+  "gin_mean": 0.041360680423676965,
+  "gin_std": 0.04943265143446935
+}

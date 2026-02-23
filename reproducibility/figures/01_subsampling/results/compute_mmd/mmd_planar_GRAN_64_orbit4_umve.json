@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "GRAN",
+  "subsample_size": 64,
+  "descriptor": "orbit4",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.014327043468547029,
+  "mmd_std": 0.010271452785367747,
+  "mmd_low": 0.006187897248913322,
+  "mmd_high": 0.045132226228888996,
+  "mmd_runtime_seconds": 3.030879,
+  "mmd_runtime_perf_seconds": 3.030879
+}

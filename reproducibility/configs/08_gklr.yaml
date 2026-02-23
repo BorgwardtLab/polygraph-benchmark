@@ -1,0 +1,17 @@
+# Config for 08_gklr/compute.py
+dataset: planar
+model: AUTOGRAPH
+subset: false
+
+hydra:
+  job:
+    name: exp08_gklr
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: planar,lobster,sbm,proteins
+      model: AUTOGRAPH,DIGRESS,GRAN,ESGG

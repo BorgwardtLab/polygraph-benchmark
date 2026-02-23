@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "GRAN",
+  "subsample_size": 1024,
+  "descriptor": "clustering",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0461682143299315,
+  "mmd_std": 0.003467137233997436,
+  "mmd_low": 0.03980950085410845,
+  "mmd_high": 0.052149788809912334,
+  "mmd_runtime_seconds": 87.700138,
+  "mmd_runtime_perf_seconds": 87.700138
+}

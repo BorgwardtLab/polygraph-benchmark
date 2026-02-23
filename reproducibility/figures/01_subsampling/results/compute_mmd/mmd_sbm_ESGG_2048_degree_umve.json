@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 2048,
+  "descriptor": "degree",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.03207921213729504,
+  "mmd_std": 0.0025152903116039556,
+  "mmd_low": 0.028303091004009434,
+  "mmd_high": 0.0374677490140559,
+  "mmd_runtime_seconds": 190.016282,
+  "mmd_runtime_perf_seconds": 190.016282
+}

@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "AUTOGRAPH",
+  "subsample_size": 1024,
+  "descriptor": "orbit4",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.008644355971966212,
+  "mmd_std": 0.003233565631710486,
+  "mmd_low": 0.0032223609347088902,
+  "mmd_high": 0.014600187905711411,
+  "mmd_runtime_seconds": 61.264501,
+  "mmd_runtime_perf_seconds": 61.264501
+}

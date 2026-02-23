@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "AUTOGRAPH",
+  "subsample_size": 8,
+  "descriptor": "orbit5",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.04656873739665404,
+  "mmd_std": 0.06964051489548789,
+  "mmd_low": -1.8261849845737617e-22,
+  "mmd_high": 0.26384906016072585,
+  "mmd_runtime_seconds": 5.316373,
+  "mmd_runtime_perf_seconds": 5.316373
+}

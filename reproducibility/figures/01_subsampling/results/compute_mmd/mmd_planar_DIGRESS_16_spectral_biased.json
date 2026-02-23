@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "DIGRESS",
+  "subsample_size": 16,
+  "descriptor": "spectral",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.12501396168220322,
+  "mmd_std": 3.258158209342133e-05,
+  "mmd_low": 0.125,
+  "mmd_high": 0.12510035842618866,
+  "mmd_runtime_seconds": 17.567072,
+  "mmd_runtime_perf_seconds": 17.567072
+}

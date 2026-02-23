@@ -1,77 +1,172 @@
-# Makefile paper reproduction
+# Makefile for paper reproduction
 # Usage: make [target]
+#
+# Each experiment has its own folder with separate scripts:
+#   compute.py  — data generation / metric computation (Hydra app)
+#   plot.py     — figure generation from JSON results (lightweight)
+#   format.py   — LaTeX table generation from JSON results (lightweight)
+#
+# All compute scripts support three modes:
+#   1. Local (default):    python XX/compute.py --multirun
+#   2. SLURM:              python XX/compute.py --multirun hydra/launcher=slurm_cpu
+#   3. Single work unit:   python XX/compute.py [overrides]
+#
+# Override the SLURM launcher with: make submit SLURM_LAUNCHER=slurm_gpu
 
-.PHONY: all tables figures download download-subset tables-submit tables-collect clean help
+.PHONY: all data figures tables \
+        compute-all compute-figures compute-tables \
+        plot-all format-all \
+        submit submit-figures submit-tables \
+        download download-subset \
+        clean clean-results help
 
-# Default target
-all: tables figures
+SLURM_LAUNCHER ?= slurm_cpu
+PAPER_DIR ?= /fs/pool/pool-hartout/Documents/papers/polygraph_iclr_paper
 
-# Download targets
+# ── Top-level targets ────────────────────────────────────────────────
+
+all: figures tables
+
+data: download
+
+figures: compute-figures plot-all
+
+tables: compute-tables format-all
+
+# ── Download ─────────────────────────────────────────────────────────
+
 download:
 	python download_data.py
 
 download-subset:
 	python download_data.py --subset
 
-# Table generation
-tables: tables/benchmark_results.tex tables/mmd_gtv.tex tables/gklr.tex tables/concatenation.tex
+# ── Compute (heavy metric evaluation — local, all combinations) ──────
 
-tables/benchmark_results.tex:
-	python generate_benchmark_tables.py
+compute-all: compute-figures compute-tables
 
-tables/mmd_gtv.tex tables/mmd_rbf_biased.tex tables/mmd_rbf_umve.tex:
-	python generate_mmd_tables.py
+compute-figures:
+	python 01_subsampling/compute_mmd.py --multirun
+	python 01_subsampling/compute_pgd.py --multirun
+	python 02_perturbation/compute.py --multirun
+	python 03_model_quality/compute.py --multirun
+	python 04_phase_plot/compute.py --multirun
 
-tables/gklr.tex:
-	python generate_gklr_tables.py
+compute-tables:
+	python 05_benchmark/compute.py --multirun
+	python 06_mmd/compute.py --multirun
+	python 07_concatenation/compute.py --multirun
+	python 08_gklr/compute.py --multirun
 
-tables/concatenation.tex:
-	python generate_concatenation_tables.py
+# ── Plot (lightweight figure generation from JSON results) ────────────
 
-# SLURM cluster submission (requires: pip install -e ".[cluster]")
-SLURM_CONFIG ?= configs/slurm_default.yaml
+plot-all:
+	python 01_subsampling/plot.py --paper-dir $(PAPER_DIR)/figures/subsampling
+	python 02_perturbation/plot.py --paper-dir $(PAPER_DIR)/figures/perturbation_experiments
+	python 03_model_quality/plot.py --paper-dir $(PAPER_DIR)/figures/model_quality
+	python 04_phase_plot/plot.py --paper-dir $(PAPER_DIR)/figures/phase_plot
 
-tables-submit:
-	python generate_benchmark_tables.py --slurm-config $(SLURM_CONFIG)
-	python generate_mmd_tables.py --slurm-config $(SLURM_CONFIG)
-	python generate_gklr_tables.py --slurm-config $(SLURM_CONFIG)
-	python generate_concatenation_tables.py --slurm-config $(SLURM_CONFIG)
+# ── Format (lightweight LaTeX table generation from JSON results) ─────
 
-tables-collect:
-	python generate_benchmark_tables.py --collect
-	python generate_mmd_tables.py --collect
-	python generate_gklr_tables.py --collect
-	python generate_concatenation_tables.py --collect
+format-all:
+	python 03_model_quality/format.py --paper-dir $(PAPER_DIR)/tables
+	python 05_benchmark/format.py --paper-dir $(PAPER_DIR)/tables
+	python 06_mmd/format.py --paper-dir $(PAPER_DIR)/tables
+	python 07_concatenation/format.py --paper-dir $(PAPER_DIR)/tables
+	python 08_gklr/format.py --paper-dir $(PAPER_DIR)/tables
 
-# Figure generation
-figures: figures/subsampling figures/perturbation figures/model_quality figures/phase_plot
+# ── SLURM submission (requires: pip install -e ".[cluster]") ─────────
 
-figures/subsampling:
-	python generate_subsampling_figures.py
+submit: submit-figures submit-tables
 
-figures/perturbation:
-	python generate_perturbation_figures.py
+submit-figures:
+	bash 01_subsampling/submit_all.sh
+	python 02_perturbation/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
+	python 03_model_quality/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
+	python 04_phase_plot/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
 
-figures/model_quality:
-	python generate_model_quality_figures.py
+submit-tables:
+	python 05_benchmark/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
+	python 06_mmd/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
+	python 07_concatenation/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
+	python 08_gklr/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
 
-figures/phase_plot:
-	python generate_phase_plot.py
+# ── Individual experiments ───────────────────────────────────────────
 
-# Cleanup
+.PHONY: 01 02 03 04 05 06 07 08
+
+01: ## Subsampling bias/variance figures
+	python 01_subsampling/compute_mmd.py --multirun
+	python 01_subsampling/compute_pgd.py --multirun
+	python 01_subsampling/plot.py
+
+02: ## Perturbation sensitivity figures
+	python 02_perturbation/compute.py --multirun
+	python 02_perturbation/plot.py
+
+03: ## Model quality figures + tables
+	python 03_model_quality/compute.py --multirun
+	python 03_model_quality/plot.py
+	python 03_model_quality/format.py
+
+04: ## Phase plot figures
+	python 04_phase_plot/compute.py --multirun
+	python 04_phase_plot/plot.py
+
+05: ## Benchmark tables
+	python 05_benchmark/compute.py --multirun
+	python 05_benchmark/format.py
+
+06: ## MMD tables
+	python 06_mmd/compute.py --multirun
+	python 06_mmd/format.py
+
+07: ## Concatenation ablation tables
+	python 07_concatenation/compute.py --multirun
+	python 07_concatenation/format.py
+
+08: ## GKLR tables
+	python 08_gklr/compute.py --multirun
+	python 08_gklr/format.py
+
+# ── Cleanup ──────────────────────────────────────────────────────────
+
 clean:
-	rm -rf figures/*
-	rm -rf tables/*
+	rm -rf figures/*/results
+	rm -rf tables/results
+	rm -rf figures/*/*.pdf
+	rm -rf tables/*.tex
+	rm -rf outputs/ multirun/
 
-# Help
+clean-results:
+	rm -rf figures/*/results
+	rm -rf tables/results
+
+# ── Help ─────────────────────────────────────────────────────────────
+
 help:
 	@echo "Available targets:"
-	@echo "  all              - Generate all tables and figures"
-	@echo "  tables           - Generate all LaTeX tables"
-	@echo "  figures          - Generate all figures"
-	@echo "  tables-submit    - Submit table jobs to SLURM cluster"
-	@echo "  tables-collect   - Collect results from completed SLURM jobs"
-	@echo "  download         - Download full dataset from Proton Drive"
+	@echo ""
+	@echo "  all              - Generate all figures and tables (compute + plot/format)"
+	@echo "  figures          - Compute + plot all figures"
+	@echo "  tables           - Compute + format all tables"
+	@echo ""
+	@echo "  compute-all      - Run all computations locally (--multirun)"
+	@echo "  compute-figures  - Compute data for figures only"
+	@echo "  compute-tables   - Compute data for tables only"
+	@echo "  plot-all         - Generate all figures from pre-computed JSON results"
+	@echo "  format-all       - Generate all LaTeX tables from pre-computed JSON results"
+	@echo ""
+	@echo "  01 .. 08         - Run a single experiment end-to-end (locally)"
+	@echo ""
+	@echo "  submit           - Submit ALL computations to SLURM"
+	@echo "  submit-figures   - Submit figure computations to SLURM"
+	@echo "  submit-tables    - Submit table computations to SLURM"
+	@echo ""
+	@echo "  Override SLURM launcher: make submit SLURM_LAUNCHER=slurm_gpu"
+	@echo ""
+	@echo "  download         - Download full dataset from MPCDF DataShare"
 	@echo "  download-subset  - Download small subset for CI testing"
-	@echo "  clean            - Remove all generated outputs"
+	@echo "  clean            - Remove all generated outputs and Hydra dirs"
+	@echo "  clean-results    - Remove only JSON result files"
 	@echo "  help             - Show this help message"

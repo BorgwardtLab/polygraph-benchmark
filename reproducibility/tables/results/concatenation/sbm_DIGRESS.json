@@ -1,0 +1,8 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "pgs_standard_mean": 0.09503008164465428,
+  "pgs_standard_std": 0.040301262824794605,
+  "pgs_concatenated_mean": 0.85167196393013,
+  "pgs_concatenated_std": 0.10715984488071979
+}

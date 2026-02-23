@@ -1,0 +1,12 @@
+{
+  "dataset": "planar",
+  "model": "GRAN",
+  "pgs_mean": 0.02938675074497963,
+  "pgs_std": 0.02053874736504095,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.013740975256569699,
+  "shortest_path_std": 0.014857709088907215,
+  "pyramid_match_mean": 0.030549326407951365,
+  "pyramid_match_std": 0.02120069381713393
+}

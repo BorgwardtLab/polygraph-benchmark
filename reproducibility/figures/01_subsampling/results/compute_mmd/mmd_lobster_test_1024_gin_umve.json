@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "test",
+  "subsample_size": 1024,
+  "descriptor": "gin",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0004986875390255342,
+  "mmd_std": 0.0006294306351237405,
+  "mmd_low": -5.10205909262335e-06,
+  "mmd_high": 0.0020667058315910467,
+  "mmd_runtime_seconds": 73.800955,
+  "mmd_runtime_perf_seconds": 73.800955
+}

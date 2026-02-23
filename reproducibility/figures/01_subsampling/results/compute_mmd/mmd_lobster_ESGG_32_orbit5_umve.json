@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "ESGG",
+  "subsample_size": 32,
+  "descriptor": "orbit5",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.21325630254781217,
+  "mmd_std": 0.07797437795698312,
+  "mmd_low": 0.08511692622879866,
+  "mmd_high": 0.38088343607553543,
+  "mmd_runtime_seconds": 1.195545,
+  "mmd_runtime_perf_seconds": 1.195545
+}

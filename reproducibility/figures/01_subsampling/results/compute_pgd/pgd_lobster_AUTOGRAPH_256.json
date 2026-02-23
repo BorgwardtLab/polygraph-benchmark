@@ -1,0 +1,22 @@
+{
+  "dataset": "lobster",
+  "model": "AUTOGRAPH",
+  "subsample_size": 256,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.06680315300356597,
+  "pgd_std": 0.05667917880071919,
+  "pgd_runtime_seconds": 23746.719855,
+  "pgd_runtime_perf_seconds": 23746.719855,
+  "orbit4_mean": 0.07486679042223841,
+  "orbit4_std": 0.05128963667030016,
+  "orbit5_mean": 0.08116251988802105,
+  "orbit5_std": 0.04684988588764748,
+  "clustering_mean": 0.010488500167262896,
+  "clustering_std": 0.01770262525909665,
+  "degree_mean": 0.054113278756849466,
+  "degree_std": 0.04590902532769194,
+  "spectral_mean": 0.03138940994627774,
+  "spectral_std": 0.040507029118310445,
+  "gin_mean": 0.07962020443286746,
+  "gin_std": 0.048910558045882256
+}

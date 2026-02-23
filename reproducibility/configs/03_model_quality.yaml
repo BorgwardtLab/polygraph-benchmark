@@ -1,0 +1,20 @@
+# Config for 03_model_quality/compute.py
+curve_type: training
+dataset: planar
+variant: jsd
+num_graphs: 2048
+subset: false
+
+hydra:
+  job:
+    name: exp03_quality
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      curve_type: training,denoising
+      dataset: planar,sbm,lobster
+      variant: jsd,informedness

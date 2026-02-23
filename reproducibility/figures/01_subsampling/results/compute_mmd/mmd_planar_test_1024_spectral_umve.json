@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "test",
+  "subsample_size": 1024,
+  "descriptor": "spectral",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 5.9709844965725346e-05,
+  "mmd_std": 6.078690800839036e-05,
+  "mmd_low": 0.0,
+  "mmd_high": 0.00019863638919289091,
+  "mmd_runtime_seconds": 59.253367,
+  "mmd_runtime_perf_seconds": 59.253367
+}

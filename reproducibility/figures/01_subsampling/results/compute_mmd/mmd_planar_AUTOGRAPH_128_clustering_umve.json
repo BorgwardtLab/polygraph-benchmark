@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "AUTOGRAPH",
+  "subsample_size": 128,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0021124339276482247,
+  "mmd_std": 0.002560058326284883,
+  "mmd_low": -7.998727840271174e-49,
+  "mmd_high": 0.009261159869232738,
+  "mmd_runtime_seconds": 10.982646,
+  "mmd_runtime_perf_seconds": 10.982646
+}

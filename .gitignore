@@ -9,6 +9,7 @@ experiments/*/figures/*.png
 experiments/*/results/*.csv
 experiments/*/tables/*.tex
 experiments/model_benchmark/benchmark_results.tex
+multirun/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,0 +1,22 @@
+{
+  "dataset": "planar",
+  "model": "GRAN",
+  "subsample_size": 256,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.5639761781692505,
+  "pgd_std": 0.05432269652999715,
+  "pgd_runtime_seconds": 23987.112719,
+  "pgd_runtime_perf_seconds": 23987.112719,
+  "orbit4_mean": 0.554001197218895,
+  "orbit4_std": 0.05126930746692983,
+  "orbit5_mean": 0.5773092797398567,
+  "orbit5_std": 0.041414091266126066,
+  "clustering_mean": 0.481434728205204,
+  "clustering_std": 0.07106626033276299,
+  "degree_mean": 0.5108819168806076,
+  "degree_std": 0.06536732412768326,
+  "spectral_mean": 0.27241832211613654,
+  "spectral_std": 0.06302040378804888,
+  "gin_mean": 0.5323340931534767,
+  "gin_std": 0.04504811454908393
+}

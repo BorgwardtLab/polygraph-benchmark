@@ -1,0 +1,8 @@
+{
+  "dataset": "planar",
+  "model": "DIGRESS",
+  "pgs_standard_mean": 0.4299365520477295,
+  "pgs_standard_std": 0.018630688251536173,
+  "pgs_concatenated_mean": 0.8476797044277191,
+  "pgs_concatenated_std": 0.005874966776264542
+}

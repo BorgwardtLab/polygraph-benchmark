@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 2048,
+  "descriptor": "gin",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.00016225139745331804,
+  "mmd_std": 0.0002464268973263763,
+  "mmd_low": -4.2847149994917896e-06,
+  "mmd_high": 0.0007662594056876548,
+  "mmd_runtime_seconds": 643.275183,
+  "mmd_runtime_perf_seconds": 643.275183
+}

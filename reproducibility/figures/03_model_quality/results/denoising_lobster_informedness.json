@@ -1,0 +1,67 @@
+{
+  "curve_type": "denoising",
+  "dataset": "lobster",
+  "variant": "informedness",
+  "results": [
+    {
+      "steps": 15,
+      "orbit_mmd": 1.5317892512658078,
+      "orbit5_mmd": 1.3862561656842507,
+      "degree_mmd": 1.5702526818331937,
+      "spectral_mmd": 1.2253949317855979,
+      "clustering_mmd": 1.8178239245155763,
+      "gin_mmd": 1.7672809126644342,
+      "validity": 0.0
+    },
+    {
+      "steps": 30,
+      "orbit_mmd": 1.5805497441436167,
+      "orbit5_mmd": 1.436671234525685,
+      "degree_mmd": 1.5765633607599256,
+      "spectral_mmd": 1.231020707669964,
+      "clustering_mmd": 1.839489106995152,
+      "gin_mmd": 1.811015268509314,
+      "validity": 0.0
+    },
+    {
+      "steps": 45,
+      "orbit_mmd": 1.5987032742456722,
+      "orbit5_mmd": 1.4662085710383328,
+      "degree_mmd": 1.5790984861122026,
+      "spectral_mmd": 1.2336753418800626,
+      "clustering_mmd": 1.842648617384665,
+      "gin_mmd": 1.8194600604341469,
+      "validity": 0.0
+    },
+    {
+      "steps": 60,
+      "orbit_mmd": 1.6122926412268748,
+      "orbit5_mmd": 1.484356204798051,
+      "degree_mmd": 1.581076997019006,
+      "spectral_mmd": 1.2345541890935252,
+      "clustering_mmd": 1.8508319809847567,
+      "gin_mmd": 1.826975542260875,
+      "validity": 0.0
+    },
+    {
+      "steps": 75,
+      "orbit_mmd": 1.6219179302056632,
+      "orbit5_mmd": 1.4993573094174968,
+      "degree_mmd": 1.5804720393780332,
+      "spectral_mmd": 1.2353015790570496,
+      "clustering_mmd": 1.8519939756105401,
+      "gin_mmd": 1.832055814433729,
+      "validity": 0.0
+    },
+    {
+      "steps": 90,
+      "orbit_mmd": 1.6226752592351101,
+      "orbit5_mmd": 1.501059240425776,
+      "degree_mmd": 1.5809961791484974,
+      "spectral_mmd": 1.2355935515177738,
+      "clustering_mmd": 1.8517946209510197,
+      "gin_mmd": 1.8331128582919192,
+      "validity": 0.0
+    }
+  ]
+}

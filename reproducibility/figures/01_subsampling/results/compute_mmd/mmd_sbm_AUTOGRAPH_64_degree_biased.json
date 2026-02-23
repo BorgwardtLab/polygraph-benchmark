@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "AUTOGRAPH",
+  "subsample_size": 64,
+  "descriptor": "degree",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.03190746210222501,
+  "mmd_std": 0.002239143884263177,
+  "mmd_low": 0.03125,
+  "mmd_high": 0.035783410173569064,
+  "mmd_runtime_seconds": 3.454309,
+  "mmd_runtime_perf_seconds": 3.454309
+}

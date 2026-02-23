@@ -1,0 +1,12 @@
+{
+  "dataset": "proteins",
+  "model": "AUTOGRAPH",
+  "pgs_mean": 0.33934288748147123,
+  "pgs_std": 0.055576600024365395,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.33934288748147123,
+  "shortest_path_std": 0.055576600024365395,
+  "pyramid_match_mean": 0.08319104063263608,
+  "pyramid_match_std": 0.044512273579677186
+}

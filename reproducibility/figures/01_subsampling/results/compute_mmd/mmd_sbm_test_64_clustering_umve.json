@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 64,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0026051006153496605,
+  "mmd_std": 0.002642453007738336,
+  "mmd_low": 5.4835998892739356e-08,
+  "mmd_high": 0.008887289035167027,
+  "mmd_runtime_seconds": 1.921841,
+  "mmd_runtime_perf_seconds": 1.921841
+}

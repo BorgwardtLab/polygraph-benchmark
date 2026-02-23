@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "test",
+  "subsample_size": 16,
+  "descriptor": "spectral",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.1250905074617215,
+  "mmd_std": 0.0005180677285392488,
+  "mmd_low": 0.125,
+  "mmd_high": 0.12631362489390865,
+  "mmd_runtime_seconds": 0.328948,
+  "mmd_runtime_perf_seconds": 0.328948
+}

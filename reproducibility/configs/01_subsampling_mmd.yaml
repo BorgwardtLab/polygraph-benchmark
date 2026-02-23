@@ -1,0 +1,8 @@
+defaults:
+  - 01_subsampling
+  - override hydra/launcher: slurm_cpu
+  - _self_
+
+hydra:
+  job:
+    name: exp01_mmd

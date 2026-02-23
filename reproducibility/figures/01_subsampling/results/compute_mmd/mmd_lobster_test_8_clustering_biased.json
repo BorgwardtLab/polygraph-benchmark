@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "test",
+  "subsample_size": 8,
+  "descriptor": "clustering",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0,
+  "mmd_std": 0.0,
+  "mmd_low": 0.0,
+  "mmd_high": 0.0,
+  "mmd_runtime_seconds": 0.059392,
+  "mmd_runtime_perf_seconds": 0.059392
+}

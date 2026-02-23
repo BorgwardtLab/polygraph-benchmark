@@ -1,0 +1,12 @@
+{
+  "dataset": "lobster",
+  "model": "ESGG",
+  "pgs_mean": 0.22789496581781293,
+  "pgs_std": 0.03748450976037406,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.21890140322522417,
+  "shortest_path_std": 0.03452985727622555,
+  "pyramid_match_mean": 0.25181633098874256,
+  "pyramid_match_std": 0.020589294167683625
+}

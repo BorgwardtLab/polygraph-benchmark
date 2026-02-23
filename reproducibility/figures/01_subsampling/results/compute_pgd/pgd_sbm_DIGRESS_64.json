@@ -1,0 +1,22 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "subsample_size": 64,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.032619971074163916,
+  "pgd_std": 0.05978990551582272,
+  "pgd_runtime_seconds": 13449.899415,
+  "pgd_runtime_perf_seconds": 13449.899415,
+  "orbit4_mean": 0.05281083433888853,
+  "orbit4_std": 0.06489345468350284,
+  "orbit5_mean": 0.05442060866393149,
+  "orbit5_std": 0.0674493612831686,
+  "clustering_mean": 0.042616885304450985,
+  "clustering_std": 0.05711496982551305,
+  "degree_mean": 0.038081678124144674,
+  "degree_std": 0.0595221870832918,
+  "spectral_mean": 0.03946947179734707,
+  "spectral_std": 0.06276914605611927,
+  "gin_mean": 0.047734820153564214,
+  "gin_std": 0.05664917258916822
+}

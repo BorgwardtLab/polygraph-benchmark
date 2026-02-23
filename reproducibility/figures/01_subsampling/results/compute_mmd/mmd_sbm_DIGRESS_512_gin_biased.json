@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "subsample_size": 512,
+  "descriptor": "gin",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.007255576712716994,
+  "mmd_std": 0.0023948509062292687,
+  "mmd_low": 0.003916294219618075,
+  "mmd_high": 0.01288125942230976,
+  "mmd_runtime_seconds": 222.978974,
+  "mmd_runtime_perf_seconds": 222.978974
+}

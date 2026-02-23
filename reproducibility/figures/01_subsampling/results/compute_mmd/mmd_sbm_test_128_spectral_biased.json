@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 128,
+  "descriptor": "spectral",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.015663044177097064,
+  "mmd_std": 9.239733501950307e-05,
+  "mmd_low": 0.015625,
+  "mmd_high": 0.015972638715429553,
+  "mmd_runtime_seconds": 4.930306,
+  "mmd_runtime_perf_seconds": 4.930306
+}

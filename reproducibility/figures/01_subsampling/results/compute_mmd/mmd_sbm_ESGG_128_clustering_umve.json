@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 128,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.054537773063682946,
+  "mmd_std": 0.008905448164985393,
+  "mmd_low": 0.039708979120711696,
+  "mmd_high": 0.07428666911091948,
+  "mmd_runtime_seconds": 10.256539,
+  "mmd_runtime_perf_seconds": 10.256539
+}

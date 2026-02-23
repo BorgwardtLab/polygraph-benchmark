@@ -1,0 +1,12 @@
+{
+  "dataset": "lobster",
+  "model": "DIGRESS",
+  "pgs_mean": 0.026027210867332284,
+  "pgs_std": 0.040115539449833156,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.016454851211341895,
+  "shortest_path_std": 0.03316035869317423,
+  "pyramid_match_mean": 0.02172295994799152,
+  "pyramid_match_std": 0.029954327194146962
+}

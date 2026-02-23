@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "ESGG",
+  "subsample_size": 1024,
+  "descriptor": "clustering",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.004481294576467126,
+  "mmd_std": 0.0012574986616937618,
+  "mmd_low": 0.0024559530413676466,
+  "mmd_high": 0.006465884840649736,
+  "mmd_runtime_seconds": 62.772524,
+  "mmd_runtime_perf_seconds": 62.772524
+}

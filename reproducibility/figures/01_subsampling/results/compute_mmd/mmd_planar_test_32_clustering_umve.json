@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "test",
+  "subsample_size": 32,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.01640066643238379,
+  "mmd_std": 0.014752154775710579,
+  "mmd_low": -5.049038652277932e-103,
+  "mmd_high": 0.05025247653865971,
+  "mmd_runtime_seconds": 0.382243,
+  "mmd_runtime_perf_seconds": 0.382243
+}

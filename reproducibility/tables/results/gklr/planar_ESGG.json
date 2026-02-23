@@ -1,0 +1,12 @@
+{
+  "dataset": "planar",
+  "model": "ESGG",
+  "pgs_mean": 0.03808389026320415,
+  "pgs_std": 0.027565625584801464,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.027266337004833607,
+  "shortest_path_std": 0.02110313801440052,
+  "pyramid_match_mean": 0.03770286645679675,
+  "pyramid_match_std": 0.029183114912174072
+}

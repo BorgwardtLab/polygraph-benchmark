@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "subsample_size": 4096,
+  "descriptor": "orbit5",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.10022880536534208,
+  "mmd_std": 0.00235904804603454,
+  "mmd_low": 0.09583609472247781,
+  "mmd_high": 0.10482109816545238,
+  "mmd_runtime_seconds": 833.848194,
+  "mmd_runtime_perf_seconds": 833.848194
+}

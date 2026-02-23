@@ -1,0 +1,12 @@
+# Config for 04_phase_plot/compute.py
+# No sweep dimensions -- processes all checkpoints in a single run.
+subset: false
+
+hydra:
+  job:
+    name: exp04_phase
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}

@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "GRAN",
+  "subsample_size": 128,
+  "descriptor": "spectral",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.017443637876220577,
+  "mmd_std": 0.002068408291286722,
+  "mmd_low": 0.01562500072362994,
+  "mmd_high": 0.02292364104163351,
+  "mmd_runtime_seconds": 30.797924,
+  "mmd_runtime_perf_seconds": 30.797924
+}

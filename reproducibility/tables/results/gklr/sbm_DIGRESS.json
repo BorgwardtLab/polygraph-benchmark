@@ -1,0 +1,12 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "pgs_mean": 0.03565040744455624,
+  "pgs_std": 0.045186635617772454,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.034662954204051424,
+  "shortest_path_std": 0.040073704173677595,
+  "pyramid_match_mean": 0.019589678944116024,
+  "pyramid_match_std": 0.0404627659825909
+}

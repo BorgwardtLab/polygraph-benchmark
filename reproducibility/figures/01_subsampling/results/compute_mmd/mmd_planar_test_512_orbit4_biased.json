@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "test",
+  "subsample_size": 512,
+  "descriptor": "orbit4",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.004144682577851108,
+  "mmd_std": 0.0005455635225106843,
+  "mmd_low": 0.003901406152644721,
+  "mmd_high": 0.005766283823876918,
+  "mmd_runtime_seconds": 11.960559,
+  "mmd_runtime_perf_seconds": 11.960559
+}

@@ -1,0 +1,12 @@
+{
+  "dataset": "lobster",
+  "model": "GRAN",
+  "pgs_mean": 0.5750087636647636,
+  "pgs_std": 0.02091345745742092,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.5750087636647636,
+  "shortest_path_std": 0.02091345745742092,
+  "pyramid_match_mean": 0.2653575472814766,
+  "pyramid_match_std": 0.024377576003426077
+}

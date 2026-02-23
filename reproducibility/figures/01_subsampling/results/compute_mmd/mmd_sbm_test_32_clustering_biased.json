@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 32,
+  "descriptor": "clustering",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.06295575013624476,
+  "mmd_std": 0.0014708658496857528,
+  "mmd_low": 0.0625,
+  "mmd_high": 0.06620408256966162,
+  "mmd_runtime_seconds": 0.898028,
+  "mmd_runtime_perf_seconds": 0.898028
+}

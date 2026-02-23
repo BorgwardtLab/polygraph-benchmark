@@ -1,0 +1,8 @@
+{
+  "dataset": "proteins",
+  "model": "AUTOGRAPH",
+  "pgs_standard_mean": 0.39395935237407687,
+  "pgs_standard_std": 0.178396309853113,
+  "pgs_concatenated_mean": 0.6120273977518081,
+  "pgs_concatenated_std": 0.14282543345898704
+}

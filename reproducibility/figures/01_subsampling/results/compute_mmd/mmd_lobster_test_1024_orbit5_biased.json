@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "test",
+  "subsample_size": 1024,
+  "descriptor": "orbit5",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0019703790948490856,
+  "mmd_std": 8.90704658713157e-05,
+  "mmd_low": 0.001875664638871165,
+  "mmd_high": 0.0022652662666380295,
+  "mmd_runtime_seconds": 41.746243,
+  "mmd_runtime_perf_seconds": 41.746243
+}

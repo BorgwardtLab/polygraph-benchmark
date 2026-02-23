@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "subsample_size": 1024,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0017066607897925122,
+  "mmd_std": 0.0005537225248921403,
+  "mmd_low": 0.0007290467361696584,
+  "mmd_high": 0.0029885046941877987,
+  "mmd_runtime_seconds": 107.370051,
+  "mmd_runtime_perf_seconds": 107.370051
+}

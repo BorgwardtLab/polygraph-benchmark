@@ -32,22 +32,22 @@ We also provide classes that implement individual [`ClassifierMetric`][polygraph
 - [`GraphNeuralNetworkClassifierMetric`][polygraph.metrics.standard_pgd.GraphNeuralNetworkClassifierMetric]: Classifier metric based on [`RandomGIN`][polygraph.utils.descriptors.RandomGIN]
 """
 
-from typing import Collection, Literal, Optional, List, Union
+from typing import Collection, List, Literal, Optional, Union
 
 import networkx as nx
 
 from polygraph.metrics.base.polygraphdiscrepancy import (
     ClassifierMetric,
+    ClassifierProtocol,
     PolyGraphDiscrepancy,
     PolyGraphDiscrepancyInterval,
-    ClassifierProtocol,
 )
 from polygraph.utils.descriptors import (
-    OrbitCounts,
     ClusteringHistogram,
-    SparseDegreeHistogram,
     EigenvalueHistogram,
+    OrbitCounts,
     RandomGIN,
+    SparseDegreeHistogram,
 )
 
 __all__ = [
@@ -71,7 +71,12 @@ class StandardPGD(PolyGraphDiscrepancy[nx.Graph]):
         reference_graphs: Collection of reference networkx graphs.
     """
 
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        variant: str = "jsd",
+        classifier=None,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
             descriptors={
@@ -88,8 +93,8 @@ class StandardPGD(PolyGraphDiscrepancy[nx.Graph]):
                     seed=42,
                 ),
             },
-            variant="jsd",
-            classifier=None,
+            variant=variant,
+            classifier=classifier,
         )
 
 
@@ -114,7 +119,7 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
             reference_graphs=reference_graphs,
             descriptors={
                 "orbit4": OrbitCounts(graphlet_size=4),
-                "orbig5": OrbitCounts(graphlet_size=5),
+                "orbit5": OrbitCounts(graphlet_size=5),
                 "clustering": ClusteringHistogram(bins=100),
                 "degree": SparseDegreeHistogram(),
                 "spectral": EigenvalueHistogram(),

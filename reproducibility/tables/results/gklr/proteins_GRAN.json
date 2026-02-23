@@ -1,0 +1,12 @@
+{
+  "dataset": "proteins",
+  "model": "GRAN",
+  "pgs_mean": 0.4334929015935726,
+  "pgs_std": 0.039187782816678104,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.39886067097177175,
+  "shortest_path_std": 0.045650091125375596,
+  "pyramid_match_mean": 0.4383148349558349,
+  "pyramid_match_std": 0.03688232918637906
+}

@@ -1,0 +1,14 @@
+{
+  "dataset": "lobster",
+  "model": "test",
+  "subsample_size": 128,
+  "descriptor": "clustering",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0,
+  "mmd_std": 0.0,
+  "mmd_low": 0.0,
+  "mmd_high": 0.0,
+  "mmd_runtime_seconds": 1.034174,
+  "mmd_runtime_perf_seconds": 1.034174
+}

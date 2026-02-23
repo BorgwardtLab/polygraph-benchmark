@@ -1,0 +1,14 @@
+{
+  "dataset": "planar",
+  "model": "AUTOGRAPH",
+  "subsample_size": 64,
+  "descriptor": "degree",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.03425662728975496,
+  "mmd_std": 0.0058997343820678385,
+  "mmd_low": 0.03083493953405685,
+  "mmd_high": 0.04907092631145828,
+  "mmd_runtime_seconds": 2.805367,
+  "mmd_runtime_perf_seconds": 2.805367
+}

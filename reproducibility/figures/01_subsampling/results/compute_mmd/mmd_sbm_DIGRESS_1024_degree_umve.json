@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "DIGRESS",
+  "subsample_size": 1024,
+  "descriptor": "degree",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.003806787246623636,
+  "mmd_std": 0.0015340728483711266,
+  "mmd_low": 0.0015224974135627542,
+  "mmd_high": 0.006936673998759958,
+  "mmd_runtime_seconds": 65.111674,
+  "mmd_runtime_perf_seconds": 65.111674
+}

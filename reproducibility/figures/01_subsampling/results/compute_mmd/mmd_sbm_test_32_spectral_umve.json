@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 32,
+  "descriptor": "spectral",
+  "variant": "umve",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.0005884991011704094,
+  "mmd_std": 0.0011478180994504803,
+  "mmd_low": 0.0,
+  "mmd_high": 0.004148836440009588,
+  "mmd_runtime_seconds": 1.1878,
+  "mmd_runtime_perf_seconds": 1.1878
+}

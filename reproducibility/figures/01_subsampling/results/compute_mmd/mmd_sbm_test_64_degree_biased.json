@@ -1,0 +1,14 @@
+{
+  "dataset": "sbm",
+  "model": "test",
+  "subsample_size": 64,
+  "descriptor": "degree",
+  "variant": "biased",
+  "num_bootstrap": 100,
+  "mmd_mean": 0.03152768800633519,
+  "mmd_std": 0.001049778269954001,
+  "mmd_low": 0.03125,
+  "mmd_high": 0.03367270217930071,
+  "mmd_runtime_seconds": 2.096419,
+  "mmd_runtime_perf_seconds": 2.096419
+}

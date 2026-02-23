@@ -1,0 +1,22 @@
+{
+  "dataset": "lobster",
+  "model": "ESGG",
+  "subsample_size": 512,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.6842819970846176,
+  "pgd_std": 0.030029338705966312,
+  "pgd_runtime_seconds": 57656.075743,
+  "pgd_runtime_perf_seconds": 57656.075743,
+  "orbit4_mean": 0.655170995593071,
+  "orbit4_std": 0.031263452671831525,
+  "orbit5_mean": 0.6851491582393646,
+  "orbit5_std": 0.029322537838501563,
+  "clustering_mean": 1.698643816450651e-05,
+  "clustering_std": 3.3881317890172014e-21,
+  "degree_mean": 0.6130978634953499,
+  "degree_std": 0.03634847553145698,
+  "spectral_mean": 0.46007016211748125,
+  "spectral_std": 0.034456619867091386,
+  "gin_mean": 0.6486966568231582,
+  "gin_std": 0.03250637066333465
+}

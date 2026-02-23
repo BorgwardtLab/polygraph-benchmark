@@ -1,0 +1,12 @@
+{
+  "dataset": "proteins",
+  "model": "ESGG",
+  "pgs_mean": 0.2675717001551997,
+  "pgs_std": 0.09881544670340701,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.28788990390771263,
+  "shortest_path_std": 0.06531880218402356,
+  "pyramid_match_mean": 0.09776992503969828,
+  "pyramid_match_std": 0.024066339735827877
+}

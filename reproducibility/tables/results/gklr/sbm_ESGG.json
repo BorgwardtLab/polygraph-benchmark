@@ -1,0 +1,12 @@
+{
+  "dataset": "sbm",
+  "model": "ESGG",
+  "pgs_mean": 0.8197781096202789,
+  "pgs_std": 0.011401204254506983,
+  "wl_mean": 0.0,
+  "wl_std": 0.0,
+  "shortest_path_mean": 0.8197781096202789,
+  "shortest_path_std": 0.011401204254506983,
+  "pyramid_match_mean": 0.14922734006845345,
+  "pyramid_match_std": 0.06759623289403467
+}
