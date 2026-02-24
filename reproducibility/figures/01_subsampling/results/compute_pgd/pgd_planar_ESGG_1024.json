@@ -1,0 +1,22 @@
+{
+  "dataset": "planar",
+  "model": "ESGG",
+  "subsample_size": 1024,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.43530893594026565,
+  "pgd_std": 0.023555670823413363,
+  "pgd_runtime_seconds": 2504.792643,
+  "pgd_runtime_perf_seconds": 2504.792643,
+  "orbit4_mean": 0.4100171113014221,
+  "orbit4_std": 0.0270135306702017,
+  "orbit5_mean": 0.43640079736709597,
+  "orbit5_std": 0.02241010740941866,
+  "clustering_mean": 0.09368287060409784,
+  "clustering_std": 0.03714219362522145,
+  "degree_mean": 0.16947591118514538,
+  "degree_std": 0.05542151208077377,
+  "spectral_mean": 0.24668734073638915,
+  "spectral_std": 0.030630259715123963,
+  "gin_mean": 0.3205565401911736,
+  "gin_std": 0.020293128183025734
+}

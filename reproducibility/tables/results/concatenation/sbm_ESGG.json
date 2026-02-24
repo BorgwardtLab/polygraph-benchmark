@@ -1,8 +1,8 @@
 {
   "dataset": "sbm",
   "model": "ESGG",
-  "pgs_standard_mean": 0.9906646549701691,
-  "pgs_standard_std": 0.007769218113916978,
-  "pgs_concatenated_mean": 0.9938161969184875,
-  "pgs_concatenated_std": 0.0022426926559803305
+  "pgs_standard_mean": 0.9937453627586365,
+  "pgs_standard_std": 0.002126789263304147,
+  "pgs_concatenated_mean": 0.9811988711357117,
+  "pgs_concatenated_std": 0.00431668031404679
 }

@@ -1,12 +1,12 @@
 {
   "dataset": "planar",
   "model": "DIGRESS",
-  "pgs_mean": 0.09140836740291432,
-  "pgs_std": 0.019001827315581296,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.08930860904669072,
-  "shortest_path_std": 0.023385874553805426,
-  "pyramid_match_mean": 0.06912006173995393,
-  "pyramid_match_std": 0.011800429708812241
+  "pgs_mean": 0.22023981385510466,
+  "pgs_std": 0.013427896374521417,
+  "wl_mean": 0.20373940831293108,
+  "wl_std": 0.009732561484026559,
+  "shortest_path_mean": 0.2265995481419906,
+  "shortest_path_std": 0.008102250193634813,
+  "pyramid_match_mean": 0.19059667432049576,
+  "pyramid_match_std": 0.008980632904314112
 }

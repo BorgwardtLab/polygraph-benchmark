@@ -1,12 +1,12 @@
 {
   "dataset": "lobster",
   "model": "ESGG",
-  "pgs_mean": 0.22789496581781293,
-  "pgs_std": 0.03748450976037406,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.21890140322522417,
-  "shortest_path_std": 0.03452985727622555,
-  "pyramid_match_mean": 0.25181633098874256,
-  "pyramid_match_std": 0.020589294167683625
+  "pgs_mean": 0.5605574503231086,
+  "pgs_std": 0.005650376005160979,
+  "wl_mean": 0.5605574503231086,
+  "wl_std": 0.005650376005160979,
+  "shortest_path_mean": 0.4178490628778223,
+  "shortest_path_std": 0.009658560396204566,
+  "pyramid_match_mean": 0.41965551355174646,
+  "pyramid_match_std": 0.006395001454660634
 }

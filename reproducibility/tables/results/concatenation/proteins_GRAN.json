@@ -1,8 +1,8 @@
 {
   "dataset": "proteins",
   "model": "GRAN",
-  "pgs_standard_mean": 0.8374813735485077,
-  "pgs_standard_std": 0.057751299082158224,
-  "pgs_concatenated_mean": 0.9171156883239746,
-  "pgs_concatenated_std": 0.03284001549203255
+  "pgs_standard_mean": 0.8606397032737731,
+  "pgs_standard_std": 0.07224617243346736,
+  "pgs_concatenated_mean": 0.9911562383174897,
+  "pgs_concatenated_std": 0.005153180868887258
 }

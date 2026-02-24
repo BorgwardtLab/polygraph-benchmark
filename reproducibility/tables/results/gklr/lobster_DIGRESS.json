@@ -1,12 +1,12 @@
 {
   "dataset": "lobster",
   "model": "DIGRESS",
-  "pgs_mean": 0.026027210867332284,
-  "pgs_std": 0.040115539449833156,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.016454851211341895,
-  "shortest_path_std": 0.03316035869317423,
-  "pyramid_match_mean": 0.02172295994799152,
-  "pyramid_match_std": 0.029954327194146962
+  "pgs_mean": 0.01976735035085743,
+  "pgs_std": 0.022774685928352377,
+  "wl_mean": 0.0032519635404874756,
+  "wl_std": 0.009755890621462426,
+  "shortest_path_mean": 0.01521104043925434,
+  "shortest_path_std": 0.02219944126461086,
+  "pyramid_match_mean": 0.02781874425778289,
+  "pyramid_match_std": 0.022954519060012727
 }

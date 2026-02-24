@@ -1,0 +1,22 @@
+{
+  "dataset": "sbm",
+  "model": "GRAN",
+  "subsample_size": 4096,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.7051749068498612,
+  "pgd_std": 0.008989062993718678,
+  "pgd_runtime_seconds": 18264.323932,
+  "pgd_runtime_perf_seconds": 18264.323932,
+  "orbit4_mean": 0.6396891921758652,
+  "orbit4_std": 0.008855572372127958,
+  "orbit5_mean": 0.6733919495344162,
+  "orbit5_std": 0.00892830546969247,
+  "clustering_mean": 0.5076798048615455,
+  "clustering_std": 0.01039494947249825,
+  "degree_mean": 0.5877409213781357,
+  "degree_std": 0.009330485190038025,
+  "spectral_mean": 0.5995005053281784,
+  "spectral_std": 0.008819335392900455,
+  "gin_mean": 0.7051749068498612,
+  "gin_std": 0.008989062993718678
+}

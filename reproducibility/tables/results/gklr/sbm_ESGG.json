@@ -1,12 +1,12 @@
 {
   "dataset": "sbm",
   "model": "ESGG",
-  "pgs_mean": 0.8197781096202789,
-  "pgs_std": 0.011401204254506983,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.8197781096202789,
-  "shortest_path_std": 0.011401204254506983,
-  "pyramid_match_mean": 0.14922734006845345,
-  "pyramid_match_std": 0.06759623289403467
+  "pgs_mean": 0.9349800442283682,
+  "pgs_std": 0.003388855274224289,
+  "wl_mean": 0.4259617150716206,
+  "wl_std": 0.010842983856260452,
+  "shortest_path_mean": 0.9349800442283682,
+  "shortest_path_std": 0.003388855274224289,
+  "pyramid_match_mean": 0.23834052465331315,
+  "pyramid_match_std": 0.01782862634111615
 }

@@ -1,12 +1,12 @@
 {
   "dataset": "proteins",
   "model": "ESGG",
-  "pgs_mean": 0.2675717001551997,
-  "pgs_std": 0.09881544670340701,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.28788990390771263,
-  "shortest_path_std": 0.06531880218402356,
-  "pyramid_match_mean": 0.09776992503969828,
-  "pyramid_match_std": 0.024066339735827877
+  "pgs_mean": 0.27731764473513865,
+  "pgs_std": 0.04947617330424715,
+  "wl_mean": 0.1612537416124895,
+  "wl_std": 0.026816169287693283,
+  "shortest_path_mean": 0.29476282671497184,
+  "shortest_path_std": 0.03123441627765606,
+  "pyramid_match_mean": 0.1177317410553278,
+  "pyramid_match_std": 0.024255683113145757
 }

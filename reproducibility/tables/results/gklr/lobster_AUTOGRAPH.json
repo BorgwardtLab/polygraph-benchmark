@@ -1,12 +1,12 @@
 {
   "dataset": "lobster",
   "model": "AUTOGRAPH",
-  "pgs_mean": 0.05304710130631022,
-  "pgs_std": 0.039857060283713844,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.06565215694771821,
-  "shortest_path_std": 0.0457564160836608,
-  "pyramid_match_mean": 0.03302645466658385,
-  "pyramid_match_std": 0.02821423289839528
+  "pgs_mean": 0.0878562321168753,
+  "pgs_std": 0.020679692577778998,
+  "wl_mean": 0.0832416535241371,
+  "wl_std": 0.018044152959689874,
+  "shortest_path_mean": 0.06214804192530893,
+  "shortest_path_std": 0.027371154137223987,
+  "pyramid_match_mean": 0.09474079811981892,
+  "pyramid_match_std": 0.010576931322776522
 }

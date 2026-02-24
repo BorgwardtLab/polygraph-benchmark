@@ -1,0 +1,22 @@
+{
+  "dataset": "lobster",
+  "model": "GRAN",
+  "subsample_size": 2048,
+  "num_bootstrap": 100,
+  "pgd_mean": 0.8507015639543534,
+  "pgd_std": 0.009623032027489903,
+  "pgd_runtime_seconds": 15697.089391,
+  "pgd_runtime_perf_seconds": 15697.089391,
+  "orbit4_mean": 0.8487168276309967,
+  "orbit4_std": 0.009871988819559033,
+  "orbit5_mean": 0.851168059706688,
+  "orbit5_std": 0.0092443923513138,
+  "clustering_mean": 0.21184803292155266,
+  "clustering_std": 0.01110971017709518,
+  "degree_mean": 0.7671022981405258,
+  "degree_std": 0.012132851082088005,
+  "spectral_mean": 0.6887298023700714,
+  "spectral_std": 0.0146603531438964,
+  "gin_mean": 0.7951968258619309,
+  "gin_std": 0.01028232038059402
+}

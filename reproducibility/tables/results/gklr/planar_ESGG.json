@@ -1,12 +1,12 @@
 {
   "dataset": "planar",
   "model": "ESGG",
-  "pgs_mean": 0.03808389026320415,
-  "pgs_std": 0.027565625584801464,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.027266337004833607,
-  "shortest_path_std": 0.02110313801440052,
-  "pyramid_match_mean": 0.03770286645679675,
-  "pyramid_match_std": 0.029183114912174072
+  "pgs_mean": 0.1439146891299405,
+  "pgs_std": 0.010029141721278147,
+  "wl_mean": 0.14627123314791185,
+  "wl_std": 0.00782817807188076,
+  "shortest_path_mean": 0.12756691007177914,
+  "shortest_path_std": 0.006508967388648848,
+  "pyramid_match_mean": 0.02674461742356108,
+  "pyramid_match_std": 0.023090531927766347
 }

@@ -1,8 +1,8 @@
 {
   "dataset": "planar",
   "model": "GRAN",
-  "pgs_standard_mean": 0.9405094265937806,
-  "pgs_standard_std": 0.02976277294496925,
-  "pgs_concatenated_mean": 0.951183658838272,
-  "pgs_concatenated_std": 0.024118576835267105
+  "pgs_standard_mean": 0.9925654888153076,
+  "pgs_standard_std": 0.010591065170562176,
+  "pgs_concatenated_mean": 0.9900869965553284,
+  "pgs_concatenated_std": 0.006424517654360969
 }

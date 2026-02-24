@@ -1,8 +1,8 @@
 {
   "dataset": "proteins",
   "model": "ESGG",
-  "pgs_standard_mean": 0.6594956278800964,
-  "pgs_standard_std": 0.06911684874781532,
-  "pgs_concatenated_mean": 0.8400933623313904,
-  "pgs_concatenated_std": 0.07408105724687171
+  "pgs_standard_mean": 0.7777238428592682,
+  "pgs_standard_std": 0.05136331820061594,
+  "pgs_concatenated_mean": 0.9938245594501496,
+  "pgs_concatenated_std": 0.002022735316269814
 }

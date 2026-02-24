@@ -1,12 +1,12 @@
 {
   "dataset": "planar",
   "model": "AUTOGRAPH",
-  "pgs_mean": 0.013097796670062436,
-  "pgs_std": 0.016805961552096908,
-  "wl_mean": 0.0,
-  "wl_std": 0.0,
-  "shortest_path_mean": 0.005712221609840022,
-  "shortest_path_std": 0.011388520446074302,
-  "pyramid_match_mean": 0.016382793947491127,
-  "pyramid_match_std": 0.015511790237211645
+  "pgs_mean": 0.06642478887901564,
+  "pgs_std": 0.01061606216181276,
+  "wl_mean": 0.07286452507023754,
+  "wl_std": 0.009599145697704646,
+  "shortest_path_mean": 0.05319852198986068,
+  "shortest_path_std": 0.008431397650377386,
+  "pyramid_match_mean": 0.05830630788737201,
+  "pyramid_match_std": 0.006716563090736182
 }

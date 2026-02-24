@@ -1,8 +1,8 @@
 {
   "dataset": "planar",
   "model": "AUTOGRAPH",
-  "pgs_standard_mean": 0.31355542242527007,
-  "pgs_standard_std": 0.021523628083361036,
-  "pgs_concatenated_mean": 0.8147171199321747,
-  "pgs_concatenated_std": 0.007396284415305327
+  "pgs_standard_mean": 0.33466967940330505,
+  "pgs_standard_std": 0.013173841703529704,
+  "pgs_concatenated_mean": 0.450069323182106,
+  "pgs_concatenated_std": 0.021512075742537533
 }

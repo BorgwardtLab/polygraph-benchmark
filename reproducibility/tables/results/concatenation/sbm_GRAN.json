@@ -1,8 +1,8 @@
 {
   "dataset": "sbm",
   "model": "GRAN",
-  "pgs_standard_mean": 0.6715508282184601,
-  "pgs_standard_std": 0.014480578603029634,
-  "pgs_concatenated_mean": 0.9119183123111725,
-  "pgs_concatenated_std": 0.004127004861990446
+  "pgs_standard_mean": 0.6877518713474273,
+  "pgs_standard_std": 0.011109317118594331,
+  "pgs_concatenated_mean": 0.7787210702896118,
+  "pgs_concatenated_std": 0.008772477131558971
 }
