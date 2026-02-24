@@ -302,8 +302,9 @@ def load_dataset(
                     del g.nodes[n]["residues"]
 
         random.shuffle(all_graphs)
-        reference_graphs = all_graphs[: len(all_graphs) // 2]
-        perturbed_graphs = all_graphs[len(all_graphs) // 2 :]
+        half = len(all_graphs) // 2
+        reference_graphs = all_graphs[:half]
+        perturbed_graphs = all_graphs[half : 2 * half]
     elif dataset == "ego":
         train = list(EgoGraphDataset(split="train").to_nx())
         test = list(EgoGraphDataset(split="test").to_nx())
@@ -314,8 +315,9 @@ def load_dataset(
             g.remove_edges_from(nx.selfloop_edges(g))
 
         random.shuffle(all_graphs)
-        reference_graphs = all_graphs[: len(all_graphs) // 2]
-        perturbed_graphs = all_graphs[len(all_graphs) // 2 :]
+        half = len(all_graphs) // 2
+        reference_graphs = all_graphs[:half]
+        perturbed_graphs = all_graphs[half : 2 * half]
     else:
         raise ValueError(f"Dataset {dataset} not supported")
 
