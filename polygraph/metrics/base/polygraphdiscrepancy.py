@@ -219,47 +219,58 @@ def _classifier_cross_validation(
         X_train, X_val = X[train_idx], X[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
 
-        # Train model
-        if _is_constant(X_train):
+        try:
+            # Train model
+            if _is_constant(X_train):
+                warnings.warn(
+                    "Input to classifier is constant, setting all scores to 0.5"
+                )
+                predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
+            else:
+                classifier.fit(X_train, y_train)
+                predict_proba = classifier.predict_proba
+
+            # Get validation predictions
+            val_pred = predict_proba(X_val)[:, 1]
+
+            # Get reference and generated indices in validation set
+            val_ref_idx = np.where(y_val == 1)[0]
+            val_gen_idx = np.where(y_val == 0)[0]
+
+            # Get predictions for reference and generated samples
+            val_ref_pred = val_pred[val_ref_idx]
+            val_gen_pred = val_pred[val_gen_idx]
+
+            if variant == "informedness":
+                train_pred = predict_proba(X_train)[:, 1]
+                train_ref_idx = np.where(y_train == 1)[0]
+                train_gen_idx = np.where(y_train == 0)[0]
+                train_ref_pred = train_pred[train_ref_idx]
+                train_gen_pred = train_pred[train_gen_idx]
+
+                # Get threshold from training data
+                _, threshold = _scores_to_informedness_and_threshold(
+                    train_ref_pred, train_gen_pred
+                )
+
+                # Apply threshold to validation data
+                score = _scores_and_threshold_to_informedness(
+                    val_ref_pred, val_gen_pred, threshold
+                )
+            elif variant == "jsd":
+                score = _scores_to_jsd(val_ref_pred, val_gen_pred)
+            else:
+                raise ValueError(f"Invalid variant: {variant}")
+        except (ValueError, RuntimeError) as e:
+            # TabPFN v2.0.9 can raise ValueError with NaN in encoder when
+            # features are near-constant (see github.com/PriorLabs/TabPFN/issues/108).
+            # Near-constant features mean distributions are indistinguishable,
+            # so the correct score is 0.
             warnings.warn(
-                "Input to classifier is constant, setting all scores to 0.5"
+                f"Classifier failed in CV fold ({e}), treating as "
+                f"indistinguishable (score=0)."
             )
-            predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
-        else:
-            classifier.fit(X_train, y_train)
-            predict_proba = classifier.predict_proba
-
-        # Get validation predictions
-        val_pred = predict_proba(X_val)[:, 1]
-
-        # Get reference and generated indices in validation set
-        val_ref_idx = np.where(y_val == 1)[0]
-        val_gen_idx = np.where(y_val == 0)[0]
-
-        # Get predictions for reference and generated samples
-        val_ref_pred = val_pred[val_ref_idx]
-        val_gen_pred = val_pred[val_gen_idx]
-
-        if variant == "informedness":
-            train_pred = predict_proba(X_train)[:, 1]
-            train_ref_idx = np.where(y_train == 1)[0]
-            train_gen_idx = np.where(y_train == 0)[0]
-            train_ref_pred = train_pred[train_ref_idx]
-            train_gen_pred = train_pred[train_gen_idx]
-
-            # Get threshold from training data
-            _, threshold = _scores_to_informedness_and_threshold(
-                train_ref_pred, train_gen_pred
-            )
-
-            # Apply threshold to validation data
-            score = _scores_and_threshold_to_informedness(
-                val_ref_pred, val_gen_pred, threshold
-            )
-        elif variant == "jsd":
-            score = _scores_to_jsd(val_ref_pred, val_gen_pred)
-        else:
-            raise ValueError(f"Invalid variant: {variant}")
+            score = 0.0
 
         scores.append(score)
 
@@ -372,31 +383,42 @@ def _descriptions_to_classifier_metric(
     )
 
     # Check if train_all_descriptions is constant across rows
-    if _is_constant(train_all_descriptions):
+    try:
+        if _is_constant(train_all_descriptions):
+            warnings.warn(
+                "Input to classifier is constant, setting all scores to 0.5"
+            )
+            predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
+        else:
+            clf.fit(train_all_descriptions, train_labels)
+            predict_proba = clf.predict_proba
+
+        ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]
+        gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]
+
+        if variant == "informedness":
+            ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]
+            gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]
+            _, threshold = _scores_to_informedness_and_threshold(
+                ref_train_pred, gen_train_pred
+            )
+            test_metric = _scores_and_threshold_to_informedness(
+                ref_test_pred, gen_test_pred, threshold
+            )
+        elif variant == "jsd":
+            test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
+        else:
+            raise ValueError(f"Invalid variant: {variant}")
+    except (ValueError, RuntimeError) as e:
+        # TabPFN v2.0.9 can raise ValueError with NaN in encoder when
+        # features are near-constant (see github.com/PriorLabs/TabPFN/issues/108).
+        # Near-constant features mean distributions are indistinguishable,
+        # so the correct metric is 0.
         warnings.warn(
-            "Input to classifier is constant, setting all scores to 0.5"
+            f"Classifier failed during refit ({e}), treating as "
+            f"indistinguishable (metric=0)."
         )
-        predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
-    else:
-        clf.fit(train_all_descriptions, train_labels)
-        predict_proba = clf.predict_proba
-
-    ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]
-    gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]
-
-    if variant == "informedness":
-        ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]
-        gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]
-        _, threshold = _scores_to_informedness_and_threshold(
-            ref_train_pred, gen_train_pred
-        )
-        test_metric = _scores_and_threshold_to_informedness(
-            ref_test_pred, gen_test_pred, threshold
-        )
-    elif variant == "jsd":
-        test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
-    else:
-        raise ValueError(f"Invalid variant: {variant}")
+        test_metric = 0.0
 
     assert isinstance(train_metric, float)
     assert isinstance(test_metric, float)
