@@ -160,7 +160,7 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
             sq_norms = features.multiply(features).sum(axis=1)
             if hasattr(sq_norms, "toarray"):
                 sq_norms = sq_norms.toarray()
-            return np.asarray(sq_norms).flatten()
+            return np.asarray(sq_norms, dtype=np.float64).flatten()
         else:
             return np.einsum("ij,ij->i", features, features)
 
@@ -203,8 +203,8 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
 
         K = self._compute_kernel_matrix(X)
         if self.normalize_kernel:
-            self.train_diag_ = np.diag(K)
-            inv_sqrt_diag = np.zeros_like(self.train_diag_)
+            self.train_diag_ = np.diag(K).astype(np.float64)
+            inv_sqrt_diag = np.zeros(len(self.train_diag_), dtype=np.float64)
             mask = self.train_diag_ > 0
             inv_sqrt_diag[mask] = 1.0 / np.sqrt(self.train_diag_[mask])
 
@@ -247,13 +247,14 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
             assert self.train_diag_ is not None
             test_diag = self._compute_kernel_diag(X)
 
-            inv_sqrt_train = np.zeros_like(self.train_diag_)
+            inv_sqrt_train = np.zeros(len(self.train_diag_), dtype=np.float64)
             mask_train = self.train_diag_ > 0
             inv_sqrt_train[mask_train] = 1.0 / np.sqrt(
                 self.train_diag_[mask_train]
             )
 
-            inv_sqrt_test = np.zeros_like(test_diag)
+            test_diag = np.asarray(test_diag, dtype=np.float64)
+            inv_sqrt_test = np.zeros(len(test_diag), dtype=np.float64)
             mask_test = test_diag > 0
             inv_sqrt_test[mask_test] = 1.0 / np.sqrt(test_diag[mask_test])
 
