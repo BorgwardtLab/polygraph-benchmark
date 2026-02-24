@@ -10,7 +10,7 @@ Usage:
 
 import json
 import sys
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 import hydra
 import networkx as nx
@@ -18,6 +18,9 @@ import numpy as np
 from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
+from scipy.sparse import issparse
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
 
@@ -42,36 +45,42 @@ def get_reference_dataset(dataset: str, split: str = "test"):
 
 
 class ConcatenatedDescriptor:
-    """Descriptor that concatenates multiple descriptor outputs with PCA reduction."""
+    """Descriptor that concatenates multiple descriptor outputs with PCA.
 
-    def __init__(self, descriptors: Dict, max_features: int = 500):
+    Matches the original polygraph CombinedDescriptor: per-descriptor
+    StandardScaler + PCA, both fit on the first call (reference data).
+    """
+
+    def __init__(self, descriptors: Dict, max_features: int = 500,
+                 dataset_size: Optional[int] = None):
         self.descriptors = descriptors
-        self.max_features = max_features
-        self._pca = None
-        self._is_fitted = False
+        n_components = max_features
+        if dataset_size is not None:
+            n_components = min(max_features, dataset_size)
+        self._pca = PCA(n_components=n_components)
+        self._scalers: Dict[str, StandardScaler] = {}
+        self._fitted = False
 
     def __call__(self, graphs: Iterable[nx.Graph]) -> np.ndarray:
-        from sklearn.decomposition import PCA
-
         graphs = list(graphs)
         features = []
         for name, desc in self.descriptors.items():
             feat = desc(graphs)
-            if hasattr(feat, 'toarray'):
+            if issparse(feat):
                 feat = feat.toarray()
+            if not self._fitted:
+                scaler = StandardScaler()
+                feat = scaler.fit_transform(feat)
+                self._scalers[name] = scaler
+            else:
+                feat = self._scalers[name].transform(feat)
             features.append(feat)
 
-        concatenated = np.hstack(features)
-
-        if concatenated.shape[1] > self.max_features:
-            n_components = min(self.max_features, concatenated.shape[0] - 1)
-            if self._pca is None:
-                self._pca = PCA(n_components=n_components)
-                concatenated = self._pca.fit_transform(concatenated)
-            else:
-                concatenated = self._pca.transform(concatenated)
-
-        return concatenated
+        concatenated = np.concatenate(features, axis=1)
+        if not self._fitted:
+            self._pca.fit(concatenated)
+            self._fitted = True
+        return self._pca.transform(concatenated)
 
 
 def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset: bool = False) -> Dict:
@@ -84,7 +93,8 @@ def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset:
         subsample_size = 15
         num_samples = 3
     else:
-        subsample_size = min(len(reference_graphs), len(generated_graphs)) // 4
+        min_subset_size = min(len(reference_graphs), len(generated_graphs))
+        subsample_size = min(int(min_subset_size * 0.5), 2048)
         num_samples = 10
 
     metric = StandardPGDInterval(
@@ -118,7 +128,8 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
         subsample_size = 15
         num_samples = 3
     else:
-        subsample_size = min(len(reference_graphs), len(generated_graphs)) // 4
+        min_subset_size = min(len(reference_graphs), len(generated_graphs))
+        subsample_size = min(int(min_subset_size * 0.5), 2048)
         num_samples = 10
 
     if subset:
@@ -138,7 +149,10 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
             "clustering": ClusteringHistogram(bins=100),
             "gin": RandomGIN(seed=42),
         }
-    concat_desc = ConcatenatedDescriptor(desc_dict, max_features=500)
+    dataset_size = min(len(reference_graphs), len(generated_graphs))
+    concat_desc = ConcatenatedDescriptor(
+        desc_dict, max_features=500, dataset_size=dataset_size,
+    )
 
     metric = PolyGraphDiscrepancyInterval(
         reference_graphs,
