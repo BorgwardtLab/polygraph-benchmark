@@ -36,7 +36,8 @@ def load_graphs(model: str, dataset: str) -> List:
     return _load(DATA_DIR, model, dataset)
 
 
-def compute_gklr_metrics(reference_graphs: List, generated_graphs: List, subset: bool = False) -> Dict:
+def compute_gklr_metrics(reference_graphs: List, generated_graphs: List,
+                         dataset: str = "", subset: bool = False) -> Dict:
     """Compute PGD metrics using graph kernel descriptors with kernel logistic regression."""
     from polygraph.metrics.base import KernelLogisticRegression, PolyGraphDiscrepancyInterval
     from polygraph.utils.descriptors import (
@@ -51,7 +52,10 @@ def compute_gklr_metrics(reference_graphs: List, generated_graphs: List, subset:
         subsample_size = 20
         num_samples = 5
     else:
-        subsample_size = min(len(reference_graphs), len(generated_graphs)) // 4
+        min_subset_size = min(len(reference_graphs), len(generated_graphs))
+        # Match original polygraph: 50% of min subset, capped at 2048
+        # Note: PolyGraphDiscrepancyInterval requires n_graphs >= 2 * subsample_size
+        subsample_size = min(int(min_subset_size * 0.5), 2048)
         num_samples = 10
 
     descriptors = {
@@ -96,7 +100,7 @@ def main(cfg: DictConfig) -> None:
     logger.info("Computing GKLR for {}/{}", model, dataset)
 
     try:
-        reference_graphs = get_reference_dataset(dataset, split="test", num_graphs=512)
+        reference_graphs = get_reference_dataset(dataset, split="test", num_graphs=4096)
     except Exception as e:
         logger.error("Error loading reference dataset: {}", e)
         maybe_append_jsonl(
@@ -130,7 +134,7 @@ def main(cfg: DictConfig) -> None:
     result: Dict = {"dataset": dataset, "model": model}
 
     try:
-        gklr_results = compute_gklr_metrics(reference_graphs, generated_graphs, subset=subset)
+        gklr_results = compute_gklr_metrics(reference_graphs, generated_graphs, dataset=dataset, subset=subset)
         result["pgs_mean"] = gklr_results.get("pgd_mean", float("nan"))
         result["pgs_std"] = gklr_results.get("pgd_std", float("nan"))
         for key, value in gklr_results.get("subscores", {}).items():
