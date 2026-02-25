@@ -158,22 +158,42 @@ def main(
         None, "--paper-dir",
         help="Copy outputs into paper figures/model_quality/ directory",
     ),
+    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
 ):
     """Generate all model quality figures for the paper."""
     setup_plotting()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    results_dir = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / f"results{results_suffix}"
+
+    def _load(curve_type: str, dataset: str, variant: str) -> Optional[pd.DataFrame]:
+        path = results_dir / f"{curve_type}_{dataset}_{variant}.json"
+        if not path.exists():
+            return None
+        with open(path) as f:
+            data = json.load(f)
+        if not data.get("results"):
+            return None
+        return pd.DataFrame(data["results"])
+
+    import tempfile, shutil
+    use_tmp = bool(results_suffix)
+    tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
+    output_dir = tmp_dir if use_tmp else OUTPUT_DIR
+    if use_tmp:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
     for variant in ["jsd", "informedness"]:
         variant_suffix = "jsd" if variant == "jsd" else "informedness-adaptive"
 
         # Denoising figure (planar only)
-        df_den = load_results("denoising", "planar", variant)
+        df_den = _load("denoising", "planar", variant)
         if df_den is not None:
             fname = f"model-quality_denoising-iterations_validity_polyscore_all_mmd_{variant_suffix}.pdf"
             _plot_multi_panel(
                 {"planar": df_den},
                 x_label="Denoising Steps",
-                output_path=OUTPUT_DIR / fname,
+                output_path=output_dir / fname,
             )
         else:
             logger.warning("No denoising results for planar/{}", variant)
@@ -181,7 +201,7 @@ def main(
         # Training figure - all datasets
         training_data = {}
         for ds in DATASETS:
-            df_train = load_results("training", ds, variant)
+            df_train = _load("training", ds, variant)
             if df_train is not None:
                 training_data[ds] = df_train
 
@@ -190,22 +210,28 @@ def main(
             _plot_multi_panel(
                 training_data,
                 x_label="Training Epochs",
-                output_path=OUTPUT_DIR / fname,
+                output_path=output_dir / fname,
             )
 
-            # JSD variant also gets a single-dataset SBM figure
             if "sbm" in training_data:
                 fname_sbm = f"all_training_epochs_{variant_suffix}_sbm.pdf"
                 _plot_multi_panel(
                     {"sbm": training_data["sbm"]},
                     x_label="Training Epochs",
-                    output_path=OUTPUT_DIR / fname_sbm,
+                    output_path=output_dir / fname_sbm,
                 )
         else:
             logger.warning("No training results for {}", variant)
 
+    # Copy from temp dir with suffixed filenames
+    if use_tmp and tmp_dir:
+        for pdf in tmp_dir.glob("*.pdf"):
+            dest = OUTPUT_DIR / (pdf.stem + results_suffix + pdf.suffix)
+            shutil.copy2(pdf, dest)
+            logger.info("Saved: {}", dest)
+        shutil.rmtree(tmp_dir)
+
     if paper_dir is not None:
-        import shutil
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         count = 0

@@ -26,6 +26,7 @@ Usage:
 import gc
 import json
 import random
+from importlib.metadata import version as pkg_version
 from itertools import product
 from typing import Callable, Dict, List, Tuple
 
@@ -71,7 +72,7 @@ from polygraph.utils.descriptors import OrbitCounts
 from polygraph.utils.kernels import AdaptiveRBFKernel
 
 REPO_ROOT = here()
-RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / "results"
+_RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation"
 
 # Adaptive RBF bandwidths (matching the library's RBFOrbitMMD2 internals)
 _RBF_BW = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
@@ -452,6 +453,8 @@ def evaluate_metrics(
 )
 def main(cfg: DictConfig) -> None:
     """Compute perturbation metrics for one (dataset, perturbation) pair."""
+    results_suffix: str = cfg.get("results_suffix", "")
+    RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset: str = cfg.dataset
@@ -543,6 +546,7 @@ def main(cfg: DictConfig) -> None:
         "classifiers": classifiers,
         "variants": variants,
         "results": all_results,
+        "tabpfn_package_version": pkg_version("tabpfn"),
     }
 
     output_path.write_text(json.dumps(output, indent=2))

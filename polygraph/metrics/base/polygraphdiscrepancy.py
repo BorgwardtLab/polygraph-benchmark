@@ -350,13 +350,14 @@ def _descriptions_to_classifier_metric(
     assert isinstance(test_gen_descriptions, (np.ndarray, csr_array))
 
     if classifier is None:
-        if version("tabpfn") != "2.0.9":
+        from packaging.version import Version
+
+        tabpfn_ver = Version(version("tabpfn"))
+        if tabpfn_ver < Version("2.0.9"):
             raise RuntimeError(
-                "TabPFN version 2.0.9 is required for this classifier. Please install it with `pip install tabpfn==2.0.9`."
+                "TabPFN >= 2.0.9 is required. Please install it with `pip install 'tabpfn>=2.0.9'`."
             )
-        clf = TabPFNClassifier(
-            device="cuda" if torch.cuda.is_available() else "cpu"
-        )
+        clf = TabPFNClassifier(device="auto", n_estimators=4)
     else:
         clf = classifier
 

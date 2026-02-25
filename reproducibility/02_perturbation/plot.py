@@ -425,28 +425,56 @@ def main(
         None, "--paper-dir",
         help="Also copy outputs into this directory (e.g. paper figures/perturbation_experiments/)",
     ),
+    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
 ):
     """Generate all perturbation figures for the paper."""
     setup_plotting()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    all_data = load_all_results()
-    if not all_data:
-        logger.error("No perturbation results found in {}. Run compute.py first.", RESULTS_DIR)
+    results_dir = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / f"results{results_suffix}"
+
+    import tempfile, shutil
+    use_tmp = bool(results_suffix)
+    tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
+    output_dir = tmp_dir if use_tmp else OUTPUT_DIR
+    if use_tmp:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load from the (possibly suffixed) results dir
+    data = {}
+    if not results_dir.exists():
+        logger.error("No perturbation results found in {}. Run compute.py first.", results_dir)
+        return
+    for f in sorted(results_dir.glob("perturbation_*.json")):
+        try:
+            d = json.loads(f.read_text())
+            key = (d["dataset"], d["perturbation"])
+            data[key] = d
+        except Exception as e:
+            logger.warning("Skipping {}: {}", f.name, e)
+    if not data:
+        logger.error("No perturbation results found in {}", results_dir)
         return
 
-    logger.info("Loaded {} result files", len(all_data))
+    logger.info("Loaded {} result files from {}", len(data), results_dir)
 
     for variant in ["jsd", "informedness"]:
-        plot_correlation_bars(all_data, "tabpfn", variant, OUTPUT_DIR)
-        plot_metrics_vs_noise(all_data, "tabpfn", variant, cropped=False, output_dir=OUTPUT_DIR)
-        plot_metrics_vs_noise(all_data, "tabpfn", variant, cropped=True, output_dir=OUTPUT_DIR)
+        plot_correlation_bars(data, "tabpfn", variant, output_dir)
+        plot_metrics_vs_noise(data, "tabpfn", variant, cropped=False, output_dir=output_dir)
+        plot_metrics_vs_noise(data, "tabpfn", variant, cropped=True, output_dir=output_dir)
 
     for variant in ["jsd", "informedness"]:
-        plot_lr_vs_tabpfn(all_data, variant, OUTPUT_DIR)
+        plot_lr_vs_tabpfn(data, variant, output_dir)
+
+    # Copy from temp dir with suffixed filenames
+    if use_tmp and tmp_dir:
+        for pdf in tmp_dir.glob("*.pdf"):
+            dest = OUTPUT_DIR / (pdf.stem + results_suffix + pdf.suffix)
+            shutil.copy2(pdf, dest)
+            logger.info("Saved: {}", dest)
+        shutil.rmtree(tmp_dir)
 
     if paper_dir is not None:
-        import shutil
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         count = 0

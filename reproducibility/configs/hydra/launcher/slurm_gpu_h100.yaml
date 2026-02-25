@@ -1,5 +1,5 @@
 # H100 GPU SLURM configuration for faster TabPFN acceleration.
-# Targets hpcl94g nodes with H100 GPUs.
+# Targets hpcl91 and hpcl94g nodes with H100 GPUs.
 #
 # Usage:
 #   python XX/compute.py --multirun hydra/launcher=slurm_gpu_h100
@@ -7,7 +7,7 @@
 defaults:
   - submitit_slurm
 
-partition: p.hpcl94g
+partition: p.hpcl91,p.hpcl94g
 timeout_min: 1440
 nodes: 1
 tasks_per_node: 1

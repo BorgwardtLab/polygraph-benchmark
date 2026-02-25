@@ -7,6 +7,9 @@ platforms = ["osx-arm64", "linux-64"]
 python = "3.10.*"
 graph-tool = "*"
 
+[activation.env]
+PYTHONPATH = "$PIXI_PROJECT_ROOT/reproducibility"
+
 [pypi-dependencies]
 polygraph-benchmark = { path = ".", editable = true, extras = ["dev", "cluster"] }
 

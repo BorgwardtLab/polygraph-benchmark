@@ -16,6 +16,7 @@ Usage:
 import json
 import pickle
 import time
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Dict, List
 
@@ -39,7 +40,6 @@ DATA_DIR = REPO_ROOT / "data"
 EXPERIMENT_RESULTS_DIR = (
     REPO_ROOT / "reproducibility" / "figures" / "01_subsampling" / "results"
 )
-RESULTS_DIR = EXPERIMENT_RESULTS_DIR / Path(__file__).stem
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +98,8 @@ def get_reference_dataset(
 @hydra.main(config_path="../configs", config_name="01_subsampling_pgd", version_base=None)
 def main(cfg: DictConfig) -> None:
     """Compute PGD for one (dataset, model, subsample_size) cell."""
+    results_suffix: str = cfg.get("results_suffix", "")
+    RESULTS_DIR = EXPERIMENT_RESULTS_DIR / f"{Path(__file__).stem}{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset: str = cfg.dataset
@@ -206,6 +208,7 @@ def main(cfg: DictConfig) -> None:
             "pgd_std": float(result["pgd"].std),
             "pgd_runtime_seconds": pgd_runtime_perf_seconds,
             "pgd_runtime_perf_seconds": pgd_runtime_perf_seconds,
+            "tabpfn_package_version": pkg_version("tabpfn"),
         }
         if result["pgd"].low is not None:
             output["pgd_low"] = float(result["pgd"].low)

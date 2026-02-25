@@ -112,24 +112,27 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
 @app.command()
 def main(
     paper_dir: Optional[Path] = typer.Option(None, "--paper-dir"),
+    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
 ):
-    concat_results = load_results(RESULTS_DIR)
-    bench_results = load_results(BENCHMARK_DIR)
+    results_dir = OUTPUT_DIR / "results" / f"concatenation{results_suffix}"
+    benchmark_dir = OUTPUT_DIR / "results" / f"benchmark{results_suffix}"
+    concat_results = load_results(results_dir)
+    bench_results = load_results(benchmark_dir)
 
     if not concat_results:
-        logger.error("No concatenation results in {}.", RESULTS_DIR)
+        logger.error("No concatenation results in {}.", results_dir)
         return
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     table = generate_table(concat_results, bench_results)
-    out = OUTPUT_DIR / "concatenation.tex"
+    out = OUTPUT_DIR / f"concatenation{results_suffix}.tex"
     out.write_text(table)
     logger.success("Saved: {}", out)
 
     if paper_dir:
         import shutil
         Path(paper_dir).mkdir(parents=True, exist_ok=True)
-        shutil.copy2(out, Path(paper_dir) / "concatenation.tex")
+        shutil.copy2(out, Path(paper_dir) / out.name)
 
 
 if __name__ == "__main__":

@@ -240,9 +240,21 @@ def main(
     mmd_only: bool = typer.Option(False, "--mmd-only"),
     pgd_only: bool = typer.Option(False, "--pgd-only"),
     paper_dir: Optional[Path] = typer.Option(None, "--paper-dir"),
+    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
 ):
     setup_plotting()
+
+    pgd_results_dir = REPO_ROOT / "reproducibility" / "figures" / "01_subsampling" / "results" / f"compute_pgd{results_suffix}"
+
+    # When suffix is provided, generate into a temp dir then copy with suffixed names
+    import tempfile, shutil
+    use_tmp = bool(results_suffix)
+    tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
+    output_dir = tmp_dir if use_tmp else OUTPUT_DIR
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     if not pgd_only:
         logger.info("Loading MMD results...")
         df_mmd = load_mmd_results()
@@ -252,24 +264,36 @@ def main(
             logger.info("Loaded {} MMD result files", len(df_mmd))
             for m in MODELS:
                 for v in VARIANTS:
-                    plot_mmd_combined(df_mmd, m, v, OUTPUT_DIR)
-            plot_mmd_individual(df_mmd, "DIGRESS", "biased", "planar", "orbit5", OUTPUT_DIR)
-            plot_mmd_individual(df_mmd, "DIGRESS", "umve", "planar", "orbit5", OUTPUT_DIR)
-            plot_mmd_individual(df_mmd, "GRAN", "biased", "sbm", "degree", OUTPUT_DIR)
-            plot_mmd_individual(df_mmd, "GRAN", "umve", "sbm", "degree", OUTPUT_DIR)
+                    plot_mmd_combined(df_mmd, m, v, output_dir)
+            plot_mmd_individual(df_mmd, "DIGRESS", "biased", "planar", "orbit5", output_dir)
+            plot_mmd_individual(df_mmd, "DIGRESS", "umve", "planar", "orbit5", output_dir)
+            plot_mmd_individual(df_mmd, "GRAN", "biased", "sbm", "degree", output_dir)
+            plot_mmd_individual(df_mmd, "GRAN", "umve", "sbm", "degree", output_dir)
     if not mmd_only:
-        logger.info("Loading PGD results...")
-        df_pgd = load_pgd_results()
-        if df_pgd.empty:
-            logger.error("No PGD results found in {}", PGD_RESULTS_DIR)
+        logger.info("Loading PGD results from {} ...", pgd_results_dir)
+        if not pgd_results_dir.exists():
+            logger.error("No PGD results found in {}", pgd_results_dir)
         else:
-            logger.info("Loaded {} PGD result files", len(df_pgd))
-            df_long = _reshape_pgd_long(df_pgd)
-            if not df_long.empty:
-                for m in MODELS:
-                    plot_pgd_model(df_long, m, OUTPUT_DIR)
+            recs = [json.loads(f.read_text()) for f in pgd_results_dir.glob("*.json")]
+            df_pgd = pd.DataFrame(recs) if recs else pd.DataFrame()
+            if df_pgd.empty:
+                logger.error("No PGD results found in {}", pgd_results_dir)
+            else:
+                logger.info("Loaded {} PGD result files", len(df_pgd))
+                df_long = _reshape_pgd_long(df_pgd)
+                if not df_long.empty:
+                    for m in MODELS:
+                        plot_pgd_model(df_long, m, output_dir)
+
+    # Copy from temp dir with suffixed filenames
+    if use_tmp and tmp_dir:
+        for pdf in tmp_dir.glob("*.pdf"):
+            dest = OUTPUT_DIR / (pdf.stem + results_suffix + pdf.suffix)
+            shutil.copy2(pdf, dest)
+            logger.info("Saved: {}", dest)
+        shutil.rmtree(tmp_dir)
+
     if paper_dir is not None:
-        import shutil
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         count = 0

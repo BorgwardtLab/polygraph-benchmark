@@ -13,6 +13,7 @@ Usage:
 
 import json
 import pickle
+from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import List
 
@@ -27,9 +28,7 @@ from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_appen
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
-RESULTS_DIR = (
-    REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
-)
+_RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality"
 
 
 def load_graphs(path: Path) -> List[nx.Graph]:
@@ -76,6 +75,8 @@ def get_reference_dataset(dataset, split="train", num_graphs=2048):
 )
 def main(cfg: DictConfig) -> None:
     """Compute PGD, MMD, and validity for all checkpoints."""
+    results_suffix: str = cfg.get("results_suffix", "")
+    RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     curve_type = cfg.curve_type
@@ -229,6 +230,7 @@ def main(cfg: DictConfig) -> None:
             "dataset": dataset,
             "variant": variant,
             "results": results,
+            "tabpfn_package_version": pkg_version("tabpfn"),
         }
         out_path = RESULTS_DIR / f"{curve_type}_{dataset}_{variant}.json"
         out_path.write_text(json.dumps(output, indent=2))

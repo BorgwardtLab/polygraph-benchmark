@@ -30,7 +30,7 @@ dependencies = [
     "orbit-count",
     "numba>=0.60.0,<0.62.0",
     "scikit-learn>=1.6.1,<2.0",
-    "tabpfn==2.0.9",
+    "tabpfn>=2.0.9",
     "fcd~=1.2.2"
 ]
 

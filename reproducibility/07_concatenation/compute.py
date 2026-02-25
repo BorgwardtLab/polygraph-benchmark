@@ -10,6 +10,7 @@ Usage:
 
 import json
 import sys
+from importlib.metadata import version as pkg_version
 from typing import Dict, Iterable, List, Optional
 
 import hydra
@@ -33,7 +34,7 @@ from utils.data import load_graphs as _load
 # ---------------------------------------------------------------------------
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
-RESULTS_DIR = REPO_ROOT / "reproducibility" / "tables" / "results" / "concatenation"
+_RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "tables" / "results"
 
 
 def load_graphs(model: str, dataset: str) -> List:
@@ -174,6 +175,8 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
 @hydra.main(config_path="../configs", config_name="07_concatenation", version_base=None)
 def main(cfg: DictConfig) -> None:
     """Compute concatenation metrics for one (dataset, model) pair and save as JSON."""
+    results_suffix: str = cfg.get("results_suffix", "")
+    RESULTS_DIR = _RESULTS_DIR_BASE / f"concatenation{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = cfg.dataset
@@ -214,7 +217,11 @@ def main(cfg: DictConfig) -> None:
         return
 
     generated_graphs = generated_graphs[:len(reference_graphs)]
-    result: Dict = {"dataset": dataset, "model": model}
+    result: Dict = {
+        "dataset": dataset,
+        "model": model,
+        "tabpfn_package_version": pkg_version("tabpfn"),
+    }
 
     try:
         std_results = compute_pgs_standard(reference_graphs, generated_graphs, subset=subset)

@@ -129,18 +129,20 @@ def generate_benchmark_table(all_results: Dict) -> str:
 @app.command()
 def main(
     paper_dir: Optional[Path] = typer.Option(None, "--paper-dir", help="Copy tables to paper dir"),
+    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
 ):
     """Generate LaTeX tables from pre-computed JSON results."""
-    result_list = load_results(RESULTS_DIR)
+    results_dir = OUTPUT_DIR / "results" / f"benchmark{results_suffix}"
+    result_list = load_results(results_dir)
     if not result_list:
-        logger.error("No results found in {}. Run compute.py first.", RESULTS_DIR)
+        logger.error("No results found in {}. Run compute.py first.", results_dir)
         return
 
     all_results = _reshape(result_list)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     table = generate_benchmark_table(all_results)
-    out = OUTPUT_DIR / "benchmark_results.tex"
+    out = OUTPUT_DIR / f"benchmark_results{results_suffix}.tex"
     out.write_text(table)
     logger.success("Table saved to: {}", out)
 
@@ -148,7 +150,7 @@ def main(
         import shutil
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(out, paper_dir / "benchmark_results.tex")
+        shutil.copy2(out, paper_dir / out.name)
         logger.success("Copied to {}", paper_dir)
 
 
