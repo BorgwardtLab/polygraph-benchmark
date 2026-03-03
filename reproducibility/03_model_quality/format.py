@@ -97,7 +97,7 @@ def generate_pearson_correlation_table(variant: str) -> str:
     variant_suffix = variant
 
     metric_cols = ["polyscore"] + MMD_KEYS
-    metric_labels = ["PGS"] + [MMD_SHORT[k] + " MMD" for k in MMD_KEYS]
+    metric_labels = ["PGD"] + [MMD_SHORT[k] + " MMD" for k in MMD_KEYS]
 
     lines = []
     lines.append("\\begin{tabular}{l" + "c" * len(metric_cols) + "}")
@@ -144,7 +144,7 @@ def generate_pearson_correlation_table(variant: str) -> str:
 def generate_spearman_training_table(variant: str) -> str:
     """Generate Spearman correlation table of metrics with training steps."""
     metric_cols = ["validity", "polyscore"] + MMD_KEYS
-    metric_labels = ["Val."] + ["PGS"] + [MMD_SHORT[k] + " MMD" for k in MMD_KEYS]
+    metric_labels = ["Val."] + ["PGD"] + [MMD_SHORT[k] + " MMD" for k in MMD_KEYS]
 
     lines = []
     lines.append("\\begin{tabular}{l" + "c" * len(metric_cols) + "}")
@@ -230,7 +230,7 @@ def generate_denoising_pgs_table() -> str:
     df = df.sort_values("steps")
 
     score_cols = ["polyscore"] + [k for k in PGS_SUBSCORE_KEYS if k in df.columns]
-    score_labels = ["PGS"] + [PGS_SHORT.get(k, k) for k in PGS_SUBSCORE_KEYS if k in df.columns]
+    score_labels = ["PGD"] + [PGS_SHORT.get(k, k) for k in PGS_SUBSCORE_KEYS if k in df.columns]
 
     lines = []
     lines.append("\\begin{tabular}{r" + "c" * len(score_cols) + "}")
