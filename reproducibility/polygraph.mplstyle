@@ -1,6 +1,22 @@
-font.size: 12
-axes.labelsize: 14
-axes.titlesize: 14
-legend.fontsize: 11
-xtick.labelsize: 11
-ytick.labelsize: 11
+# Matches /fs/pool/pool-hartout/Documents/Git/polygraph/rcparams.json
+text.usetex: false
+font.serif: Times
+font.family: DejaVu Sans
+mathtext.fontset: stix
+mathtext.rm: Times
+mathtext.it: Times:italic
+mathtext.bf: Times:bold
+
+figure.figsize: 5.5, 3.399186938124422
+figure.constrained_layout.use: true
+figure.autolayout: false
+
+savefig.bbox: tight
+savefig.pad_inches: 0.015
+
+font.size: 9
+axes.labelsize: 9
+axes.titlesize: 9
+legend.fontsize: 7
+xtick.labelsize: 7
+ytick.labelsize: 7

@@ -114,6 +114,7 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
         reference_graphs: Collection[nx.Graph],
         subsample_size: int,
         num_samples: int = 10,
+        classifier=None,
     ):
         super().__init__(
             reference_graphs=reference_graphs,
@@ -132,7 +133,7 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
                 ),
             },
             variant="jsd",
-            classifier=None,
+            classifier=classifier,
             subsample_size=subsample_size,
             num_samples=num_samples,
         )

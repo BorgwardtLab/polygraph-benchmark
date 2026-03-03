@@ -10,7 +10,7 @@ import seaborn as sns
 import typer
 from loguru import logger
 from matplotlib.lines import Line2D
-from matplotlib.ticker import AutoMinorLocator, FuncFormatter, LogLocator, NullFormatter, NullLocator
+from matplotlib.ticker import AutoMinorLocator, FixedLocator, FuncFormatter, LogLocator, NullFormatter, ScalarFormatter
 from pyprojroot import here
 
 app = typer.Typer()
@@ -74,14 +74,17 @@ def _logx(g):
         ax.set_xscale("log", base=2)
         ax.xaxis.set_major_locator(LogLocator(base=2, numticks=7))
         ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(x)}" if float(x).is_integer() else f"{x:g}"))
-        ax.xaxis.set_minor_locator(NullLocator())
+        ax.xaxis.set_minor_locator(FixedLocator([v * s for v in (2**n for n in range(3, 13)) for s in (1.25, 1.5, 1.75)]))
+        ax.xaxis.set_minor_formatter(NullFormatter())
+        ax.tick_params(axis="x", which="minor", length=2, width=0.5)
+        ax.tick_params(axis="x", which="major", length=5)
         ax.tick_params(axis="x", which="major", labelrotation=45, labelsize=12)
         ax.tick_params(axis="y", labelsize=12)
 
 
 def _facet_titles(g):
     g.set_titles(row_template="", col_template="{col_name}", size=14)
-    g.fig.subplots_adjust(wspace=0.3, hspace=0.1)
+    g.fig.subplots_adjust(wspace=0.3, hspace=0.25)
     for (rv, cv), ax in g.axes_dict.items():
         if cv == g.col_names[0]:
             ax.text(-0.5, 0.5, str(rv), transform=ax.transAxes, ha="right", va="center",
@@ -94,6 +97,10 @@ def _yminor(ax):
         ax.yaxis.set_minor_formatter(NullFormatter())
     else:
         ax.yaxis.set_minor_locator(AutoMinorLocator())
+        # Use scientific notation for small y-values to avoid label overlap
+        fmt = ScalarFormatter(useMathText=True)
+        fmt.set_powerlimits((-2, 3))
+        ax.yaxis.set_major_formatter(fmt)
     ax.tick_params(axis="y", which="minor", length=2, width=0.6)
 
 
@@ -109,9 +116,11 @@ def plot_mmd_combined(df_all, model, variant, output_dir):
     descs = [d for d in DESCRIPTOR_ORDER if d in df["Descriptor"].unique()]
     dsets = [d for d in DATASET_ORDER if d in df["Dataset"].unique()]
     g = sns.relplot(data=df, x="subsample_size", y="mmd_mean", hue="Source", col="Descriptor",
-                    row="Dataset", kind="line", marker="o", markersize=4, height=2.2, aspect=1.0,
+                    row="Dataset", kind="line", marker="o", markersize=4, height=2, aspect=1.1,
                     col_order=descs, row_order=dsets, hue_order=srcs, palette=cp,
-                    facet_kws={"sharey": False, "sharex": True}, legend=False)
+                    facet_kws={"margin_titles": True, "sharey": False})
+    sns.move_legend(g, "lower center", bbox_to_anchor=(0.5, -0.2),
+                    title="Graph sources:", ncol=2, title_fontsize=14, fontsize=14)
     _add_bands(g, df)
     _logx(g)
     for ax in g.axes.flat:
@@ -119,13 +128,11 @@ def plot_mmd_combined(df_all, model, variant, output_dir):
             ax.set_yscale("log")
         _yminor(ax)
     _facet_titles(g)
-    ml = r" ($\log_{10}$)" if mode == "log" else ""
-    g.set_ylabels(f"MMD{ml}", fontsize=14, labelpad=0)
-    g.set_xlabels(r"Number of Graphs ($\log_2$)", fontsize=14)
-    lh = [Line2D([0], [0], color=cp[s], marker="o", markersize=5, label=s) for s in srcs]
-    g.fig.legend(handles=lh, title="Graph Sources", loc="lower center", ncol=len(srcs),
-                 bbox_to_anchor=(0.5, -0.02), frameon=False, fontsize=12, title_fontsize=12)
-    g.fig.subplots_adjust(bottom=0.12)
+    g.set_axis_labels(
+        r"Number of Graphs",
+        "MMD",
+        fontsize=14,
+    )
     out = output_dir / f"{mc}_{variant}_subsampling_{sfx}.pdf"
     g.fig.savefig(str(out), bbox_inches="tight")
     plt.close(g.fig)
@@ -154,12 +161,15 @@ def plot_mmd_individual(df_all, model, variant, dataset, descriptor, output_dir)
     _yminor(ax)
     ax.xaxis.set_major_locator(LogLocator(base=2, numticks=5))
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(x)}" if float(x).is_integer() else f"{x:g}"))
-    ax.xaxis.set_minor_locator(NullLocator())
+    ax.xaxis.set_minor_locator(FixedLocator([v * s for v in (2**n for n in range(3, 13)) for s in (1.25, 1.5, 1.75)]))
+    ax.xaxis.set_minor_formatter(NullFormatter())
+    ax.tick_params(axis="x", which="minor", length=2, width=0.5)
+    ax.tick_params(axis="x", which="major", length=5)
     ax.tick_params(axis="x", which="major", labelrotation=45, labelsize=12)
     ax.tick_params(axis="y", labelsize=12)
-    plt.xlabel(r"Number of Graphs ($\log_2$)", fontsize=14)
-    ml = r" ($\log_{10}$)" if mode == "log" else ""
-    ax.set_ylabel(f"MMD{ml}", fontsize=14, labelpad=0)
+    plt.xlabel("Number of Graphs", fontsize=14)
+    ax.set_ylabel("MMD", fontsize=14, labelpad=0)
+    ax.yaxis.set_label_coords(-0.2, 0.5)
     ds_l = DATASET_LABEL_MAP.get(dataset, dataset)
     de_l = DESCRIPTOR_LABEL_MAP.get(descriptor, descriptor)
     plt.title(f"RBF MMD {de_l} on {ds_l}", fontsize=14)
@@ -176,63 +186,170 @@ def plot_mmd_individual(df_all, model, variant, dataset, descriptor, output_dir)
     logger.success("Saved: {}", output_dir / fn)
 
 
+# PGD score key -> display label, in canonical column order
+PGD_SCORE_KEYS = ["pgd", "orbit4", "orbit5", "spectral", "gin", "degree", "clustering"]
 PGD_SCORE_LABELS: Dict[str, str] = {
-    "pgd": "PGD", "clustering_pgs": "Clustering PGD", "degree_pgs": "Degree PGD",
-    "gin_pgs": "GIN PGD", "orbit5_pgs": "Orbit-5 PGD", "orbit_pgs": "Orbit PGD",
-    "spectral_pgs": "Spectral PGD",
+    "pgd": "PGD", "orbit4": "Orbit PGD", "orbit5": "Orbit-5 PGD",
+    "spectral": "Spectral PGD", "gin": "GIN PGD", "degree": "Degree PGD",
+    "clustering": "Clustering PGD",
 }
+PGD_SCORE_ORDER = [PGD_SCORE_LABELS[k] for k in PGD_SCORE_KEYS]
 
 
 def _reshape_pgd_long(df):
+    """Reshape wide PGD DataFrame to long format with Score/mean/low/high columns."""
     df["Dataset"] = df["dataset"].map(DATASET_LABEL_MAP)
-    sc = [c for c in df.columns if c.endswith("_mean") and not c.startswith("_")]
-    iv = [c for c in ["dataset", "Dataset", "model", "subsample_size"] if c in df.columns]
     rows = []
     for _, row in df.iterrows():
-        for col in sc:
-            base = col.replace("_mean", "")
-            rows.append({**{k: row[k] for k in iv}, "Score": PGD_SCORE_LABELS.get(base, base),
-                         "score_mean": row[col], "score_std": row.get(f"{base}_std", 0.0)})
+        base = {"dataset": row["dataset"], "Dataset": row["Dataset"],
+                "model": row["model"], "subsample_size": row["subsample_size"]}
+        for key in PGD_SCORE_KEYS:
+            mean_col, std_col = f"{key}_mean", f"{key}_std"
+            if mean_col not in df.columns:
+                continue
+            m = row[mean_col]
+            s = row.get(std_col, 0.0) if std_col in df.columns else 0.0
+            rows.append({**base, "Score": PGD_SCORE_LABELS[key], "score_key": key,
+                         "mean": m, "low": m - s, "high": m + s})
     return pd.DataFrame(rows)
 
 
-def plot_pgd_model(df_long, model, output_dir):
+def _model_color(model_code):
+    """Canonical model color matching the MMD plots."""
+    p = sns.color_palette("colorblind")
+    return {"autograph": p[1], "digress": p[2], "gran": p[3], "esgg": p[4]}.get(model_code.lower(), p[0])
+
+
+def _test_color():
+    return sns.color_palette("colorblind")[0]
+
+
+def plot_pgd_combined(df_long, model, output_dir, df_test=None):
+    """Combined faceted PGD plot: rows=datasets, cols=scores. Matches original plot_subsampling_pgs.py."""
     mc = model.lower()
-    df = df_long[df_long["model"].str.lower() == mc].copy()
+    model_display = MODEL_DISPLAY.get(model, model)
+    df = df_long[df_long["model"].str.upper() == model].copy()
     if df.empty:
         return
+
     dsets = [d for d in DATASET_ORDER if d in df["Dataset"].unique()]
-    so = [s for s in PGD_SCORE_LABELS.values() if s in df["Score"].unique()]
-    pal = sns.color_palette("colorblind", n_colors=len(so))
-    cm = {s: pal[i] for i, s in enumerate(so)}
-    g = sns.relplot(data=df, x="subsample_size", y="score_mean", hue="Score", col="Dataset",
-                    kind="line", marker="o", markersize=4, height=3.0, aspect=1.0,
-                    col_order=dsets, hue_order=so, palette=cm,
-                    facet_kws={"sharey": False, "sharex": True}, legend=True)
-    for ds, ax in zip(dsets, g.axes.flat):
-        sub = df[df["Dataset"] == ds]
-        for sn in so:
-            s = sub[sub["Score"] == sn].sort_values("subsample_size")
-            if not s.empty:
-                ax.fill_between(s["subsample_size"], s["score_mean"] - s["score_std"],
-                                s["score_mean"] + s["score_std"], alpha=0.15, color=cm[sn])
+    scores = [s for s in PGD_SCORE_ORDER if s in df["Score"].unique()]
+
+    color = _model_color(mc)
+
+    g = sns.relplot(
+        data=df, x="subsample_size", y="mean", col="Score", row="Dataset",
+        kind="line", marker="o", markersize=4, height=2, aspect=1.0,
+        facet_kws={"margin_titles": True, "sharey": True},
+        col_order=scores, row_order=dsets,
+        errorbar=None, color=color,
+    )
+
+    # Error bands for model
+    for (rv, cv), ax in g.axes_dict.items():
+        sub = df[(df["Dataset"] == rv) & (df["Score"] == cv)].sort_values("subsample_size")
+        if not sub.empty:
+            ax.fill_between(sub["subsample_size"], sub["low"], sub["high"],
+                            alpha=0.25, color=color)
+
+    # Test baseline overlay
+    if df_test is not None and not df_test.empty:
+        for (rv, cv), ax in g.axes_dict.items():
+            tsub = df_test[(df_test["Dataset"] == rv) & (df_test["Score"] == cv)].sort_values("subsample_size")
+            if not tsub.empty:
+                ax.plot(tsub["subsample_size"], tsub["mean"], linestyle="--",
+                        linewidth=1.2, color=_test_color(), zorder=3)
+                ax.fill_between(tsub["subsample_size"], tsub["low"], tsub["high"],
+                                alpha=0.15, color=_test_color(), zorder=2)
+
+    # Axes formatting
     for ax in g.axes.flat:
         ax.set_xscale("log", base=2)
-        ax.xaxis.set_major_locator(LogLocator(base=2, numticks=7))
+        ax.xaxis.set_major_locator(LogLocator(base=2, numticks=5))
         ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(x)}" if float(x).is_integer() else f"{x:g}"))
-        ax.xaxis.set_minor_locator(NullLocator())
-        ax.tick_params(axis="x", which="major", labelrotation=45, labelsize=12)
-        ax.tick_params(axis="y", labelsize=12)
-        _yminor(ax)
-    g.set_ylabels("PGD Score", fontsize=14)
-    g.set_xlabels(r"Number of Graphs ($\log_2$)", fontsize=14)
-    g.set_titles("{col_name}", size=14)
-    sns.move_legend(g, "lower center", ncol=min(4, len(so)), frameon=False, fontsize=12, title_fontsize=14)
+        ax.xaxis.set_minor_locator(FixedLocator([v * s for v in (2**n for n in range(3, 13)) for s in (1.25, 1.5, 1.75)]))
+        ax.xaxis.set_minor_formatter(NullFormatter())
+        ax.tick_params(axis="x", which="minor", length=2, width=0.5)
+        ax.tick_params(axis="x", which="major", length=5)
+        ax.tick_params(axis="x", which="major", labelrotation=45, labelsize=14)
+        ax.tick_params(axis="y", labelsize=14)
+
+    g.set(ylim=(0, 1))
+
+    _facet_titles(g)
+    g.set_axis_labels(
+        "Number of Graphs",
+        "PGD",
+        fontsize=14,
+    )
+
+    # Legend
+    lh = [Line2D([0], [0], color=color, marker="o", linestyle="-", linewidth=1.5,
+                 markersize=4, label=model_display)]
+    if df_test is not None and not df_test.empty:
+        lh.append(Line2D([0], [0], color=_test_color(), linestyle="--",
+                         linewidth=1.2, label="Test baseline"))
+    g.fig.legend(handles=lh, title="Graph Sources:", loc="lower center",
+                 ncol=len(lh), frameon=False, bbox_to_anchor=(0.5, -0.2),
+                 borderaxespad=0.5, title_fontsize=14, fontsize=14)
     g.fig.subplots_adjust(bottom=0.12)
-    out = output_dir / f"{mc}_pgs_subsampling.pdf"
+
+    out = output_dir / f"{mc}_pgd_subsampling.pdf"
     g.fig.savefig(str(out), bbox_inches="tight")
     plt.close(g.fig)
     logger.success("Saved: {}", out)
+
+
+def plot_pgd_individual(df_long, model, dataset, score_key, output_dir, df_test=None):
+    """Individual PGD plot for a single (model, dataset, score) combo."""
+    mc = model.lower()
+    model_display = MODEL_DISPLAY.get(model, model)
+    ds_label = DATASET_LABEL_MAP.get(dataset, dataset)
+    score_label = PGD_SCORE_LABELS.get(score_key, score_key)
+
+    df = df_long[(df_long["model"].str.upper() == model)
+                 & (df_long["Dataset"] == ds_label)
+                 & (df_long["score_key"] == score_key)].copy()
+    if df.empty:
+        return
+
+    color = _model_color(mc)
+    plt.figure(figsize=(3.5, 3.5))
+    s = df.sort_values("subsample_size")
+    plt.plot(s["subsample_size"], s["mean"], marker="o", markersize=4, color=color, label=model_display)
+    plt.fill_between(s["subsample_size"], s["low"], s["high"], alpha=0.25, color=color)
+
+    # Test baseline overlay
+    if df_test is not None and not df_test.empty:
+        tsub = df_test[(df_test["Dataset"] == ds_label) & (df_test["score_key"] == score_key)].sort_values("subsample_size")
+        if not tsub.empty:
+            plt.plot(tsub["subsample_size"], tsub["mean"], linestyle="--", linewidth=1.2,
+                     color=_test_color(), label="Test baseline")
+            plt.fill_between(tsub["subsample_size"], tsub["low"], tsub["high"],
+                             alpha=0.15, color=_test_color())
+
+    ax = plt.gca()
+    ax.set_xscale("log", base=2)
+    ax.set_ylim(0, 1)
+    ax.xaxis.set_major_locator(LogLocator(base=2, numticks=5))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{int(x)}" if float(x).is_integer() else f"{x:g}"))
+    ax.xaxis.set_minor_locator(FixedLocator([v * s for v in (2**n for n in range(3, 13)) for s in (1.25, 1.5, 1.75)]))
+    ax.xaxis.set_minor_formatter(NullFormatter())
+    ax.tick_params(axis="x", which="minor", length=2, width=0.5)
+    ax.tick_params(axis="x", which="major", length=5)
+    ax.tick_params(axis="x", which="major", labelrotation=45, labelsize=12)
+    ax.tick_params(axis="y", labelsize=12)
+    plt.xlabel("Number of Graphs", fontsize=14)
+    ax.set_ylabel("PGD", fontsize=14, labelpad=0)
+    ax.yaxis.set_label_coords(-0.2, 0.5)
+    plt.title(f"{score_label} on {ds_label}", fontsize=14)
+    ax.legend(title="Graph Sources", frameon=False, fontsize=12, title_fontsize=12,
+              bbox_to_anchor=(0.98, 0.98), loc="upper right", bbox_transform=ax.transAxes)
+    plt.tight_layout()
+    fn = f"{mc}_pgd_{ds_label.lower()}_{score_key}_subsampling.pdf"
+    plt.savefig(str(output_dir / fn), bbox_inches="tight")
+    plt.close()
+    logger.success("Saved: {}", output_dir / fn)
 
 
 @app.command()
@@ -281,9 +398,16 @@ def main(
             else:
                 logger.info("Loaded {} PGD result files", len(df_pgd))
                 df_long = _reshape_pgd_long(df_pgd)
+                # Split out test baseline if present
+                df_test = df_long[df_long["model"].str.lower() == "test"] if "model" in df_long.columns else pd.DataFrame()
                 if not df_long.empty:
+                    test_arg = df_test if not df_test.empty else None
                     for m in MODELS:
-                        plot_pgd_model(df_long, m, output_dir)
+                        plot_pgd_combined(df_long, m, output_dir, df_test=test_arg)
+                        # Individual per-(model, dataset, score) plots
+                        for ds in ["lobster", "planar", "sbm"]:
+                            for sk in PGD_SCORE_KEYS:
+                                plot_pgd_individual(df_long, m, ds, sk, output_dir, df_test=test_arg)
 
     # Copy from temp dir with suffixed filenames
     if use_tmp and tmp_dir:

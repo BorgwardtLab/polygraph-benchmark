@@ -76,6 +76,7 @@ def get_reference_dataset(dataset, split="train", num_graphs=2048):
 def main(cfg: DictConfig) -> None:
     """Compute PGD, MMD, and validity for all checkpoints."""
     results_suffix: str = cfg.get("results_suffix", "")
+    tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
     RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -83,13 +84,16 @@ def main(cfg: DictConfig) -> None:
     dataset = cfg.dataset
     variant = cfg.variant
     subset = cfg.subset
+    pgd_only = cfg.get("pgd_only", False)
     num_graphs = cfg.get("num_graphs", 2048)
 
     dir_map = {
         "training": "training-iterations",
         "denoising": "denoising-iterations",
     }
-    iteration_dir = DATA_DIR / "DIGRESS" / dir_map[curve_type]
+    base_dir = DATA_DIR / "DIGRESS" / dir_map[curve_type]
+    # For training, use per-dataset subdirectory if it exists
+    iteration_dir = base_dir / dataset if (base_dir / dataset).exists() else base_dir
 
     if not iteration_dir.exists():
         logger.warning("Iteration directory not found: {}", iteration_dir)
@@ -106,9 +110,17 @@ def main(cfg: DictConfig) -> None:
         )
         return
 
+    def _parse_steps(p: Path) -> int:
+        """Parse step number from either 'N_steps.pkl' or 'epoch_N.pkl' format."""
+        parts = p.stem.split("_")
+        try:
+            return int(parts[0])  # N_steps.pkl
+        except ValueError:
+            return int(parts[-1])  # epoch_N.pkl
+
     pkl_files = sorted(
         iteration_dir.glob("*.pkl"),
-        key=lambda p: int(p.stem.split("_")[0]),
+        key=_parse_steps,
     )
     if not pkl_files:
         logger.warning("No checkpoint files found in {}", iteration_dir)
@@ -165,31 +177,41 @@ def main(cfg: DictConfig) -> None:
     if subset:
         ref = ref[:30]
 
+    if tabpfn_weights_version == "v2":
+        from tabpfn import TabPFNClassifier
+        from tabpfn.classifier import ModelVersion
+        classifier = TabPFNClassifier.create_default_for_version(
+            ModelVersion.V2, device="auto", n_estimators=4,
+        )
+    else:
+        classifier = None  # default (v2.5)
+
     pgd_metric = StandardPGD(
         reference_graphs=ref,
         variant=variant,
-        classifier=None,
+        classifier=classifier,
     )
 
-    bw = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
-    mmd_metrics = {
-        "orbit_mmd": RBFOrbitMMD2(ref),
-        "orbit5_mmd": MaxDescriptorMMD2(
-            ref,
-            kernel=AdaptiveRBFKernel(
-                descriptor_fn=OrbitCounts(graphlet_size=5), bw=bw,
+    if not pgd_only:
+        bw = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
+        mmd_metrics = {
+            "orbit_mmd": RBFOrbitMMD2(ref),
+            "orbit5_mmd": MaxDescriptorMMD2(
+                ref,
+                kernel=AdaptiveRBFKernel(
+                    descriptor_fn=OrbitCounts(graphlet_size=5), bw=bw,
+                ),
+                variant="biased",
             ),
-            variant="biased",
-        ),
-        "degree_mmd": RBFDegreeMMD2(ref),
-        "spectral_mmd": RBFSpectralMMD2(ref),
-        "clustering_mmd": RBFClusteringMMD2(ref),
-        "gin_mmd": RBFGraphNeuralNetworkMMD2(ref),
-    }
+            "degree_mmd": RBFDegreeMMD2(ref),
+            "spectral_mmd": RBFSpectralMMD2(ref),
+            "clustering_mmd": RBFClusteringMMD2(ref),
+            "gin_mmd": RBFGraphNeuralNetworkMMD2(ref),
+        }
 
     results = []
     for pkl_path in pkl_files:
-        steps = int(pkl_path.stem.split("_")[0])
+        steps = _parse_steps(pkl_path)
         logger.info("  {} steps...", steps)
 
         graphs = load_graphs(pkl_path)
@@ -210,17 +232,18 @@ def main(cfg: DictConfig) -> None:
         except Exception as e:
             logger.error("PGD error at step {}: {}", steps, e)
 
-        for mmd_name, mmd_metric in mmd_metrics.items():
-            try:
-                entry[mmd_name] = mmd_metric.compute(gen)
-            except Exception as e:
-                logger.error("MMD {} error at step {}: {}", mmd_name, steps, e)
+        if not pgd_only:
+            for mmd_name, mmd_metric in mmd_metrics.items():
+                try:
+                    entry[mmd_name] = mmd_metric.compute(gen)
+                except Exception as e:
+                    logger.error("MMD {} error at step {}: {}", mmd_name, steps, e)
 
-        try:
-            valid_count = sum(1 for g in gen if ds_obj.is_valid(g))
-            entry["validity"] = valid_count / len(gen)
-        except Exception as e:
-            logger.error("Validity error at step {}: {}", steps, e)
+            try:
+                valid_count = sum(1 for g in gen if ds_obj.is_valid(g))
+                entry["validity"] = valid_count / len(gen)
+            except Exception as e:
+                logger.error("Validity error at step {}: {}", steps, e)
 
         results.append(entry)
 
@@ -231,6 +254,7 @@ def main(cfg: DictConfig) -> None:
             "variant": variant,
             "results": results,
             "tabpfn_package_version": pkg_version("tabpfn"),
+            "tabpfn_weights_version": tabpfn_weights_version,
         }
         out_path = RESULTS_DIR / f"{curve_type}_{dataset}_{variant}.json"
         out_path.write_text(json.dumps(output, indent=2))

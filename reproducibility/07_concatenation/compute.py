@@ -46,19 +46,24 @@ def get_reference_dataset(dataset: str, split: str = "test"):
 
 
 class ConcatenatedDescriptor:
-    """Descriptor that concatenates multiple descriptor outputs with PCA.
+    """Descriptor that concatenates multiple descriptor outputs, optionally with PCA.
 
     Matches the original polygraph CombinedDescriptor: per-descriptor
-    StandardScaler + PCA, both fit on the first call (reference data).
+    StandardScaler + optional PCA, both fit on the first call (reference data).
+
+    Set ``max_features=None`` to skip PCA (e.g. when using TabPFN v2.5 which
+    handles high-dimensional inputs natively).
     """
 
-    def __init__(self, descriptors: Dict, max_features: int = 500,
+    def __init__(self, descriptors: Dict, max_features: Optional[int] = 500,
                  dataset_size: Optional[int] = None):
         self.descriptors = descriptors
-        n_components = max_features
-        if dataset_size is not None:
-            n_components = min(max_features, dataset_size)
-        self._pca = PCA(n_components=n_components)
+        self._use_pca = max_features is not None
+        if self._use_pca:
+            n_components = max_features
+            if dataset_size is not None:
+                n_components = min(max_features, dataset_size)
+            self._pca = PCA(n_components=n_components)
         self._scalers: Dict[str, StandardScaler] = {}
         self._fitted = False
 
@@ -78,13 +83,16 @@ class ConcatenatedDescriptor:
             features.append(feat)
 
         concatenated = np.concatenate(features, axis=1)
+        if not self._use_pca:
+            self._fitted = True
+            return concatenated
         if not self._fitted:
             self._pca.fit(concatenated)
             self._fitted = True
         return self._pca.transform(concatenated)
 
 
-def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset: bool = False) -> Dict:
+def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset: bool = False, classifier=None) -> Dict:
     """Compute standard PGD (max over individual descriptors, TabPFN classifier)."""
     from polygraph.metrics import StandardPGDInterval
 
@@ -102,6 +110,7 @@ def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset:
         reference_graphs,
         subsample_size=subsample_size,
         num_samples=num_samples,
+        classifier=classifier,
     )
     result = metric.compute(generated_graphs)
 
@@ -111,7 +120,7 @@ def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset:
     }
 
 
-def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, subset: bool = False) -> Dict:
+def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, subset: bool = False, classifier=None, use_pca: bool = True) -> Dict:
     """Compute concatenated PGD (all descriptors as one feature vector)."""
 
     from polygraph.metrics.base import PolyGraphDiscrepancyInterval
@@ -152,7 +161,7 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
         }
     dataset_size = min(len(reference_graphs), len(generated_graphs))
     concat_desc = ConcatenatedDescriptor(
-        desc_dict, max_features=500, dataset_size=dataset_size,
+        desc_dict, max_features=500 if use_pca else None, dataset_size=dataset_size,
     )
 
     metric = PolyGraphDiscrepancyInterval(
@@ -161,7 +170,7 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
         subsample_size=subsample_size,
         num_samples=num_samples,
         variant="jsd",
-        classifier=None,
+        classifier=classifier,
     )
 
     result = metric.compute(generated_graphs)
@@ -176,12 +185,25 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
 def main(cfg: DictConfig) -> None:
     """Compute concatenation metrics for one (dataset, model) pair and save as JSON."""
     results_suffix: str = cfg.get("results_suffix", "")
+    tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
     RESULTS_DIR = _RESULTS_DIR_BASE / f"concatenation{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = cfg.dataset
     model = cfg.model
     subset = cfg.subset
+
+    if tabpfn_weights_version == "v2":
+        from tabpfn import TabPFNClassifier
+        from tabpfn.classifier import ModelVersion
+        classifier = TabPFNClassifier.create_default_for_version(
+            ModelVersion.V2, device="auto", n_estimators=4,
+        )
+    else:
+        classifier = None  # default (v2.5)
+
+    # V2.5 handles high-dimensional inputs natively; skip PCA
+    use_pca = tabpfn_weights_version != "v2.5"
 
     logger.info("Computing concatenation ablation for {}/{}", model, dataset)
 
@@ -221,16 +243,17 @@ def main(cfg: DictConfig) -> None:
         "dataset": dataset,
         "model": model,
         "tabpfn_package_version": pkg_version("tabpfn"),
+        "tabpfn_weights_version": tabpfn_weights_version,
     }
 
     try:
-        std_results = compute_pgs_standard(reference_graphs, generated_graphs, subset=subset)
+        std_results = compute_pgs_standard(reference_graphs, generated_graphs, subset=subset, classifier=classifier)
         result.update(std_results)
     except Exception as e:
         logger.error("Error computing standard PGD for {}/{}: {}", model, dataset, e)
 
     try:
-        cat_results = compute_pgs_concatenated(reference_graphs, generated_graphs, subset=subset)
+        cat_results = compute_pgs_concatenated(reference_graphs, generated_graphs, subset=subset, classifier=classifier, use_pca=use_pca)
         result.update(cat_results)
     except Exception as e:
         logger.error("Error computing concatenated PGD for {}/{}: {}", model, dataset, e)

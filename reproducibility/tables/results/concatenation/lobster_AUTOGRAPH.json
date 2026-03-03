@@ -1,8 +1,0 @@
-{
-  "dataset": "lobster",
-  "model": "AUTOGRAPH",
-  "pgs_standard_mean": 0.16437363624572754,
-  "pgs_standard_std": 0.017287802184627967,
-  "pgs_concatenated_mean": 0.2892992585897446,
-  "pgs_concatenated_std": 0.017143897516320155
-}

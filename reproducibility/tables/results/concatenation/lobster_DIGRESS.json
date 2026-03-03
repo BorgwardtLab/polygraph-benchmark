@@ -1,8 +1,0 @@
-{
-  "dataset": "lobster",
-  "model": "DIGRESS",
-  "pgs_standard_mean": 0.04123058365657926,
-  "pgs_standard_std": 0.029998897981440068,
-  "pgs_concatenated_mean": 0.44555577337741853,
-  "pgs_concatenated_std": 0.01034950087108771
-}

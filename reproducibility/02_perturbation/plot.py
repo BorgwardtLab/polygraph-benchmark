@@ -19,6 +19,7 @@ Usage:
 """
 
 import json
+from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -38,8 +39,8 @@ RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / "r
 OUTPUT_DIR = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation"
 STYLE_FILE = Path(__file__).resolve().parent.parent / "polygraph.mplstyle"
 
-DATASETS = ["sbm", "planar", "lobster", "proteins", "ego"]
-PERTURBATIONS = ["edge_rewiring", "edge_swapping", "mixing", "edge_deletion", "edge_addition"]
+DATASETS = ["planar", "lobster", "proteins", "sbm", "ego"]
+PERTURBATIONS = ["edge_deletion", "edge_rewiring", "edge_swapping", "mixing", "edge_addition"]
 
 DATASET_DISPLAY = {
     "sbm": "SBM",
@@ -88,11 +89,28 @@ MMD_DISPLAY = {
 }
 
 
+def _to_hex(color):
+    """Convert matplotlib color tuple to hex string."""
+    if isinstance(color, str):
+        return color
+    if hasattr(color, "__len__") and len(color) >= 3:
+        return f"#{int(color[0]*255):02x}{int(color[1]*255):02x}{int(color[2]*255):02x}"
+    return "#000000"
+
+
 def setup_plotting():
     if STYLE_FILE.exists():
         plt.style.use(str(STYLE_FILE))
     sns.set_style("ticks")
     sns.set_palette("colorblind")
+    # Override font sizes to match original notebook
+    plt.rcParams.update({
+        "axes.labelsize": 14,
+        "axes.titlesize": 15,
+        "legend.fontsize": 12,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+    })
 
 
 def load_all_results() -> Dict[Tuple[str, str], dict]:
@@ -148,7 +166,13 @@ def _build_long_df(
                 base[mmd_key] = result_row.get(mmd_key, np.nan)
 
             rows.append(base)
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    # Enforce ordering matching the original paper
+    ds_order = [DATASET_DISPLAY.get(d, d) for d in DATASETS]
+    pt_order = [PERTURBATION_DISPLAY.get(p, p) for p in PERTURBATIONS]
+    df["Dataset"] = pd.Categorical(df["Dataset"], categories=ds_order, ordered=True)
+    df["Perturbation"] = pd.Categorical(df["Perturbation"], categories=pt_order, ordered=True)
+    return df
 
 
 def _find_saturation_threshold(df_subset: pd.DataFrame) -> float:
@@ -187,7 +211,7 @@ def _compute_spearman(series: pd.Series, noise: pd.Series) -> float:
 def plot_correlation_bars(
     all_data: Dict, classifier: str, variant: str, output_dir: Path,
 ) -> None:
-    """Generate correlation bar chart (one per variant)."""
+    """Generate correlation jitter plot: one subplot per perturbation, dots per dataset."""
     df = _build_long_df(all_data, classifier, variant)
     if df.empty:
         logger.warning("No data for correlation plot: clf={}, var={}", classifier, variant)
@@ -195,40 +219,54 @@ def plot_correlation_bars(
 
     df_cropped = _crop_df(df)
 
-    metric_cols = [f"PGS_{d}" for d in DESCRIPTORS] + ["PGS"] + MMD_METRICS
-    metric_labels = (
-        [DESCRIPTOR_DISPLAY[d] for d in DESCRIPTORS]
-        + ["PGS (agg.)"]
-        + [MMD_DISPLAY[m] for m in MMD_METRICS]
-    )
+    # Metrics matching the paper: 5 RBF MMD + aggregate PGD
+    metric_cols = ["orbit_rbf", "degree_rbf", "spectral_rbf", "clustering_rbf", "gin_rbf", "PGS"]
+    metric_labels = ["Orbit RBF", "Deg. RBF", "Spec. RBF", "Clust. RBF", "GIN RBF", "PGD"]
 
-    correlations = []
-    for (ds, pert), group in df_cropped.groupby(["dataset", "perturbation"]):
-        noise = group["noise_level"]
-        for col, label in zip(metric_cols, metric_labels):
-            rho = _compute_spearman(group[col], noise)
-            correlations.append({
-                "Metric": label,
-                "Dataset": DATASET_DISPLAY.get(ds, ds),
-                "Perturbation": PERTURBATION_DISPLAY.get(pert, pert),
-                "Spearman ρ": rho,
-            })
+    # Descriptor-based coloring (matching paper's to_descriptor_color)
+    cb = sns.color_palette("colorblind")
+    metric_colors = {
+        "orbit_rbf": cb[0],
+        "degree_rbf": cb[1],
+        "spectral_rbf": cb[2],
+        "clustering_rbf": cb[3],
+        "gin_rbf": cb[4],
+        "PGS": "black",
+    }
 
-    corr_df = pd.DataFrame(correlations).dropna(subset=["Spearman ρ"])
-    if corr_df.empty:
+    present_perts = [p for p in PERTURBATIONS if PERTURBATION_DISPLAY[p] in df_cropped["Perturbation"].unique()]
+    present_datasets = [d for d in DATASETS if DATASET_DISPLAY[d] in df_cropped["Dataset"].unique()]
+    n_plots = len(present_perts)
+    if n_plots == 0:
         return
 
-    fig, ax = plt.subplots(figsize=(8, 3.5))
-    order = metric_labels
-    present = [m for m in order if m in corr_df["Metric"].unique()]
-    sns.boxplot(
-        data=corr_df, x="Metric", y="Spearman ρ", order=present,
-        ax=ax, palette="colorblind", linewidth=0.8, fliersize=2,
-    )
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", fontsize=7)
-    ax.set_ylabel("Spearman ρ")
-    ax.set_xlabel("")
-    ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.5)
+    fig, axes = plt.subplots(1, n_plots, figsize=(15, 3))
+    if n_plots == 1:
+        axes = [axes]
+
+    for i, pert in enumerate(present_perts):
+        ax = axes[i]
+        ax.set_xticks(range(len(metric_cols)))
+        ax.set_xticklabels(metric_labels, rotation=45)
+        ax.set_ylim(-0.1, 1.1)
+        ax.set_title(PERTURBATION_DISPLAY[pert])
+        if i == 0:
+            ax.set_ylabel("Spearman Corr.")
+
+        for j, col in enumerate(metric_cols):
+            xs, ys = [], []
+            for k, ds in enumerate(present_datasets):
+                group = df_cropped[
+                    (df_cropped["perturbation"] == pert) & (df_cropped["dataset"] == ds)
+                ]
+                if group.empty:
+                    continue
+                rho = _compute_spearman(group[col], group["noise_level"])
+                x_offset = k / len(present_datasets) * 0.6 - 0.3
+                xs.append(j + x_offset)
+                ys.append(rho if np.isfinite(rho) else 0)
+            ax.scatter(xs, ys, color=metric_colors[col], s=15)
+
     sns.despine()
     plt.tight_layout()
 
@@ -251,86 +289,119 @@ def plot_metrics_vs_noise(
     cropped: bool,
     output_dir: Path,
 ) -> None:
-    """Generate faceted grid: rows=perturbation, cols=dataset, lines=descriptor PGS."""
+    """Faceted scatter grid matching paper: row=dataset, col=perturbation."""
     df = _build_long_df(all_data, classifier, variant)
     if df.empty:
         logger.warning("No data for metrics_vs_noise: clf={}, var={}", classifier, variant)
         return
 
-    if cropped:
-        df = _crop_df(df)
+    # Note: don't remove data points for cropped/full - both plot all noise levels.
+    # In the original paper, "cropped" vs "full" refers to different experimental
+    # data sets, not filtering. Both have 100 noise levels plotted.
 
-    palette = sns.color_palette("colorblind", n_colors=len(DESCRIPTORS) + 1)
-    color_map = {DESCRIPTOR_DISPLAY[d]: palette[i] for i, d in enumerate(DESCRIPTORS)}
-    color_map["PGS (agg.)"] = palette[len(DESCRIPTORS)]
+    # Descriptor colors matching original to_descriptor_color
+    cb = sns.color_palette("colorblind")
+    desc_colors = {
+        "orbit": cb[0], "degree": cb[1], "spectral": cb[2],
+        "clustering": cb[3], "gin": cb[4], "orbit5": cb[5],
+    }
 
-    present_perts = [p for p in PERTURBATIONS if PERTURBATION_DISPLAY[p] in df["Perturbation"].unique()]
-    present_datasets = [d for d in DATASETS if DATASET_DISPLAY[d] in df["Dataset"].unique()]
+    # Metrics: per-descriptor PGS + aggregate (with markers matching paper)
+    metrics = OrderedDict([
+        (f"PGS_orbit", ("Orbit PGD", "o")),
+        (f"PGS_orbit5", ("Orbit5 PGD", "s")),
+        (f"PGS_degree", ("Degree PGD", "D")),
+        (f"PGS_spectral", ("Spectral PGD", "p")),
+        (f"PGS_clustering", ("Clustering PGD", "X")),
+        (f"PGS_gin", ("GIN PGD", "P")),
+        ("PGS", ("PGD", "*")),
+    ])
 
-    n_rows = len(present_perts)
-    n_cols = len(present_datasets)
-    if n_rows == 0 or n_cols == 0:
+    # Correlation per (dataset, perturbation)
+    corr_map = {}
+    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):
+        corr_map[(ds, pert)] = _compute_spearman(group["PGS"], group["noise_level"])
+
+    # Build long-form scatter DataFrame
+    plot_rows = []
+    for _, row in df.iterrows():
+        ds, pert = row["dataset"], row["perturbation"]
+        corr = corr_map.get((ds, pert), np.nan)
+        for col, (label, _) in metrics.items():
+            val = row.get(col, np.nan)
+            if pd.notna(val):
+                plot_rows.append({
+                    "dataset": row["Dataset"],
+                    "perturbation": row["Perturbation"],
+                    "metric": label,
+                    "noise_level": row["noise_level"],
+                    "metric_value": val,
+                    "correlation": corr,
+                })
+
+    plot_df = pd.DataFrame(plot_rows)
+    if plot_df.empty:
         return
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(2.5 * n_cols, 2 * n_rows), squeeze=False)
+    # Enforce facet ordering matching the original paper
+    ds_order = [DATASET_DISPLAY.get(d, d) for d in DATASETS]
+    pt_order = [PERTURBATION_DISPLAY.get(p, p) for p in PERTURBATIONS]
+    plot_df["dataset"] = pd.Categorical(plot_df["dataset"], categories=ds_order, ordered=True)
+    plot_df["perturbation"] = pd.Categorical(plot_df["perturbation"], categories=pt_order, ordered=True)
 
-    for i, pert in enumerate(present_perts):
-        for j, ds in enumerate(present_datasets):
-            ax = axes[i, j]
-            subset = df[
-                (df["perturbation"] == pert) & (df["dataset"] == ds)
-            ].sort_values("noise_level")
+    # Color and marker maps keyed by display label
+    color_map = {}
+    marker_map = {}
+    for col, (label, marker) in metrics.items():
+        marker_map[label] = marker
+        if col == "PGS":
+            color_map[label] = "#000000"
+        else:
+            desc = col.replace("PGS_", "")
+            color_map[label] = _to_hex(desc_colors.get(desc, "black"))
 
-            if subset.empty:
-                ax.set_visible(False)
-                continue
+    g = sns.relplot(
+        data=plot_df,
+        x="noise_level",
+        y="metric_value",
+        col="perturbation",
+        row="dataset",
+        hue="metric",
+        style="metric",
+        kind="scatter",
+        markers=marker_map,
+        height=3,
+        aspect=0.8,
+        s=20,
+        alpha=0.8,
+        palette=color_map,
+        facet_kws={"margin_titles": True, "sharex": False},
+    )
 
-            noise = subset["noise_level"].values
+    g.set_xlabels("Noise Level")
+    g.set_ylabels("PGD")
+    g.set(ylim=(-0.1, 1.05))
+    g.set_titles(row_template="{row_name}", col_template="{col_name}")
 
-            for desc in DESCRIPTORS:
-                col = f"PGS_{desc}"
-                if col in subset.columns:
-                    vals = subset[col].values
-                    ax.plot(noise, vals, linewidth=1, alpha=0.7,
-                            color=color_map[DESCRIPTOR_DISPLAY[desc]],
-                            label=DESCRIPTOR_DISPLAY[desc])
+    # Add correlation annotation in subplot titles (matching paper)
+    for (row_val, col_val), ax in g.axes_dict.items():
+        sub = plot_df[(plot_df["dataset"] == row_val) & (plot_df["perturbation"] == col_val)]
+        if not sub.empty:
+            corr = sub.iloc[0]["correlation"]
+            title = ax.get_title()
+            if not np.isnan(corr):
+                ax.set_title(f"{title}\nPGD ρ = {corr:.2f}")
 
-            agg = subset["PGS"].values
-            ax.plot(noise, agg, linewidth=2, color=color_map["PGS (agg.)"],
-                    label="PGS (agg.)")
-
-            if cropped:
-                rho = _compute_spearman(pd.Series(agg), pd.Series(noise))
-                if not np.isnan(rho):
-                    ax.text(0.95, 0.05, f"ρ={rho:.2f}", transform=ax.transAxes,
-                            ha="right", va="bottom", fontsize=7,
-                            bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.8))
-
-            ax.set_ylim(-0.05, 1.05)
-
-            if i == 0:
-                ax.set_title(DATASET_DISPLAY[ds], fontsize=9)
-            if j == 0:
-                ax.set_ylabel(PERTURBATION_DISPLAY[pert], fontsize=8)
-            if i == n_rows - 1:
-                ax.set_xlabel("Noise Level", fontsize=8)
-
-            ax.tick_params(labelsize=7)
-            sns.despine(ax=ax)
-
-    handles, labels = axes[0, 0].get_legend_handles_labels()
-    if handles:
-        fig.legend(handles, labels, loc="lower center", ncol=min(7, len(handles)),
-                   fontsize=7, frameon=False, bbox_to_anchor=(0.5, -0.02))
-
-    fig.subplots_adjust(hspace=0.4, wspace=0.3, bottom=0.08)
+    sns.move_legend(g, "lower center", bbox_to_anchor=(0.5, 0.01), ncol=4,
+                    title="Metric", title_fontsize=13)
+    plt.tight_layout(rect=[0, 0.06, 1, 1])
 
     variant_label = "jsd" if variant == "jsd" else "informedness"
     crop_label = "cropped" if cropped else "full"
     fname = f"metrics_vs_noise_level_{variant_label}_{classifier}_{crop_label}.pdf"
     out = output_dir / fname
-    fig.savefig(str(out), bbox_inches="tight")
-    plt.close(fig)
+    g.savefig(str(out), bbox_inches="tight")
+    plt.close(g.figure)
     logger.success("Saved: {}", out)
 
 
@@ -341,7 +412,7 @@ def plot_metrics_vs_noise(
 def plot_lr_vs_tabpfn(
     all_data: Dict, variant: str, output_dir: Path,
 ) -> None:
-    """Generate LR vs TabPFN comparison on cropped range."""
+    """LR vs TabPFN scatter comparison matching the paper."""
     df_tabpfn = _build_long_df(all_data, "tabpfn", variant)
     df_lr = _build_long_df(all_data, "lr", variant)
 
@@ -349,75 +420,93 @@ def plot_lr_vs_tabpfn(
         logger.warning("Missing data for LR vs TabPFN comparison")
         return
 
-    df_tabpfn = _crop_df(df_tabpfn)
-    df_lr_cropped = df_lr[
-        df_lr.set_index(["dataset", "perturbation", "noise_level"]).index.isin(
-            df_tabpfn.set_index(["dataset", "perturbation", "noise_level"]).index
-        )
-    ]
+    cb = sns.color_palette("colorblind")
 
-    palette = sns.color_palette("colorblind")
+    # Build scatter DataFrame (matching original: LR=colors[0], TabPFN=colors[1])
+    plot_rows = []
+    for _, row in df_lr.iterrows():
+        plot_rows.append({
+            "dataset": row["Dataset"],
+            "perturbation": row["Perturbation"],
+            "metric": "LR PGD",
+            "noise_level": row["noise_level"],
+            "metric_value": row["PGS"],
+        })
+    for _, row in df_tabpfn.iterrows():
+        plot_rows.append({
+            "dataset": row["Dataset"],
+            "perturbation": row["Perturbation"],
+            "metric": "TABPFN PGD",
+            "noise_level": row["noise_level"],
+            "metric_value": row["PGS"],
+        })
 
-    present_perts = [p for p in PERTURBATIONS if PERTURBATION_DISPLAY[p] in df_tabpfn["Perturbation"].unique()]
-    present_datasets = [d for d in DATASETS if DATASET_DISPLAY[d] in df_tabpfn["Dataset"].unique()]
-
-    n_rows = len(present_perts)
-    n_cols = len(present_datasets)
-    if n_rows == 0 or n_cols == 0:
+    plot_df = pd.DataFrame(plot_rows)
+    if plot_df.empty:
         return
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(2.5 * n_cols, 2 * n_rows), squeeze=False)
+    # Enforce facet ordering matching the original paper
+    ds_order = [DATASET_DISPLAY.get(d, d) for d in DATASETS]
+    pt_order = [PERTURBATION_DISPLAY.get(p, p) for p in PERTURBATIONS]
+    plot_df["dataset"] = pd.Categorical(plot_df["dataset"], categories=ds_order, ordered=True)
+    plot_df["perturbation"] = pd.Categorical(plot_df["perturbation"], categories=pt_order, ordered=True)
 
-    for i, pert in enumerate(present_perts):
-        for j, ds in enumerate(present_datasets):
-            ax = axes[i, j]
-            sub_t = df_tabpfn[
-                (df_tabpfn["perturbation"] == pert) & (df_tabpfn["dataset"] == ds)
-            ].sort_values("noise_level")
-            sub_l = df_lr_cropped[
-                (df_lr_cropped["perturbation"] == pert) & (df_lr_cropped["dataset"] == ds)
-            ].sort_values("noise_level")
+    markers = {"LR PGD": "o", "TABPFN PGD": "X"}
+    colors = {"LR PGD": _to_hex(cb[0]), "TABPFN PGD": _to_hex(cb[1])}
 
-            if sub_t.empty:
-                ax.set_visible(False)
-                continue
+    g = sns.relplot(
+        data=plot_df,
+        x="noise_level",
+        y="metric_value",
+        col="perturbation",
+        row="dataset",
+        hue="metric",
+        style="metric",
+        kind="scatter",
+        markers=markers,
+        height=3,
+        aspect=0.8,
+        s=20,
+        alpha=0.8,
+        palette=colors,
+        facet_kws={"margin_titles": True, "sharex": False},
+    )
 
-            ax.plot(sub_t["noise_level"].values, sub_t["PGS"].values,
-                    linewidth=1.5, color=palette[0], label="PGD (TabPFN)")
-            if not sub_l.empty:
-                ax.plot(sub_l["noise_level"].values, sub_l["PGS"].values,
-                        linewidth=1.5, color=palette[1], linestyle="--", label="LR PGD")
+    g.set_xlabels("Noise Level")
+    g.set_ylabels("PGD")
+    g.set(ylim=(-0.1, 1.05))
+    g.set_titles(row_template="{row_name}", col_template="{col_name}")
 
-            ax.set_ylim(-0.05, 1.05)
-
-            if i == 0:
-                ax.set_title(DATASET_DISPLAY[ds], fontsize=9)
-            if j == 0:
-                ax.set_ylabel(PERTURBATION_DISPLAY[pert], fontsize=8)
-            if i == n_rows - 1:
-                ax.set_xlabel("Noise Level", fontsize=8)
-
-            ax.tick_params(labelsize=7)
-            sns.despine(ax=ax)
-
-    handles, labels = axes[0, 0].get_legend_handles_labels()
-    if handles:
-        fig.legend(handles, labels, loc="lower center", ncol=2,
-                   fontsize=8, frameon=False, bbox_to_anchor=(0.5, -0.02))
-
-    fig.subplots_adjust(hspace=0.4, wspace=0.3, bottom=0.08)
+    sns.move_legend(g, "lower center", bbox_to_anchor=(0.5, 0.01), ncol=2,
+                    title="Metric", title_fontsize=13)
+    plt.tight_layout(rect=[0, 0.06, 1, 1])
 
     variant_label = "jsd" if variant == "jsd" else "informedness"
     fname = f"lr_vs_tabpfn_cropped_{variant_label}.pdf"
     out = output_dir / fname
-    fig.savefig(str(out), bbox_inches="tight")
-    plt.close(fig)
+    g.savefig(str(out), bbox_inches="tight")
+    plt.close(g.figure)
     logger.success("Saved: {}", out)
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
+def _load_results_dir(results_dir: Path) -> Dict[Tuple[str, str], dict]:
+    """Load all perturbation JSON results from a directory."""
+    data = {}
+    if not results_dir.exists():
+        return data
+    for f in sorted(results_dir.glob("perturbation_*.json")):
+        try:
+            d = json.loads(f.read_text())
+            key = (d["dataset"], d["perturbation"])
+            data[key] = d
+        except Exception as e:
+            logger.warning("Skipping {}: {}", f.name, e)
+    return data
+
 
 @app.command()
 def main(
@@ -431,7 +520,10 @@ def main(
     setup_plotting()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    results_dir = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / f"results{results_suffix}"
+    # Full-range results (noise in [0, 1])
+    results_dir_full = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / f"results{results_suffix}"
+    # Cropped results (noise up to PGS saturation, dense sampling)
+    results_dir_cropped = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / "results_cropped"
 
     import tempfile, shutil
     use_tmp = bool(results_suffix)
@@ -440,31 +532,27 @@ def main(
     if use_tmp:
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load from the (possibly suffixed) results dir
-    data = {}
-    if not results_dir.exists():
-        logger.error("No perturbation results found in {}. Run compute.py first.", results_dir)
-        return
-    for f in sorted(results_dir.glob("perturbation_*.json")):
-        try:
-            d = json.loads(f.read_text())
-            key = (d["dataset"], d["perturbation"])
-            data[key] = d
-        except Exception as e:
-            logger.warning("Skipping {}: {}", f.name, e)
-    if not data:
-        logger.error("No perturbation results found in {}", results_dir)
+    data_full = _load_results_dir(results_dir_full)
+    data_cropped = _load_results_dir(results_dir_cropped)
+
+    if not data_full:
+        logger.error("No full-range results found in {}. Run compute.py first.", results_dir_full)
         return
 
-    logger.info("Loaded {} result files from {}", len(data), results_dir)
+    # Fall back to full data if cropped data is unavailable
+    if not data_cropped:
+        logger.warning("No cropped results found in {}; using full data for cropped plots.", results_dir_cropped)
+        data_cropped = data_full
+
+    logger.info("Loaded {} full + {} cropped result files", len(data_full), len(data_cropped))
 
     for variant in ["jsd", "informedness"]:
-        plot_correlation_bars(data, "tabpfn", variant, output_dir)
-        plot_metrics_vs_noise(data, "tabpfn", variant, cropped=False, output_dir=output_dir)
-        plot_metrics_vs_noise(data, "tabpfn", variant, cropped=True, output_dir=output_dir)
+        plot_correlation_bars(data_cropped, "tabpfn", variant, output_dir)
+        plot_metrics_vs_noise(data_full, "tabpfn", variant, cropped=False, output_dir=output_dir)
+        plot_metrics_vs_noise(data_cropped, "tabpfn", variant, cropped=True, output_dir=output_dir)
 
     for variant in ["jsd", "informedness"]:
-        plot_lr_vs_tabpfn(data, variant, output_dir)
+        plot_lr_vs_tabpfn(data_cropped, variant, output_dir)
 
     # Copy from temp dir with suffixed filenames
     if use_tmp and tmp_dir:

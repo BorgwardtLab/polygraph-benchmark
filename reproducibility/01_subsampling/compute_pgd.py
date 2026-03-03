@@ -32,6 +32,17 @@ from polygraph.utils.io import (
     maybe_append_reproducibility_jsonl as maybe_append_jsonl,
 )
 
+
+def _make_tabpfn_classifier(weights_version: str):
+    """Create a TabPFN classifier for the given weights version, or None for default."""
+    if weights_version == "v2":
+        from tabpfn import TabPFNClassifier
+        from tabpfn.classifier import ModelVersion
+        return TabPFNClassifier.create_default_for_version(
+            ModelVersion.V2, device="auto", n_estimators=4,
+        )
+    return None  # default (v2.5)
+
 # ---------------------------------------------------------------------------
 # Paths (resolved before Hydra touches CWD; we disable chdir in the config)
 # ---------------------------------------------------------------------------
@@ -99,6 +110,7 @@ def get_reference_dataset(
 def main(cfg: DictConfig) -> None:
     """Compute PGD for one (dataset, model, subsample_size) cell."""
     results_suffix: str = cfg.get("results_suffix", "")
+    tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
     RESULTS_DIR = EXPERIMENT_RESULTS_DIR / f"{Path(__file__).stem}{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -106,6 +118,7 @@ def main(cfg: DictConfig) -> None:
     model: str = cfg.model
     subsample_size: int = cfg.subsample_size
     num_bootstrap: int = 3 if cfg.subset else cfg.num_bootstrap
+    classifier = _make_tabpfn_classifier(tabpfn_weights_version)
 
     logger.info(
         "PGD subsampling: dataset={}, model={}, n={}, bootstraps={}",
@@ -136,7 +149,7 @@ def main(cfg: DictConfig) -> None:
     try:
         if model == "test":
             generated_graphs = get_reference_dataset(
-                dataset, split="test", num_graphs=subsample_size
+                dataset, split="test", num_graphs=max(subsample_size * 10, 512)
             )
         else:
             generated_graphs = load_graphs(model, dataset)
@@ -195,6 +208,7 @@ def main(cfg: DictConfig) -> None:
             reference_graphs=reference_graphs,
             subsample_size=min(subsample_size, len(generated_graphs)),
             num_samples=num_bootstrap,
+            classifier=classifier,
         )
         result = metric.compute(generated_graphs)
         pgd_runtime_perf_seconds = round(time.perf_counter() - metric_start, 6)
@@ -209,6 +223,7 @@ def main(cfg: DictConfig) -> None:
             "pgd_runtime_seconds": pgd_runtime_perf_seconds,
             "pgd_runtime_perf_seconds": pgd_runtime_perf_seconds,
             "tabpfn_package_version": pkg_version("tabpfn"),
+            "tabpfn_weights_version": tabpfn_weights_version,
         }
         if result["pgd"].low is not None:
             output["pgd_low"] = float(result["pgd"].low)

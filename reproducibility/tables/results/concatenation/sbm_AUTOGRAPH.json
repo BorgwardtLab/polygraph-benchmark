@@ -1,8 +1,0 @@
-{
-  "dataset": "sbm",
-  "model": "AUTOGRAPH",
-  "pgs_standard_mean": 0.05840279497206211,
-  "pgs_standard_std": 0.012135827346156891,
-  "pgs_concatenated_mean": 0.29406298995018004,
-  "pgs_concatenated_std": 0.012471165314829228
-}

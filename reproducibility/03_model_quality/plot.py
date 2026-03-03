@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -56,6 +57,14 @@ def setup_plotting():
         plt.style.use(str(STYLE_FILE))
     sns.set_style("ticks")
     sns.set_palette("colorblind")
+    # Override font sizes to match original notebook
+    plt.rcParams.update({
+        "axes.labelsize": 11,
+        "axes.titlesize": 12,
+        "legend.fontsize": 9,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+    })
 
 
 def load_results(curve_type: str, dataset: str, variant: str) -> Optional[pd.DataFrame]:
@@ -70,83 +79,140 @@ def load_results(curve_type: str, dataset: str, variant: str) -> Optional[pd.Dat
     return pd.DataFrame(data["results"])
 
 
-def _metric_columns(df: pd.DataFrame) -> List[str]:
-    """Return the list of metric columns present in the data."""
-    cols = []
-    if "validity" in df.columns:
-        cols.append("validity")
-    if "polyscore" in df.columns:
-        cols.append("polyscore")
-    for k in MMD_KEYS:
-        if k in df.columns:
-            cols.append(k)
-    return cols
-
-
-def _metric_label(col: str) -> str:
-    if col == "validity":
-        return "Validity"
-    if col == "polyscore":
-        return "PGS"
-    return MMD_DISPLAY.get(col, col)
-
 
 def _plot_multi_panel(
     data_dict: Dict[str, pd.DataFrame],
     x_label: str,
     output_path: Path,
-    figwidth_per_col: float = 2.2,
-    figheight_per_row: float = 1.8,
+    pgd_label: str = "PGD",
 ) -> None:
-    """Create a multi-panel figure: rows=datasets, cols=metrics."""
-    all_cols = set()
-    for df in data_dict.values():
-        all_cols.update(_metric_columns(df))
-
-    col_order = []
-    for c in ["validity", "polyscore"] + MMD_KEYS:
-        if c in all_cols:
-            col_order.append(c)
-
+    """Create a multi-panel figure matching the paper: columns for Validity, PGD (if available), MMD twinx."""
     datasets = list(data_dict.keys())
-    n_rows = len(datasets)
-    n_cols = len(col_order)
-
-    if n_rows == 0 or n_cols == 0:
+    n_datasets = len(datasets)
+    if n_datasets == 0:
         return
 
+    single = n_datasets == 1
     palette = sns.color_palette("colorblind")
-    fig, axes = plt.subplots(
-        n_rows, n_cols,
-        figsize=(figwidth_per_col * n_cols, figheight_per_row * n_rows),
-        squeeze=False,
-    )
+    descriptor_colors = {
+        "orbit": palette[0],
+        "degree": palette[1],
+        "spectral": palette[2],
+        "clustering": palette[3],
+        "gin": palette[4],
+    }
+    mmd_metrics = ["orbit_mmd", "degree_mmd", "spectral_mmd", "clustering_mmd", "gin_mmd"]
+
+    # Determine if polyscore is available in any dataset
+    has_polyscore = any("polyscore" in df.columns for df in data_dict.values())
+    n_cols = 3 if has_polyscore else 2
+
+    if single:
+        fig, axes = plt.subplots(1, n_cols, figsize=(8 if has_polyscore else 5.5, 1.6), squeeze=False)
+    else:
+        fig, axes = plt.subplots(n_datasets, n_cols, figsize=(8 if has_polyscore else 5.5, n_datasets * 1.5), squeeze=False)
+
+    # Build legend elements
+    legend_elements = [
+        Line2D([0], [0], color="#7e9ef7", lw=2, label="Validity"),
+    ]
+    if has_polyscore:
+        legend_elements.append(Line2D([0], [0], color="black", lw=2, label=pgd_label))
+    for metric in mmd_metrics:
+        desc = metric.replace("_mmd", "")
+        color = descriptor_colors.get(desc, "black")
+        legend_elements.append(
+            Line2D([0], [0], color=color, lw=2, label=f"{desc.title()} RBF")
+        )
 
     for i, ds in enumerate(datasets):
         df = data_dict[ds].sort_values("steps")
         steps = df["steps"].values
+        label = DATASET_DISPLAY.get(ds, ds)
 
-        for j, metric in enumerate(col_order):
-            ax = axes[i, j]
-            if metric not in df.columns:
-                ax.set_visible(False)
-                continue
+        # Dataset label on left margin (multi-dataset only)
+        if not single and label:
+            axes[i, 0].annotate(
+                label, xy=(0, 0.5), xycoords="axes fraction",
+                xytext=(-60, 0), textcoords="offset points",
+                rotation=90, va="center", fontsize=12, fontweight="bold",
+                annotation_clip=False,
+            )
 
-            vals = df[metric].values
-            color = palette[j % len(palette)]
-            ax.plot(steps, vals, marker="o", markersize=2, linewidth=1.2, color=color)
+        col_idx = 0
 
+        # Column: Validity
+        ax_val = axes[i, col_idx]
+        ax_val.plot(steps, df["validity"].values, color="#7e9ef7")
+        ax_val.set_ylabel("Validity")
+        ax_val.set_ylim([0, 1])
+        ax_val.yaxis.set_major_locator(plt.MaxNLocator(6))
+        ax_val.xaxis.set_major_locator(plt.MaxNLocator(nbins=3, integer=True))
+        if i == 0:
+            ax_val.set_title("Validity")
+        if i == n_datasets - 1:
+            ax_val.set_xlabel(x_label)
+        col_idx += 1
+
+        # Column: PGD (only if data has it)
+        if has_polyscore:
+            ax_pgs = axes[i, col_idx]
+            if "polyscore" in df.columns:
+                ax_pgs.plot(steps, df["polyscore"].values, color="black")
+            ax_pgs.set_ylabel("PGD")
+            ax_pgs.set_ylim([0, 1])
+            ax_pgs.yaxis.set_major_locator(plt.MaxNLocator(6))
+            ax_pgs.xaxis.set_major_locator(plt.MaxNLocator(nbins=3, integer=True))
             if i == 0:
-                ax.set_title(_metric_label(metric), fontsize=9)
-            if j == 0:
-                ax.set_ylabel(DATASET_DISPLAY.get(ds, ds), fontsize=9, fontweight="bold")
-            if i == n_rows - 1:
-                ax.set_xlabel(x_label, fontsize=8)
+                ax_pgs.set_title(pgd_label)
+            if i == n_datasets - 1:
+                ax_pgs.set_xlabel(x_label)
+            col_idx += 1
 
-            ax.tick_params(labelsize=7)
-            sns.despine(ax=ax)
+        # Column: Combined MMD with twinx per metric
+        ax_mmd = axes[i, col_idx]
+        ax_mmd.set_yticks([])
+        ax_mmd.set_ylabel("MMD\u00b2")
+        ax_mmd.spines["left"].set_visible(False)
+        ax_mmd.xaxis.set_major_locator(plt.MaxNLocator(nbins=3, integer=True))
+        if i == 0:
+            ax_mmd.set_title("MMD")
+        if i == n_datasets - 1:
+            ax_mmd.set_xlabel(x_label)
 
-    fig.tight_layout()
+        present_metrics = [m for m in mmd_metrics if m in df.columns]
+        for j, metric in enumerate(present_metrics):
+            desc = metric.replace("_mmd", "")
+            color = descriptor_colors.get(desc, "black")
+            metric_data = df[metric].values
+
+            ax_twin = ax_mmd.twinx()
+            ax_twin.spines["right"].set_position(("outward", 35 * j))
+
+            max_val = np.nanmax(metric_data)
+            if max_val > 0:
+                power = int(np.floor(np.log10(max_val)))
+                scale_factor = 10 ** power
+                scaled = metric_data / scale_factor
+                ax_twin.plot(steps, scaled, color=color)
+                ax_twin.tick_params(axis="y", labelcolor=color)
+                ax_twin.yaxis.set_major_locator(plt.MaxNLocator(6))
+                ax_twin.annotate(
+                    f"$\\times 10^{{{power}}}$",
+                    xy=(1.0, 1.0), xycoords="axes fraction",
+                    xytext=(35 * j, 4), textcoords="offset points",
+                    color=color, fontsize=10, ha="center", va="bottom",
+                    annotation_clip=False,
+                )
+            else:
+                ax_twin.plot(steps, metric_data, color=color)
+                ax_twin.tick_params(axis="y", labelcolor=color)
+                ax_twin.yaxis.set_major_locator(plt.MaxNLocator(6))
+
+    fig.legend(
+        handles=legend_elements, loc="upper center",
+        bbox_to_anchor=(0.5, -0.02), ncol=4, frameon=False,
+    )
     fig.savefig(str(output_path), bbox_inches="tight")
     plt.close(fig)
     logger.success("Saved: {}", output_path)
@@ -185,6 +251,7 @@ def main(
 
     for variant in ["jsd", "informedness"]:
         variant_suffix = "jsd" if variant == "jsd" else "informedness-adaptive"
+        pgd_label = "PolyGraph Discrepancy"
 
         # Denoising figure (planar only)
         df_den = _load("denoising", "planar", variant)
@@ -192,8 +259,9 @@ def main(
             fname = f"model-quality_denoising-iterations_validity_polyscore_all_mmd_{variant_suffix}.pdf"
             _plot_multi_panel(
                 {"planar": df_den},
-                x_label="Denoising Steps",
+                x_label="# Denoising Steps",
                 output_path=output_dir / fname,
+                pgd_label=pgd_label,
             )
         else:
             logger.warning("No denoising results for planar/{}", variant)
@@ -209,16 +277,18 @@ def main(
             fname = f"all_training_epochs_{variant_suffix}.pdf"
             _plot_multi_panel(
                 training_data,
-                x_label="Training Epochs",
+                x_label="# Epochs",
                 output_path=output_dir / fname,
+                pgd_label=pgd_label,
             )
 
             if "sbm" in training_data:
                 fname_sbm = f"all_training_epochs_{variant_suffix}_sbm.pdf"
                 _plot_multi_panel(
                     {"sbm": training_data["sbm"]},
-                    x_label="Training Epochs",
+                    x_label="# Epochs",
                     output_path=output_dir / fname_sbm,
+                    pgd_label=pgd_label,
                 )
         else:
             logger.warning("No training results for {}", variant)
@@ -236,6 +306,10 @@ def main(
         paper_dir.mkdir(parents=True, exist_ok=True)
         count = 0
         for pdf in OUTPUT_DIR.glob("*.pdf"):
+            if results_suffix and results_suffix not in pdf.stem:
+                continue
+            if not results_suffix and any(s in pdf.stem for s in ["_tabpfn"]):
+                continue
             shutil.copy2(pdf, paper_dir / pdf.name)
             count += 1
         logger.success("Copied {} PDFs to {}", count, paper_dir)

@@ -330,10 +330,16 @@ def load_dataset(
 # ---------------------------------------------------------------------------
 
 
-def _make_classifier(name: str):
-    """None for TabPFN (library default), LogisticRegression for 'lr'."""
+def _make_classifier(name: str, tabpfn_weights_version: str = "v2.5"):
+    """Build a classifier by name. For TabPFN, respects weights version."""
     if name == "tabpfn":
-        return None
+        if tabpfn_weights_version == "v2":
+            from tabpfn import TabPFNClassifier
+            from tabpfn.classifier import ModelVersion
+            return TabPFNClassifier.create_default_for_version(
+                ModelVersion.V2, device="auto", n_estimators=4,
+            )
+        return None  # default (v2.5)
     elif name == "lr":
         return LogisticRegression(max_iter=1000)
     else:
@@ -344,66 +350,79 @@ def build_metrics(
     reference_graphs: List[nx.Graph],
     classifiers: List[str] = None,
     variants: List[str] = None,
+    tabpfn_weights_version: str = "v2.5",
+    tabpfn_only: bool = False,
 ) -> Dict[str, object]:
-    """Build all metrics: 10 MMD + 6 descriptors x classifiers x variants."""
+    """Build all metrics: 10 MMD + 6 descriptors x classifiers x variants.
+
+    If tabpfn_only is True, skip MMD metrics and force classifiers=["tabpfn"],
+    building only the 12 TabPFN classifier metrics.
+    """
     if classifiers is None:
         classifiers = ["tabpfn", "lr"]
     if variants is None:
         variants = ["informedness", "jsd"]
 
-    metrics: Dict[str, object] = {
-        # GaussianTV kernel (4 metrics)
-        "orbit_tv": GaussianTVOrbitMMD2(reference_graphs),
-        "degree_tv": GaussianTVDegreeMMD2(reference_graphs),
-        "spectral_tv": GaussianTVSpectralMMD2(reference_graphs),
-        "clustering_tv": GaussianTVClusteringMMD2(reference_graphs),
-        # Adaptive RBF kernel (6 metrics)
-        "orbit_rbf": RBFOrbitMMD2(reference_graphs),
-        "orbit5_rbf": MaxDescriptorMMD2(
-            reference_graphs=reference_graphs,
-            kernel=AdaptiveRBFKernel(
-                descriptor_fn=OrbitCounts(graphlet_size=5),
-                bw=_RBF_BW,
+    if tabpfn_only:
+        classifiers = ["tabpfn"]
+        logger.info("tabpfn_only=True: skipping MMD metrics, using classifiers={}", classifiers)
+
+    metrics: Dict[str, object] = {}
+
+    if not tabpfn_only:
+        metrics.update({
+            # GaussianTV kernel (4 metrics)
+            "orbit_tv": GaussianTVOrbitMMD2(reference_graphs),
+            "degree_tv": GaussianTVDegreeMMD2(reference_graphs),
+            "spectral_tv": GaussianTVSpectralMMD2(reference_graphs),
+            "clustering_tv": GaussianTVClusteringMMD2(reference_graphs),
+            # Adaptive RBF kernel (6 metrics)
+            "orbit_rbf": RBFOrbitMMD2(reference_graphs),
+            "orbit5_rbf": MaxDescriptorMMD2(
+                reference_graphs=reference_graphs,
+                kernel=AdaptiveRBFKernel(
+                    descriptor_fn=OrbitCounts(graphlet_size=5),
+                    bw=_RBF_BW,
+                ),
+                variant="biased",
             ),
-            variant="biased",
-        ),
-        "degree_rbf": RBFDegreeMMD2(reference_graphs),
-        "spectral_rbf": RBFSpectralMMD2(reference_graphs),
-        "clustering_rbf": RBFClusteringMMD2(reference_graphs),
-        "gin_rbf": RBFGraphNeuralNetworkMMD2(reference_graphs),
-    }
+            "degree_rbf": RBFDegreeMMD2(reference_graphs),
+            "spectral_rbf": RBFSpectralMMD2(reference_graphs),
+            "clustering_rbf": RBFClusteringMMD2(reference_graphs),
+            "gin_rbf": RBFGraphNeuralNetworkMMD2(reference_graphs),
+        })
 
     # Classifier metrics (6 descriptors x classifiers x variants)
     for clf_name, variant in product(classifiers, variants):
         metrics[f"orbit_{clf_name}_{variant}"] = ClassifierOrbit4Metric(
             reference_graphs,
             variant=variant,
-            classifier=_make_classifier(clf_name),
+            classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"orbit5_{clf_name}_{variant}"] = ClassifierOrbit5Metric(
             reference_graphs,
             variant=variant,
-            classifier=_make_classifier(clf_name),
+            classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"degree_{clf_name}_{variant}"] = ClassifierDegreeMetric(
             reference_graphs,
             variant=variant,
-            classifier=_make_classifier(clf_name),
+            classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"spectral_{clf_name}_{variant}"] = ClassifierSpectralMetric(
             reference_graphs,
             variant=variant,
-            classifier=_make_classifier(clf_name),
+            classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"clustering_{clf_name}_{variant}"] = ClassifierClusteringMetric(
             reference_graphs,
             variant=variant,
-            classifier=_make_classifier(clf_name),
+            classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"gin_{clf_name}_{variant}"] = GraphNeuralNetworkClassifierMetric(
             reference_graphs,
             variant=variant,
-            classifier=_make_classifier(clf_name),
+            classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
 
     return metrics
@@ -454,6 +473,7 @@ def evaluate_metrics(
 def main(cfg: DictConfig) -> None:
     """Compute perturbation metrics for one (dataset, perturbation) pair."""
     results_suffix: str = cfg.get("results_suffix", "")
+    tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
     RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -466,6 +486,7 @@ def main(cfg: DictConfig) -> None:
     subset: bool = cfg.get("subset", False)
     classifiers: List[str] = list(cfg.get("classifiers", ["tabpfn", "lr"]))
     variants: List[str] = list(cfg.get("variants", ["informedness", "jsd"]))
+    tabpfn_only: bool = cfg.get("tabpfn_only", False)
 
     if subset:
         num_graphs = 100
@@ -506,7 +527,9 @@ def main(cfg: DictConfig) -> None:
     )
 
     metrics = build_metrics(
-        reference_graphs, classifiers=classifiers, variants=variants
+        reference_graphs, classifiers=classifiers, variants=variants,
+        tabpfn_weights_version=tabpfn_weights_version,
+        tabpfn_only=tabpfn_only,
     )
     logger.info("Initialized {} metrics", len(metrics))
 
@@ -547,6 +570,8 @@ def main(cfg: DictConfig) -> None:
         "variants": variants,
         "results": all_results,
         "tabpfn_package_version": pkg_version("tabpfn"),
+        "tabpfn_weights_version": tabpfn_weights_version,
+        "tabpfn_only": tabpfn_only,
     }
 
     output_path.write_text(json.dumps(output, indent=2))

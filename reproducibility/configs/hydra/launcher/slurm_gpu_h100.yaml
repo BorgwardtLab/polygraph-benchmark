@@ -12,7 +12,8 @@ timeout_min: 1440
 nodes: 1
 tasks_per_node: 1
 cpus_per_task: 8
-gpus_per_node: 1
+gres: "gpu:h100:1"
+exclude: "hpcl9101"
 mem_gb: 32
 setup:
   - "export TABPFN_ALLOW_CPU_LARGE_DATASET=1"

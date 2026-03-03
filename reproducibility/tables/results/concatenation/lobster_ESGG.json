@@ -1,8 +1,0 @@
-{
-  "dataset": "lobster",
-  "model": "ESGG",
-  "pgs_standard_mean": 0.6988646745681762,
-  "pgs_standard_std": 0.005566797042389836,
-  "pgs_concatenated_mean": 0.7081648886203766,
-  "pgs_concatenated_std": 0.010445066139441165
-}

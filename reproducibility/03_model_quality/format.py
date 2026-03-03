@@ -262,8 +262,15 @@ def main(
     paper_dir: Optional[Path] = typer.Option(
         None, "--paper-dir", help="Copy tables into paper tables/ directory",
     ),
+    results_suffix: str = typer.Option(
+        "", "--results-suffix", help="Suffix for results dir (e.g. _tabpfn_weights_v2.5)",
+    ),
 ):
     """Generate all model quality LaTeX tables."""
+    global RESULTS_DIR
+    RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / f"results{results_suffix}"
+    logger.info("Using results dir: {}", RESULTS_DIR)
+
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
     table_map = {

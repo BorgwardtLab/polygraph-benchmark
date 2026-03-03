@@ -42,7 +42,7 @@ def get_reference_dataset(dataset: str, split: str = "test"):
     return _get_ref(dataset, split=split, num_graphs=num)
 
 
-def compute_pgs_metrics(reference_graphs: List, generated_graphs: List, dataset: str = "", subset: bool = False) -> Dict:
+def compute_pgs_metrics(reference_graphs: List, generated_graphs: List, dataset: str = "", subset: bool = False, classifier=None) -> Dict:
     """Compute PGD metrics using the polygraph library."""
     from polygraph.metrics import StandardPGDInterval
 
@@ -57,7 +57,7 @@ def compute_pgs_metrics(reference_graphs: List, generated_graphs: List, dataset:
         subsample_size = min(int(min_subset * 0.5), 2048)
         num_samples = 10
 
-    metric = StandardPGDInterval(reference_graphs, subsample_size=subsample_size, num_samples=num_samples)
+    metric = StandardPGDInterval(reference_graphs, subsample_size=subsample_size, num_samples=num_samples, classifier=classifier)
     result = metric.compute(generated_graphs)
 
     return {
@@ -105,12 +105,23 @@ def compute_vun_metrics(train_graphs: List, generated_graphs: List, dataset: str
 def main(cfg: DictConfig) -> None:
     """Compute benchmark metrics for one (dataset, model) pair and save as JSON."""
     results_suffix: str = cfg.get("results_suffix", "")
+    tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
     RESULTS_DIR = _RESULTS_DIR_BASE / f"benchmark{results_suffix}"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = cfg.dataset
     model = cfg.model
     subset = cfg.subset
+    skip_vun = cfg.get("skip_vun", False)
+
+    if tabpfn_weights_version == "v2":
+        from tabpfn import TabPFNClassifier
+        from tabpfn.classifier import ModelVersion
+        classifier = TabPFNClassifier.create_default_for_version(
+            ModelVersion.V2, device="auto", n_estimators=4,
+        )
+    else:
+        classifier = None  # default (v2.5)
 
     logger.info("Computing benchmark for {}/{}", model, dataset)
 
@@ -151,12 +162,13 @@ def main(cfg: DictConfig) -> None:
         "dataset": dataset,
         "model": model,
         "tabpfn_package_version": pkg_version("tabpfn"),
+        "tabpfn_weights_version": tabpfn_weights_version,
     }
 
     out_path = RESULTS_DIR / f"{dataset}_{model}.json"
 
     try:
-        pgs_results = compute_pgs_metrics(reference_graphs, generated_graphs, dataset=dataset, subset=subset)
+        pgs_results = compute_pgs_metrics(reference_graphs, generated_graphs, dataset=dataset, subset=subset, classifier=classifier)
         result["pgs_mean"] = pgs_results.get("polyscore_mean", float("nan"))
         result["pgs_std"] = pgs_results.get("polyscore_std", float("nan"))
         for key, value in pgs_results.get("subscores", {}).items():
@@ -169,12 +181,13 @@ def main(cfg: DictConfig) -> None:
     except Exception as e:
         logger.error("Error computing PGD for {}/{}: {}", model, dataset, e)
 
-    try:
-        vun_results = compute_vun_metrics(train_graphs, generated_graphs, dataset, subset=subset)
-        if vun_results:
-            result["vun"] = vun_results.get("valid_unique_novel_mle", float("nan"))
-    except Exception as e:
-        logger.error("Error computing VUN for {}/{}: {}", model, dataset, e)
+    if not skip_vun:
+        try:
+            vun_results = compute_vun_metrics(train_graphs, generated_graphs, dataset, subset=subset)
+            if vun_results:
+                result["vun"] = vun_results.get("valid_unique_novel", float("nan"))
+        except Exception as e:
+            logger.error("Error computing VUN for {}/{}: {}", model, dataset, e)
 
     out_path.write_text(json.dumps(result, indent=2))
     logger.success("Result saved to {}", out_path)

@@ -1,8 +1,0 @@
-{
-  "dataset": "lobster",
-  "model": "GRAN",
-  "pgs_standard_mean": 0.8569836378097534,
-  "pgs_standard_std": 0.006847157252343821,
-  "pgs_concatenated_mean": 0.8623102962970733,
-  "pgs_concatenated_std": 0.007830409414827133
-}
