@@ -1,0 +1,17 @@
+# Config for 09_train_test_reference/compute.py
+dataset: planar
+subset: false
+tabpfn_weights_version: "v2.5"
+results_suffix: ""
+
+hydra:
+  job:
+    name: exp09_train_test_ref
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: planar,lobster,sbm,proteins
