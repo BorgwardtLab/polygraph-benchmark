@@ -114,14 +114,18 @@ def main(cfg: DictConfig) -> None:
     subset = cfg.subset
     skip_vun = cfg.get("skip_vun", False)
 
-    if tabpfn_weights_version == "v2":
-        from tabpfn import TabPFNClassifier
-        from tabpfn.classifier import ModelVersion
-        classifier = TabPFNClassifier.create_default_for_version(
-            ModelVersion.V2, device="auto", n_estimators=4,
-        )
-    else:
-        classifier = None  # default (v2.5)
+    from tabpfn import TabPFNClassifier
+    from tabpfn.classifier import ModelVersion
+
+    version_map = {
+        "v2": ModelVersion.V2,
+        "v2.5": ModelVersion.V2_5,
+    }
+    if tabpfn_weights_version not in version_map:
+        raise ValueError(f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}")
+    classifier = TabPFNClassifier.create_default_for_version(
+        version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+    )
 
     logger.info("Computing benchmark for {}/{}", model, dataset)
 

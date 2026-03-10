@@ -333,13 +333,18 @@ def load_dataset(
 def _make_classifier(name: str, tabpfn_weights_version: str = "v2.5"):
     """Build a classifier by name. For TabPFN, respects weights version."""
     if name == "tabpfn":
-        if tabpfn_weights_version == "v2":
-            from tabpfn import TabPFNClassifier
-            from tabpfn.classifier import ModelVersion
-            return TabPFNClassifier.create_default_for_version(
-                ModelVersion.V2, device="auto", n_estimators=4,
-            )
-        return None  # default (v2.5)
+        from tabpfn import TabPFNClassifier
+        from tabpfn.classifier import ModelVersion
+
+        version_map = {
+            "v2": ModelVersion.V2,
+            "v2.5": ModelVersion.V2_5,
+        }
+        if tabpfn_weights_version not in version_map:
+            raise ValueError(f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}")
+        return TabPFNClassifier.create_default_for_version(
+            version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+        )
     elif name == "lr":
         return LogisticRegression(max_iter=1000)
     else:

@@ -34,14 +34,19 @@ from polygraph.utils.io import (
 
 
 def _make_tabpfn_classifier(weights_version: str):
-    """Create a TabPFN classifier for the given weights version, or None for default."""
-    if weights_version == "v2":
-        from tabpfn import TabPFNClassifier
-        from tabpfn.classifier import ModelVersion
-        return TabPFNClassifier.create_default_for_version(
-            ModelVersion.V2, device="auto", n_estimators=4,
-        )
-    return None  # default (v2.5)
+    """Create a TabPFN classifier for the given weights version."""
+    from tabpfn import TabPFNClassifier
+    from tabpfn.classifier import ModelVersion
+
+    version_map = {
+        "v2": ModelVersion.V2,
+        "v2.5": ModelVersion.V2_5,
+    }
+    if weights_version not in version_map:
+        raise ValueError(f"Unknown weights_version: {weights_version!r}. Must be one of {list(version_map)}")
+    return TabPFNClassifier.create_default_for_version(
+        version_map[weights_version], device="auto", n_estimators=4,
+    )
 
 # ---------------------------------------------------------------------------
 # Paths (resolved before Hydra touches CWD; we disable chdir in the config)
