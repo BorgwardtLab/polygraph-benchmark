@@ -1,8 +1,11 @@
-\begin{tabular}{lccccccc}
+\begin{tabular}{llcccccc}
 \toprule
-\textbf{Experiment} & \textbf{PGD} & \textbf{Orb. MMD} & \textbf{Orb5. MMD} & \textbf{Deg. MMD} & \textbf{Eig. MMD} & \textbf{Clust. MMD} & \textbf{GIN MMD} \\
+ & \textbf{Dataset} & \textbf{TV-PGD} & \textbf{Orb. RBF} & \textbf{Deg. RBF} & \textbf{Eig. RBF} & \textbf{Clust. RBF} & \textbf{GIN RBF} \\
 \midrule
-Denoising & 0.99 & 0.74 & 0.74 & 0.71 & 0.73 & 0.71 & 0.83 \\
-Training & 0.84 & 0.34 & 0.39 & 0.10 & 0.26 & 0.87 & 0.15 \\
+Denoising & \textsc{Planar-L} & \textbf{98.56} & 73.50 & 70.87 & 73.41 & 71.36 & \underline{82.52} \\
+\midrule
+\multirow{3}{*}{Training} & \textsc{Planar-L} & \textbf{95.23} & 84.32 & 59.11 & 76.47 & \underline{88.31} & 68.11 \\
+ & \textsc{SBM-L} & \textbf{85.56} & 53.22 & 6.59 & 23.49 & \underline{85.07} & 6.85 \\
+ & \textsc{Lobster-L} & \underline{70.49} & -34.65 & -35.17 & -22.95 & \textbf{87.05} & -30.55 \\
 \bottomrule
 \end{tabular}
