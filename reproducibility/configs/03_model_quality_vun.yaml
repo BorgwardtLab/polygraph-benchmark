@@ -1,0 +1,20 @@
+# Config for 03_model_quality/compute_vun.py
+# Computes VUN (Valid-Unique-Novel) for denoising-iteration checkpoints.
+dataset: planar
+num_graphs: 2048
+iso_timeout: 10
+n_workers: 8
+force: false
+results_suffix: ""
+
+hydra:
+  job:
+    name: exp03_vun
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: planar

@@ -29,6 +29,11 @@ echo ""
 echo "--- 03: Model Quality ---"
 python 03_model_quality/compute.py --multirun hydra/launcher=${GPU_LAUNCHER}
 
+# 03b: Model quality VUN (denoising checkpoints, CPU heavy)
+echo ""
+echo "--- 03b: Model Quality VUN ---"
+python 03_model_quality/compute_vun.py --multirun hydra/launcher=slurm_cpu_hpcl94c
+
 # 04: Phase plot (single run, uses existing CSV or AutoGraph logs)
 echo ""
 echo "--- 04: Phase Plot ---"
