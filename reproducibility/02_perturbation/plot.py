@@ -490,6 +490,137 @@ def plot_lr_vs_tabpfn(
 
 
 # ---------------------------------------------------------------------------
+# Single-dataset perturbation figures (e.g. SBM-only)
+# ---------------------------------------------------------------------------
+
+def plot_single_dataset_perturbation(
+    all_data: Dict,
+    classifier: str,
+    variant: str,
+    dataset: str,
+    perturbations_filter: Optional[List[str]],
+    output_dir: Path,
+) -> None:
+    """Generate a metrics-vs-noise figure for a single dataset.
+
+    If perturbations_filter is None, all available perturbations are plotted
+    in a single row (→ ``perturbation_all_{dataset}.pdf``).
+    If a single perturbation is given, a single-panel figure is produced
+    (→ ``perturbation_{perturbation}_{dataset}.pdf``).
+    """
+    # Filter data to requested dataset
+    filtered = {k: v for k, v in all_data.items() if k[0] == dataset}
+    if perturbations_filter:
+        filtered = {k: v for k, v in filtered.items() if k[1] in perturbations_filter}
+    if not filtered:
+        logger.warning("No data for dataset={}, perturbations={}", dataset, perturbations_filter)
+        return
+
+    df = _build_long_df(filtered, classifier, variant)
+    if df.empty:
+        return
+
+    # Descriptor colors
+    cb = sns.color_palette("colorblind")
+    desc_colors = {
+        "orbit": cb[0], "degree": cb[1], "spectral": cb[2],
+        "clustering": cb[3], "gin": cb[4], "orbit5": cb[5],
+    }
+
+    metrics = OrderedDict([
+        ("PGS_orbit", ("Orbit PGD", "o")),
+        ("PGS_orbit5", ("Orbit5 PGD", "s")),
+        ("PGS_degree", ("Degree PGD", "D")),
+        ("PGS_spectral", ("Spectral PGD", "p")),
+        ("PGS_clustering", ("Clustering PGD", "X")),
+        ("PGS_gin", ("GIN PGD", "P")),
+        ("PGS", ("PGD", "*")),
+    ])
+
+    corr_map = {}
+    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):
+        corr_map[(ds, pert)] = _compute_spearman(group["PGS"], group["noise_level"])
+
+    plot_rows = []
+    for _, row in df.iterrows():
+        ds, pert = row["dataset"], row["perturbation"]
+        corr = corr_map.get((ds, pert), np.nan)
+        for col, (label, _) in metrics.items():
+            val = row.get(col, np.nan)
+            if pd.notna(val):
+                plot_rows.append({
+                    "perturbation": row["Perturbation"],
+                    "metric": label,
+                    "noise_level": row["noise_level"],
+                    "metric_value": val,
+                    "correlation": corr,
+                })
+
+    plot_df = pd.DataFrame(plot_rows)
+    if plot_df.empty:
+        return
+
+    pt_order = [PERTURBATION_DISPLAY.get(p, p) for p in PERTURBATIONS]
+    plot_df["perturbation"] = pd.Categorical(plot_df["perturbation"], categories=pt_order, ordered=True)
+
+    color_map = {}
+    marker_map = {}
+    for col, (label, marker) in metrics.items():
+        marker_map[label] = marker
+        if col == "PGS":
+            color_map[label] = "#000000"
+        else:
+            desc = col.replace("PGS_", "")
+            color_map[label] = _to_hex(desc_colors.get(desc, "black"))
+
+    n_perts = plot_df["perturbation"].nunique()
+    g = sns.relplot(
+        data=plot_df,
+        x="noise_level",
+        y="metric_value",
+        col="perturbation",
+        hue="metric",
+        style="metric",
+        kind="scatter",
+        markers=marker_map,
+        height=3,
+        aspect=0.8 if n_perts > 1 else 1.2,
+        s=20,
+        alpha=0.8,
+        palette=color_map,
+        facet_kws={"margin_titles": True, "sharex": False},
+    )
+
+    g.set_xlabels("Noise Level")
+    g.set_ylabels("PGD")
+    g.set(ylim=(-0.1, 1.05))
+    g.set_titles(col_template="{col_name}")
+
+    for col_val, ax in g.axes_dict.items():
+        sub = plot_df[plot_df["perturbation"] == col_val]
+        if not sub.empty:
+            corr = sub.iloc[0]["correlation"]
+            title = ax.get_title()
+            if not np.isnan(corr):
+                ax.set_title(f"{title}\nPGD ρ = {corr:.2f}")
+
+    # Single-row figures need more bottom margin for the legend than multi-row grids
+    bottom_margin = 0.18 if n_perts > 1 else 0.25
+    sns.move_legend(g, "lower center", bbox_to_anchor=(0.5, -0.02), ncol=4,
+                    title="Metric", title_fontsize=13)
+    plt.tight_layout(rect=[0, bottom_margin, 1, 1])
+
+    if perturbations_filter and len(perturbations_filter) == 1:
+        fname = f"perturbation_{perturbations_filter[0]}_{dataset}.pdf"
+    else:
+        fname = f"perturbation_all_{dataset}.pdf"
+    out = output_dir / fname
+    g.savefig(str(out), bbox_inches="tight")
+    plt.close(g.figure)
+    logger.success("Saved: {}", out)
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -572,6 +703,28 @@ def main(
         logger.success("Copied {} PDFs to {}", count, paper_dir)
 
     logger.success("Done.")
+
+
+@app.command()
+def single_dataset(
+    dataset: str = typer.Argument(..., help="Dataset name (e.g. sbm, planar, lobster)"),
+    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir (e.g. _tabpfn_weights_v2.5)"),
+    perturbation: Optional[str] = typer.Option(None, "--perturbation", help="Single perturbation type; omit for all"),
+    classifier: str = typer.Option("tabpfn", "--classifier"),
+    variant: str = typer.Option("jsd", "--variant"),
+):
+    """Generate perturbation figures for a single dataset."""
+    setup_plotting()
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    results_dir = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation" / f"results{results_suffix}"
+    all_data = _load_results_dir(results_dir)
+    if not all_data:
+        logger.error("No results found in {}", results_dir)
+        return
+
+    perts = [perturbation] if perturbation else None
+    plot_single_dataset_perturbation(all_data, classifier, variant, dataset, perts, OUTPUT_DIR)
 
 
 if __name__ == "__main__":
