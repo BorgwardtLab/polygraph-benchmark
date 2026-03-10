@@ -83,6 +83,13 @@ def generate_benchmark_table(all_results: Dict) -> str:
         ds_results = all_results.get(dataset, {})
         pgs_best, pgs_second = _best_two(ds_results, "pgs_mean", lower=True)
         vun_best, vun_second = _best_two(ds_results, "vun", lower=False)
+        sub_best = {}
+        sub_second = {}
+        for key, _ in SUBSCORES:
+            mean_key = f"{key}_mean"
+            alt_key = f"{key.replace('_pgs', '')}_mean"
+            lookup = mean_key if any(mean_key in ds_results.get(m, {}) for m in ds_results) else alt_key
+            sub_best[key], sub_second[key] = _best_two(ds_results, lookup, lower=True)
 
         first = True
         for model in MODELS:
@@ -114,6 +121,7 @@ def generate_benchmark_table(all_results: Dict) -> str:
                 row.append(_fmt_pgs(
                     r.get(f"{key}_mean", r.get(f"{key.replace('_pgs', '')}_mean", float("nan"))),
                     r.get(f"{key}_std", r.get(f"{key.replace('_pgs', '')}_std", float("nan"))),
+                    model == sub_best[key], model == sub_second[key],
                 ))
 
             lines.append(" & ".join(row) + " \\\\")
