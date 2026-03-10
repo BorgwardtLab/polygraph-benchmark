@@ -12,8 +12,6 @@ PYTHONPATH = "$PIXI_PROJECT_ROOT/reproducibility"
 
 [pypi-dependencies]
 polygraph-benchmark = { path = ".", editable = true, extras = ["dev", "cluster"] }
-pymupdf = ">=1.27.1, <2"
-pillow = "*"
 
 [tasks]
 # Development

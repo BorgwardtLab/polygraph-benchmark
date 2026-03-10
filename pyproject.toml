@@ -60,7 +60,9 @@ dev = [
     "typer",
     "hydra-core",
     "matplotlib",
-    "tqdm"
+    "tqdm",
+    "pymupdf>=1.27.1,<2",
+    "pillow",
 ]
 
 [tool.setuptools.packages.find]
