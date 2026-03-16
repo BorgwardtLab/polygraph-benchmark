@@ -14,35 +14,6 @@ PYTHONPATH = "$PIXI_PROJECT_ROOT/reproducibility"
 polygraph-benchmark = { path = ".", editable = true, extras = ["dev", "cluster"] }
 
 [tasks]
-# Development
 test = "pytest -n auto --dist loadgroup -v --tb=short --skip-slow ./tests"
 test-all = "pytest -n auto --dist loadgroup -v --tb=short ./tests"
 docs = "mkdocs build"
-
-# Data download
-download = { cmd = "python download_data.py", cwd = "reproducibility" }
-download-subset = { cmd = "python download_data.py --subset", cwd = "reproducibility" }
-
-# Individual figures
-figure-subsampling = { cmd = "python 01_generate_subsampling_figures.py", cwd = "reproducibility" }
-figure-perturbation = { cmd = "python 02_generate_perturbation_figures.py", cwd = "reproducibility" }
-figure-model-quality = { cmd = "python 03_generate_model_quality_figures.py", cwd = "reproducibility" }
-figure-phase-plot = { cmd = "python 04_generate_phase_plot.py", cwd = "reproducibility" }
-
-# Individual tables
-table-benchmark = { cmd = "python 05_generate_benchmark_tables.py", cwd = "reproducibility" }
-table-mmd = { cmd = "python 06_generate_mmd_tables.py", cwd = "reproducibility" }
-table-concatenation = { cmd = "python 07_generate_concatenation_tables.py", cwd = "reproducibility" }
-table-gklr = { cmd = "python 08_generate_gklr_tables.py", cwd = "reproducibility" }
-
-# SLURM cluster submission
-tables-submit = { cmd = "python 05_generate_benchmark_tables.py --slurm-config configs/slurm_default.yaml && python 06_generate_mmd_tables.py --slurm-config configs/slurm_default.yaml && python 07_generate_concatenation_tables.py --slurm-config configs/slurm_default.yaml && python 08_generate_gklr_tables.py --slurm-config configs/slurm_default.yaml", cwd = "reproducibility" }
-tables-collect = { cmd = "python 05_generate_benchmark_tables.py --collect && python 06_generate_mmd_tables.py --collect && python 07_generate_concatenation_tables.py --collect && python 08_generate_gklr_tables.py --collect", cwd = "reproducibility" }
-
-# Aggregate tasks (sequential, in paper order; download is idempotent)
-figures = { cmd = "python download_data.py && python 01_generate_subsampling_figures.py && python 02_generate_perturbation_figures.py && python 03_generate_model_quality_figures.py && python 04_generate_phase_plot.py", cwd = "reproducibility" }
-tables = { cmd = "python download_data.py && python 05_generate_benchmark_tables.py && python 06_generate_mmd_tables.py && python 07_generate_concatenation_tables.py && python 08_generate_gklr_tables.py", cwd = "reproducibility" }
-reproduce = { cmd = "python download_data.py && python 01_generate_subsampling_figures.py && python 02_generate_perturbation_figures.py && python 03_generate_model_quality_figures.py && python 04_generate_phase_plot.py && python 05_generate_benchmark_tables.py && python 06_generate_mmd_tables.py && python 07_generate_concatenation_tables.py && python 08_generate_gklr_tables.py", cwd = "reproducibility" }
-
-# Cleanup
-clean = { cmd = "rm -rf figures/* tables/*", cwd = "reproducibility" }
