@@ -44,6 +44,7 @@ dev = [
     "pyprojroot",
     "ipython",
     "ruff",
+    "pyright",
     "pre-commit",
     "ipykernel",
     "pytest-profiling",

@@ -416,12 +416,12 @@ To cite our paper:
 
 ```latex
 @misc{krimmel2025polygraph,
-  title={PolyGraph Discrepancy: a classifier-based metric for graph generation}, 
+  title={PolyGraph Discrepancy: a classifier-based metric for graph generation},
   author={Markus Krimmel and Philip Hartout and Karsten Borgwardt and Dexiong Chen},
   year={2025},
   eprint={2510.06122},
   archivePrefix={arXiv},
   primaryClass={cs.LG},
-  url={https://arxiv.org/abs/2510.06122}, 
+  url={https://arxiv.org/abs/2510.06122},
 }
 ```
