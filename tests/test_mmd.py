@@ -92,7 +92,6 @@ def grakel_wl_mmd(
     return mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="biased")
 
 
-
 @pytest.mark.parametrize(
     "mmd_cls,baseline_method",
     [
