@@ -29,7 +29,7 @@ Example:
 
 import json
 import signal
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from functools import partial
 from multiprocessing import Pool
 from typing import (
@@ -49,9 +49,31 @@ from polygraph.metrics.base.interface import GenerationMetric
 
 __all__ = ["VUN"]
 
-BinomConfidenceInterval = namedtuple(
-    "ConfidenceInterval", ["mle", "low", "high"]
-)
+
+class BinomConfidenceInterval:
+    """Binomial confidence interval for a proportion.
+
+    Args:
+        mle: Maximum likelihood estimate.
+        low: Lower bound of the confidence interval.
+        high: Upper bound of the confidence interval.
+    """
+
+    def __init__(
+        self,
+        mle: float,
+        low: Optional[float],
+        high: Optional[float],
+    ):
+        self.mle = mle
+        self.low = low
+        self.high = high
+
+    def __repr__(self) -> str:
+        return (
+            f"ConfidenceInterval("
+            f"mle={self.mle}, low={self.low}, high={self.high})"
+        )
 
 
 class _IsomorphismTimeout(Exception):

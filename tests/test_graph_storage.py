@@ -37,7 +37,7 @@ def test_from_pyg_batch():
         )
         for _ in range(3)
     ]
-    batch = Batch.from_data_list(data_list)
+    batch = Batch.from_data_list(data_list)  # type: ignore[arg-type]
     gs = GraphStorage.from_pyg_batch(batch)
     assert gs.num_graphs == 3
 
@@ -70,6 +70,8 @@ def test_from_nx_graphs(use_attrs):
         assert len(gs) == 2
         ex0 = gs.get_example(0)
         ex1 = gs.get_example(1)
+        assert ex0.edge_index is not None
+        assert ex1.edge_index is not None
         assert ex0.edge_index.shape == (2, 2)
         assert ex1.edge_index.shape == (2, 2)
     else:
@@ -86,10 +88,13 @@ def test_from_nx_graphs(use_attrs):
 
         assert ex0.g.item() == 7 and ex1.g.item() == 8
 
+        assert ex0.edge_index is not None
+        assert ex1.edge_index is not None
         assert ex0.edge_index.shape == (2, 2)
         assert ex1.edge_index.shape == (2, 2)
 
         # Remove backward edges for assertions
+        assert ex0.e is not None and ex1.e is not None
         ex0e = ex0.e[ex0.edge_index[0] < ex0.edge_index[1]]
         ex1e = ex1.e[ex1.edge_index[0] < ex1.edge_index[1]]
 

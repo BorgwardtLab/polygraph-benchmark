@@ -91,8 +91,10 @@ ignore = ["E731"]
 convention = "google"
 
 [tool.pyright]
-include = ["polygraph"]
+include = ["polygraph", "tests", "reproducibility"]
 exclude = [
   "polygraph/datasets/base/molecules.py",
-  "polygraph/datasets/molecules.py"
+  "polygraph/datasets/molecules.py",
+  "tests/ggm_implementation",
+  "tests/gran_mmd_implementation"
 ]

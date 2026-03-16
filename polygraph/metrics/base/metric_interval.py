@@ -51,14 +51,16 @@ class MetricInterval:
 
         if coverage is not None:
             low, high = (
-                np.quantile(samples, (1 - coverage) / 2, axis=0),
-                np.quantile(samples, coverage + (1 - coverage) / 2, axis=0),
+                float(np.quantile(samples, (1 - coverage) / 2, axis=0)),
+                float(
+                    np.quantile(samples, coverage + (1 - coverage) / 2, axis=0)
+                ),
             )
         else:
             low, high = None, None
 
-        mean = np.mean(samples, axis=0)
-        std = np.std(samples, axis=0)
+        mean = float(np.mean(samples, axis=0))
+        std = float(np.std(samples, axis=0))
 
         return cls(mean=mean, std=std, low=low, high=high, coverage=coverage)
 

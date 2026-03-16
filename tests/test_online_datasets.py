@@ -21,6 +21,7 @@ from polygraph.datasets import (
     SmallEgoGraphDataset,
 )
 from polygraph.datasets.base import AbstractDataset
+from polygraph.datasets.base.dataset import GraphDataset
 from polygraph.datasets.base.caching import clear_cache, identifier_to_path
 from polygraph.metrics import VUN
 
@@ -96,6 +97,7 @@ def test_loading(ds_cls, sample_size):
         assert isinstance(ds, AbstractDataset), (
             "Should inherit from AbstractDataset"
         )
+        assert isinstance(ds, GraphDataset)
         assert len(ds) > 0, "Dataset should have at least one item"
 
         sample_size = min(sample_size, len(ds))

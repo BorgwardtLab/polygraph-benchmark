@@ -25,6 +25,7 @@ class MockDescriptorKernel(DescriptorKernel):
         return self
 
     def kernel_diag(self, features):
+        assert features.shape is not None
         return np.ones(features.shape[0])
 
     @property
@@ -203,7 +204,7 @@ def test_kernel_call_method(mock_descriptor_fn, sample_features):
     ref, gen = sample_features
     kernel = LinearKernel(mock_descriptor_fn)
 
-    kernel.featurize = lambda x: ref if x == "ref" else gen
+    kernel.featurize = lambda x: ref if x == "ref" else gen  # type: ignore[method-assign]
 
     blocks = kernel(ref, gen)
     assert isinstance(blocks, GramBlocks)

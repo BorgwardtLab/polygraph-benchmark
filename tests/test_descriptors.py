@@ -47,6 +47,8 @@ def test_sparse_equivalence(num_bins):
     sparse_clustering_features = clustering_sparse(ds)
     dense_clustering_features = clustering_dense(ds)
 
+    assert isinstance(sparse_clustering_features, csr_array)
+    assert isinstance(dense_clustering_features, np.ndarray)
     assert np.allclose(
         sparse_clustering_features.toarray(), dense_clustering_features
     )
@@ -54,6 +56,8 @@ def test_sparse_equivalence(num_bins):
     sparse_eigenvalue_features = eigenvalue_sparse(ds)
     dense_eigenvalue_features = eigenvalue_dense(ds)
 
+    assert isinstance(sparse_eigenvalue_features, csr_array)
+    assert isinstance(dense_eigenvalue_features, np.ndarray)
     assert np.allclose(
         sparse_eigenvalue_features.toarray(), dense_eigenvalue_features
     )
@@ -80,6 +84,7 @@ def test_sparse_degree_histogram(sample_graphs):
     features = descriptor(sample_graphs)
 
     assert isinstance(features, csr_array)
+    assert features.shape is not None
     assert features.shape[0] == len(sample_graphs)
 
     for i, graph in enumerate(sample_graphs):
@@ -151,6 +156,7 @@ def test_weisfeiler_lehman_descriptor(sample_graphs, iterations):
     features = descriptor(sample_graphs)
 
     assert isinstance(features, csr_array)
+    assert features.shape is not None
 
     assert features.shape[0] == len(sample_graphs)
 
@@ -174,6 +180,7 @@ def test_weisfeiler_lehman_descriptor_molecules(
     features = descriptor(sample_molecules)
 
     assert isinstance(features, csr_array)
+    assert features.shape is not None
 
     assert features.shape[0] == len(sample_molecules)
     for i in range(len(sample_molecules)):

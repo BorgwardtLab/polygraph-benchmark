@@ -8,7 +8,7 @@ Usage:
 import argparse
 import json
 import pickle
-from typing import Dict, List
+from typing import Dict, List, Literal
 
 from loguru import logger
 from pyprojroot import here
@@ -54,7 +54,9 @@ def load_graphs(model: str, dataset: str) -> List:
 
 
 def get_reference_dataset(
-    dataset: str, split: str = "test", num_graphs: int = 512
+    dataset: str,
+    split: Literal["train", "val", "test"] = "test",
+    num_graphs: int = 512,
 ):
     from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
     from polygraph.datasets.planar import ProceduralPlanarGraphDataset

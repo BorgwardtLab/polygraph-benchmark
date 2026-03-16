@@ -65,7 +65,7 @@ class ConcatenatedDescriptor:
     ):
         self.descriptors = descriptors
         self._use_pca = max_features is not None
-        if self._use_pca:
+        if max_features is not None:
             n_components = max_features
             if dataset_size is not None:
                 n_components = min(max_features, dataset_size)

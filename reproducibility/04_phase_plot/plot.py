@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 import numpy as np
 import pandas as pd
 import typer
@@ -100,8 +101,8 @@ def main(
         points = np.array([x_vals, y_vals]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-        norm = plt.Normalize(indices.min(), indices.max())
-        lc = LineCollection(segments, cmap=cmap_name, norm=norm)
+        norm = Normalize(indices.min(), indices.max())
+        lc = LineCollection(segments, cmap=cmap_name, norm=norm)  # type: ignore[arg-type]
         lc.set_array(indices[:-1])
         lc.set_linewidth(1)
         ax.add_collection(lc)
@@ -133,7 +134,7 @@ def main(
 
     if "sbm_small" in data:
         indices_small = np.arange(len(data["sbm_small"]["val_loss"]))
-        norm_small = plt.Normalize(indices_small.min(), indices_small.max())
+        norm_small = Normalize(indices_small.min(), indices_small.max())
         sm_small = plt.cm.ScalarMappable(cmap="autumn", norm=norm_small)
         sm_small.set_array(indices_small)
         cbar_small = fig.colorbar(sm_small, ax=ax, aspect=30, pad=0.02)
@@ -141,7 +142,7 @@ def main(
 
     if "sbm_large" in data:
         indices_large = np.arange(len(data["sbm_large"]["val_loss"]))
-        norm_large = plt.Normalize(indices_large.min(), indices_large.max())
+        norm_large = Normalize(indices_large.min(), indices_large.max())
         sm_large = plt.cm.ScalarMappable(cmap="winter", norm=norm_large)
         sm_large.set_array(indices_large)
         cbar_large = fig.colorbar(sm_large, ax=ax, aspect=30, pad=0.08)

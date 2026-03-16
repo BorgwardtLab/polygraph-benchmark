@@ -74,7 +74,7 @@ class WeisfeilerLehmanMMD2(DescriptorMMD2):
 def grakel_wl_mmd(
     reference_graphs, test_graphs, is_parallel=False, iterations=3
 ):
-    import grakel
+    import grakel  # type: ignore[import-not-found]
 
     grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
     all_graphs = reference_graphs + test_graphs
@@ -195,6 +195,7 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
 
     single_mmd = DescriptorMMD2(sbm_samples, kernel, variant=variant)
     single_estimate = single_mmd.compute(planar_samples)
+    assert result.low is not None and result.high is not None
     assert result.low <= single_estimate <= result.high
 
 
@@ -231,7 +232,7 @@ def test_concrete_uncertainty(
         and issubclass(interval_cls, MaxDescriptorMMD2Interval)
     )
 
-    interval_mmd = interval_cls(planar, subsample_size=subsample_size)
+    interval_mmd = interval_cls(planar, subsample_size=subsample_size)  # type: ignore[call-arg]
     interval = interval_mmd.compute(sbm)
     assert isinstance(interval, MetricInterval)
 
@@ -246,8 +247,9 @@ def test_concrete_uncertainty(
         planar_samples = [planar[int(idx)] for idx in planar_idxs]
         sbm_samples = [sbm[int(idx)] for idx in sbm_idxs]
 
-        single_mmd = single_cls(planar_samples)
+        single_mmd = single_cls(planar_samples)  # type: ignore[call-arg]
         single_estimate = single_mmd.compute(sbm_samples)
+        assert interval.low is not None and interval.high is not None
         assert interval.low <= interval.high
         if interval.low <= single_estimate <= interval.high:
             num_in_bounds += 1
@@ -295,8 +297,8 @@ def test_measure_runtime(
     ):
         pytest.skip("Orbit and WL don't have parallel baselines")
 
-    ds1 = ProceduralPlanarGraphDataset("ds1", 1024, seed=42)
-    ds2 = ProceduralPlanarGraphDataset("ds2", 1024, seed=42)
+    ds1 = ProceduralPlanarGraphDataset("train", 1024, seed=42)
+    ds2 = ProceduralPlanarGraphDataset("test", 1024, seed=42)
     ds1, ds2 = list(ds1.to_nx()), list(ds2.to_nx())
 
     if baseline_method is orbit_stats_all:

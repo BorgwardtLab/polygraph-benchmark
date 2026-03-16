@@ -61,7 +61,7 @@ def best_two(
     vals = {
         m: r[key]
         for m, r in results.items()
-        if key in r and not pd.isna(r.get(key))
+        if key in r and not pd.isna(r.get(key))  # type: ignore[operator]
     }
     if not vals:
         return None, None

@@ -5,6 +5,7 @@ import pytest
 
 from polygraph.datasets import PlanarGraphDataset
 from polygraph.metrics import VUN
+from polygraph.metrics.vun import BinomConfidenceInterval
 
 
 def create_test_graphs() -> List[nx.Graph]:
@@ -34,10 +35,12 @@ def test_vun_scores() -> None:
     vun = VUN(ref_graphs, confidence_level=0.95)
     vun_scores = vun.compute(gen_graphs)
 
-    assert vun_scores["unique"].mle == 2 / 3, (
-        "Should have 2 unique graphs out of 3"
-    )
-    assert vun_scores["novel"].mle == 0.0, "No novel graphs expected"
+    unique = vun_scores["unique"]
+    assert isinstance(unique, BinomConfidenceInterval)
+    assert unique.mle == 2 / 3, "Should have 2 unique graphs out of 3"
+    novel = vun_scores["novel"]
+    assert isinstance(novel, BinomConfidenceInterval)
+    assert novel.mle == 0.0, "No novel graphs expected"
 
 
 def test_vun_empty_inputs() -> None:
@@ -62,7 +65,9 @@ def test_vun_without_uncertainty() -> None:
     assert len(vun_scores1) == len(vun_scores2)
 
     for key in vun_scores1.keys():
-        assert vun_scores1[key] == vun_scores2[key].mle
+        v2 = vun_scores2[key]
+        assert isinstance(v2, BinomConfidenceInterval)
+        assert vun_scores1[key] == v2.mle
 
 
 def test_vun_with_real_dataset() -> None:
@@ -73,18 +78,34 @@ def test_vun_with_real_dataset() -> None:
     vun = VUN(ref_graphs, validity_fn=ds.is_valid, confidence_level=0.95)
     vun_scores = vun.compute(gen_graphs)
 
-    assert vun_scores["unique"].mle == 1, "All graphs should be unique"
-    assert vun_scores["novel"].mle == 1, "All graphs should be novel"
-    assert vun_scores["valid"].mle == 1, "All graphs should be valid"
+    unique = vun_scores["unique"]
+    novel = vun_scores["novel"]
+    valid = vun_scores["valid"]
+    assert isinstance(unique, BinomConfidenceInterval)
+    assert isinstance(novel, BinomConfidenceInterval)
+    assert isinstance(valid, BinomConfidenceInterval)
+    assert unique.mle == 1, "All graphs should be unique"
+    assert novel.mle == 1, "All graphs should be novel"
+    assert valid.mle == 1, "All graphs should be valid"
 
     vun_scores = vun.compute(ref_graphs)
-    assert vun_scores["unique"].mle == 1, "All graphs should be unique"
-    assert vun_scores["novel"].mle == 0, "No novel graphs expected"
-    assert vun_scores["valid"].mle == 1, "All graphs should be valid"
+    unique = vun_scores["unique"]
+    novel = vun_scores["novel"]
+    valid = vun_scores["valid"]
+    assert isinstance(unique, BinomConfidenceInterval)
+    assert isinstance(novel, BinomConfidenceInterval)
+    assert isinstance(valid, BinomConfidenceInterval)
+    assert unique.mle == 1, "All graphs should be unique"
+    assert novel.mle == 0, "No novel graphs expected"
+    assert valid.mle == 1, "All graphs should be valid"
 
     vun_scores = vun.compute([gen_graphs[0] for _ in range(10)])
-    assert vun_scores["unique"].mle == 0.1, (
-        "Only one of 10 graphs should be unique"
-    )
-    assert vun_scores["novel"].mle == 1.0, "All graphs should be novel"
-    assert vun_scores["valid"].mle == 1, "All graphs should be valid"
+    unique = vun_scores["unique"]
+    novel = vun_scores["novel"]
+    valid = vun_scores["valid"]
+    assert isinstance(unique, BinomConfidenceInterval)
+    assert isinstance(novel, BinomConfidenceInterval)
+    assert isinstance(valid, BinomConfidenceInterval)
+    assert unique.mle == 0.1, "Only one of 10 graphs should be unique"
+    assert novel.mle == 1.0, "All graphs should be novel"
+    assert valid.mle == 1, "All graphs should be valid"

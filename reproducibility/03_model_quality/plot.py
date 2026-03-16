@@ -24,6 +24,7 @@ from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -179,8 +180,8 @@ def _plot_multi_panel(
         ax_val.plot(steps, df["validity"].values, color="#7e9ef7")
         ax_val.set_ylabel("Validity")
         ax_val.set_ylim([0, 1])
-        ax_val.yaxis.set_major_locator(plt.MaxNLocator(6))
-        ax_val.xaxis.set_major_locator(plt.MaxNLocator(nbins=3, integer=True))
+        ax_val.yaxis.set_major_locator(MaxNLocator(6))
+        ax_val.xaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
         if i == 0:
             ax_val.set_title("Validity")
         if i == n_datasets - 1:
@@ -194,10 +195,8 @@ def _plot_multi_panel(
                 ax_pgs.plot(steps, df["polyscore"].values, color="black")
             ax_pgs.set_ylabel("PGD")
             ax_pgs.set_ylim([0, 1])
-            ax_pgs.yaxis.set_major_locator(plt.MaxNLocator(6))
-            ax_pgs.xaxis.set_major_locator(
-                plt.MaxNLocator(nbins=3, integer=True)
-            )
+            ax_pgs.yaxis.set_major_locator(MaxNLocator(6))
+            ax_pgs.xaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
             if i == 0:
                 ax_pgs.set_title(pgd_label)
             if i == n_datasets - 1:
@@ -209,7 +208,7 @@ def _plot_multi_panel(
         ax_mmd.set_yticks([])
         ax_mmd.set_ylabel("MMD\u00b2")
         ax_mmd.spines["left"].set_visible(False)
-        ax_mmd.xaxis.set_major_locator(plt.MaxNLocator(nbins=3, integer=True))
+        ax_mmd.xaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
         if i == 0:
             ax_mmd.set_title("MMD")
         if i == n_datasets - 1:
@@ -224,14 +223,14 @@ def _plot_multi_panel(
             ax_twin = ax_mmd.twinx()
             ax_twin.spines["right"].set_position(("outward", 35 * j))
 
-            max_val = np.nanmax(metric_data)
+            max_val = np.nanmax(metric_data)  # type: ignore[arg-type]
             if max_val > 0:
                 power = int(np.floor(np.log10(max_val)))
                 scale_factor = 10**power
                 scaled = metric_data / scale_factor
                 ax_twin.plot(steps, scaled, color=color)
                 ax_twin.tick_params(axis="y", labelcolor=color)
-                ax_twin.yaxis.set_major_locator(plt.MaxNLocator(6))
+                ax_twin.yaxis.set_major_locator(MaxNLocator(6))
                 ax_twin.annotate(
                     f"$\\times 10^{{{power}}}$",
                     xy=(1.0, 1.0),
@@ -247,7 +246,7 @@ def _plot_multi_panel(
             else:
                 ax_twin.plot(steps, metric_data, color=color)
                 ax_twin.tick_params(axis="y", labelcolor=color)
-                ax_twin.yaxis.set_major_locator(plt.MaxNLocator(6))
+                ax_twin.yaxis.set_major_locator(MaxNLocator(6))
 
     fig.legend(
         handles=legend_elements,
@@ -303,7 +302,7 @@ def main(
 
     use_tmp = bool(results_suffix)
     tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
-    output_dir = tmp_dir if use_tmp else OUTPUT_DIR
+    output_dir: Path = tmp_dir if tmp_dir is not None else OUTPUT_DIR
     if use_tmp:
         output_dir.mkdir(parents=True, exist_ok=True)
 

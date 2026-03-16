@@ -17,7 +17,7 @@ import json
 import pickle
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Literal, cast
 
 import hydra
 import networkx as nx
@@ -262,7 +262,7 @@ def main(cfg: DictConfig) -> None:
             kernel=kernel,
             subsample_size=min(subsample_size, len(generated_graphs)),
             num_samples=num_bootstrap,
-            variant=variant,
+            variant=cast(Literal["biased", "umve", "ustat"], variant),
         )
         result = metric.compute(generated_graphs)
         mmd_runtime_perf_seconds = round(time.perf_counter() - metric_start, 6)

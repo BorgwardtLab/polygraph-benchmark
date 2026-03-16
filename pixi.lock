@@ -4457,7 +4457,7 @@ packages:
 - pypi: ./
   name: polygraph-benchmark
   version: 1.0.2
-  sha256: a6a422cf6d9a4d13ff86503391f950645808c81faec112e24fb969679f4f9931
+  sha256: 47b7f448b53df0cd38caa2c426975e27fd02ffca97f684164d34eaf4e1355b54
   requires_dist:
   - numpy>=1.26.4,<3.0
   - torch>=2.4.0,<3.0

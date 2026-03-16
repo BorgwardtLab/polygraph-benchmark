@@ -30,7 +30,7 @@ repos:
   hooks:
     - id: pyright
       name: Pyright Type Check
-      entry: pyright --project pyproject.toml
+      entry: pixi run pyright --project pyproject.toml
       language: system
       types: [python]
       pass_filenames: false

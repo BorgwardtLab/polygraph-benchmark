@@ -15,7 +15,7 @@ import json
 import pickle
 from importlib.metadata import version as pkg_version
 from pathlib import Path
-from typing import List
+from typing import Any, List, Literal, cast
 
 import hydra
 import networkx as nx
@@ -56,7 +56,11 @@ def load_graphs(path: Path) -> List[nx.Graph]:
     return graphs
 
 
-def get_reference_dataset(dataset, split="train", num_graphs=2048):
+def get_reference_dataset(
+    dataset: str,
+    split: Literal["train", "val", "test"] = "train",
+    num_graphs: int = 2048,
+):
     """Get reference dataset from polygraph library."""
     if dataset == "planar":
         from polygraph.datasets.planar import ProceduralPlanarGraphDataset
@@ -208,10 +212,11 @@ def main(cfg: DictConfig) -> None:
 
     pgd_metric = StandardPGD(
         reference_graphs=ref,
-        variant=variant,
+        variant=cast(Literal["informedness", "jsd"], variant),
         classifier=classifier,
     )
 
+    mmd_metrics: dict[str, Any] = {}
     if not pgd_only:
         bw = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
         mmd_metrics = {
@@ -243,7 +248,7 @@ def main(cfg: DictConfig) -> None:
         if subset:
             gen = gen[:30]
 
-        entry = {"steps": steps}
+        entry: dict[str, object] = {"steps": steps}
 
         try:
             pgd_result = pgd_metric.compute(gen)

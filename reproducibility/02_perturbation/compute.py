@@ -28,7 +28,7 @@ import json
 import random
 from importlib.metadata import version as pkg_version
 from itertools import product
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, cast
 
 import hydra
 import networkx as nx
@@ -367,11 +367,11 @@ def _make_classifier(name: str, tabpfn_weights_version: str = "v2.5"):
 
 def build_metrics(
     reference_graphs: List[nx.Graph],
-    classifiers: List[str] = None,
-    variants: List[str] = None,
+    classifiers: Optional[List[str]] = None,
+    variants: Optional[List[str]] = None,
     tabpfn_weights_version: str = "v2.5",
     tabpfn_only: bool = False,
-) -> Dict[str, object]:
+) -> Dict[str, Any]:
     """Build all metrics: 10 MMD + 6 descriptors x classifiers x variants.
 
     If tabpfn_only is True, skip MMD metrics and force classifiers=["tabpfn"],
@@ -389,7 +389,7 @@ def build_metrics(
             classifiers,
         )
 
-    metrics: Dict[str, object] = {}
+    metrics: Dict[str, Any] = {}
 
     if not tabpfn_only:
         metrics.update(
@@ -418,37 +418,38 @@ def build_metrics(
 
     # Classifier metrics (6 descriptors x classifiers x variants)
     for clf_name, variant in product(classifiers, variants):
+        variant_lit = cast(Literal["informedness", "jsd"], variant)
         metrics[f"orbit_{clf_name}_{variant}"] = ClassifierOrbit4Metric(
             reference_graphs,
-            variant=variant,
+            variant=variant_lit,
             classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"orbit5_{clf_name}_{variant}"] = ClassifierOrbit5Metric(
             reference_graphs,
-            variant=variant,
+            variant=variant_lit,
             classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"degree_{clf_name}_{variant}"] = ClassifierDegreeMetric(
             reference_graphs,
-            variant=variant,
+            variant=variant_lit,
             classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"spectral_{clf_name}_{variant}"] = ClassifierSpectralMetric(
             reference_graphs,
-            variant=variant,
+            variant=variant_lit,
             classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
         metrics[f"clustering_{clf_name}_{variant}"] = (
             ClassifierClusteringMetric(
                 reference_graphs,
-                variant=variant,
+                variant=variant_lit,
                 classifier=_make_classifier(clf_name, tabpfn_weights_version),
             )
         )
         metrics[f"gin_{clf_name}_{variant}"] = (
             GraphNeuralNetworkClassifierMetric(
                 reference_graphs,
-                variant=variant,
+                variant=variant_lit,
                 classifier=_make_classifier(clf_name, tabpfn_weights_version),
             )
         )
@@ -463,7 +464,7 @@ def build_metrics(
 
 def evaluate_metrics(
     perturbed_graphs: List[nx.Graph],
-    metrics: Dict[str, object],
+    metrics: Dict[str, Any],
 ) -> Dict[str, float]:
     """Compute all metrics on perturbed graphs.
 

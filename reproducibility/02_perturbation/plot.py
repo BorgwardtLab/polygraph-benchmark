@@ -203,14 +203,14 @@ def _find_saturation_threshold(df_subset: pd.DataFrame) -> float:
     sorted_df = df_subset.sort_values("noise_level")
     mask = sorted_df["PGS"] > 0.95
     if mask.any():
-        return sorted_df.loc[mask.idxmax(), "noise_level"]
-    return sorted_df["noise_level"].max()
+        return float(sorted_df.loc[mask.idxmax(), "noise_level"])
+    return float(sorted_df["noise_level"].max())
 
 
 def _crop_df(df: pd.DataFrame) -> pd.DataFrame:
     """Crop DataFrame to non-saturating PGS range per (dataset, perturbation)."""
     frames = []
-    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):
+    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):  # type: ignore[misc]
         threshold = _find_saturation_threshold(group)
         frames.append(group[group["noise_level"] <= threshold])
     if not frames:
@@ -224,7 +224,7 @@ def _compute_spearman(series: pd.Series, noise: pd.Series) -> float:
     if valid.sum() < 3:
         return np.nan
     rho, _ = stats.spearmanr(noise[valid], series[valid])
-    return rho
+    return float(rho)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -313,7 +313,7 @@ def plot_correlation_bars(
                 ]
                 if group.empty:
                     continue
-                rho = _compute_spearman(group[col], group["noise_level"])
+                rho = _compute_spearman(group[col], group["noise_level"])  # type: ignore[arg-type]
                 x_offset = k / len(present_datasets) * 0.6 - 0.3
                 xs.append(j + x_offset)
                 ys.append(rho if np.isfinite(rho) else 0)
@@ -380,9 +380,10 @@ def plot_metrics_vs_noise(
 
     # Correlation per (dataset, perturbation)
     corr_map = {}
-    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):
+    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):  # type: ignore[misc]
         corr_map[(ds, pert)] = _compute_spearman(
-            group["PGS"], group["noise_level"]
+            group["PGS"],  # type: ignore[arg-type]
+            group["noise_level"],  # type: ignore[arg-type]
         )
 
     # Build long-form scatter DataFrame
@@ -392,7 +393,7 @@ def plot_metrics_vs_noise(
         corr = corr_map.get((ds, pert), np.nan)
         for col, (label, _) in metrics.items():
             val = row.get(col, np.nan)
-            if pd.notna(val):
+            if pd.notna(val):  # type: ignore[arg-type]
                 plot_rows.append(
                     {
                         "dataset": row["Dataset"],
@@ -472,7 +473,7 @@ def plot_metrics_vs_noise(
         title="Metric",
         title_fontsize=13,
     )
-    plt.tight_layout(rect=[0, 0.06, 1, 1])
+    plt.tight_layout(rect=(0, 0.06, 1, 1))
 
     variant_label = "jsd" if variant == "jsd" else "informedness"
     crop_label = "cropped" if cropped else "full"
@@ -576,7 +577,7 @@ def plot_lr_vs_tabpfn(
         title="Metric",
         title_fontsize=13,
     )
-    plt.tight_layout(rect=[0, 0.06, 1, 1])
+    plt.tight_layout(rect=(0, 0.06, 1, 1))
 
     variant_label = "jsd" if variant == "jsd" else "informedness"
     fname = f"lr_vs_tabpfn_cropped_{variant_label}.pdf"
@@ -648,9 +649,10 @@ def plot_single_dataset_perturbation(
     )
 
     corr_map = {}
-    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):
+    for (ds, pert), group in df.groupby(["dataset", "perturbation"]):  # type: ignore[misc]
         corr_map[(ds, pert)] = _compute_spearman(
-            group["PGS"], group["noise_level"]
+            group["PGS"],  # type: ignore[arg-type]
+            group["noise_level"],  # type: ignore[arg-type]
         )
 
     plot_rows = []
@@ -659,7 +661,7 @@ def plot_single_dataset_perturbation(
         corr = corr_map.get((ds, pert), np.nan)
         for col, (label, _) in metrics.items():
             val = row.get(col, np.nan)
-            if pd.notna(val):
+            if pd.notna(val):  # type: ignore[arg-type]
                 plot_rows.append(
                     {
                         "perturbation": row["Perturbation"],
@@ -730,7 +732,7 @@ def plot_single_dataset_perturbation(
         title="Metric",
         title_fontsize=13,
     )
-    plt.tight_layout(rect=[0, bottom_margin, 1, 1])
+    plt.tight_layout(rect=(0, bottom_margin, 1, 1))
 
     if perturbations_filter and len(perturbations_filter) == 1:
         fname = f"perturbation_{perturbations_filter[0]}_{dataset}.pdf"
@@ -801,7 +803,7 @@ def main(
 
     use_tmp = bool(results_suffix)
     tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
-    output_dir = tmp_dir if use_tmp else OUTPUT_DIR
+    output_dir: Path = tmp_dir if tmp_dir is not None else OUTPUT_DIR
     if use_tmp:
         output_dir.mkdir(parents=True, exist_ok=True)
 

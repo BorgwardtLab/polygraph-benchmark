@@ -16,7 +16,7 @@ import json
 import pickle
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Literal
 
 import hydra
 import networkx as nx
@@ -67,7 +67,9 @@ def load_graphs(path: Path) -> List[nx.Graph]:
 
 
 def get_reference_dataset(
-    dataset: str, split: str = "train", num_graphs: int = 2048
+    dataset: str,
+    split: Literal["train", "val", "test"] = "train",
+    num_graphs: int = 2048,
 ):
     """Get reference dataset from polygraph library."""
     if dataset == "planar":

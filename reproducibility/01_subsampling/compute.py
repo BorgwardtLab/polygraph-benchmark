@@ -12,7 +12,7 @@ Usage:
 import json
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Literal
 
 import hydra
 from loguru import logger
@@ -33,7 +33,9 @@ RESULTS_DIR = EXPERIMENT_RESULTS_DIR / Path(__file__).stem
 
 
 def get_reference_dataset(
-    dataset: str = "planar", split: str = "test", num_graphs: int = 4096
+    dataset: str = "planar",
+    split: Literal["train", "val", "test"] = "test",
+    num_graphs: int = 4096,
 ):
     """Get reference dataset from polygraph library."""
     from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
@@ -136,8 +138,8 @@ def main(cfg: DictConfig) -> None:
         )
         return
 
+    metric_start = time.perf_counter()
     try:
-        metric_start = time.perf_counter()
         result = compute_pgs_for_subsample_size(
             reference_graphs,
             train_graphs,

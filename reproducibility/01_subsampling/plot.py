@@ -89,9 +89,9 @@ def load_mmd_results():
     if not recs:
         return pd.DataFrame()
     df = pd.DataFrame(recs)
-    df["Dataset"] = df["dataset"].map(DATASET_LABEL_MAP)
-    df["Descriptor"] = df["descriptor"].map(DESCRIPTOR_LABEL_MAP)
-    df["Source"] = df["model"].map(MODEL_DISPLAY)
+    df["Dataset"] = df["dataset"].map(DATASET_LABEL_MAP)  # type: ignore[arg-type]
+    df["Descriptor"] = df["descriptor"].map(DESCRIPTOR_LABEL_MAP)  # type: ignore[arg-type]
+    df["Source"] = df["model"].map(MODEL_DISPLAY)  # type: ignore[arg-type]
     return df
 
 
@@ -162,7 +162,7 @@ def _facet_titles(g):
 def _yminor(ax):
     if ax.get_yscale() == "log":
         ax.yaxis.set_minor_locator(
-            LogLocator(base=10.0, subs=np.arange(2, 10) * 0.1)
+            LogLocator(base=10.0, subs=(np.arange(2, 10) * 0.1).tolist())
         )
         ax.yaxis.set_minor_formatter(NullFormatter())
     else:
@@ -292,6 +292,8 @@ def plot_mmd_individual(
     ax.yaxis.set_label_coords(-0.2, 0.5)
     ds_l = DATASET_LABEL_MAP.get(dataset, dataset)
     de_l = DESCRIPTOR_LABEL_MAP.get(descriptor, descriptor)
+    assert ds_l is not None
+    assert de_l is not None
     plt.title(f"RBF MMD {de_l} on {ds_l}", fontsize=14)
     handles, labels = ax.get_legend_handles_labels()
     oi = {n: i for i, n in enumerate(SOURCE_ORDER)}
@@ -535,6 +537,8 @@ def plot_pgd_individual(
     model_display = MODEL_DISPLAY.get(model, model)
     ds_label = DATASET_LABEL_MAP.get(dataset, dataset)
     score_label = PGD_SCORE_LABELS.get(score_key, score_key)
+    assert ds_label is not None
+    assert score_label is not None
 
     df = df_long[
         (df_long["model"].str.upper() == model)
@@ -653,7 +657,7 @@ def main(
 
     use_tmp = bool(results_suffix)
     tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
-    output_dir = tmp_dir if use_tmp else OUTPUT_DIR
+    output_dir: Path = tmp_dir if tmp_dir is not None else OUTPUT_DIR
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)

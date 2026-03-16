@@ -89,13 +89,13 @@ def load_results(
     return pd.DataFrame(data["results"])
 
 
-def _neg_pearson(x, y):
+def _neg_pearson(x, y) -> float:
     """Negative Pearson correlation (higher = better correlation with validity)."""
     mask = np.isfinite(x) & np.isfinite(y)
     if mask.sum() < 3:
-        return np.nan
+        return float(np.nan)
     r, _ = stats.pearsonr(x[mask], y[mask])
-    return -r
+    return -float(r)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -232,9 +232,10 @@ def generate_spearman_training_table(variant: str) -> str:
                 if mask.sum() < 3:
                     values.append(np.nan)
                 else:
-                    rho, _ = stats.spearmanr(
+                    rho_val, _ = stats.spearmanr(
                         steps[mask], df[col].values.astype(float)[mask]
                     )
+                    rho = float(rho_val)  # type: ignore[arg-type]
                     if col not in higher_is_better:
                         rho = -rho
                     values.append(rho * 100)
@@ -279,7 +280,7 @@ def generate_denoising_mmd_table() -> str:
         cells = [str(int(row["steps"]))]
         for k in present_mmds:
             val = row.get(k, np.nan)
-            if np.isnan(val):
+            if val is None or np.isnan(float(val)):
                 cells.append("-")
             else:
                 cells.append(f"{val:.4f}")
@@ -303,7 +304,7 @@ def generate_denoising_pgs_table(variant: str = "jsd") -> str:
 
     df = df.sort_values("steps")
 
-    has_vun = "vun" in df.columns and df["vun"].notna().any()
+    has_vun = "vun" in df.columns and bool(df["vun"].notna().any())
 
     # VUN comes first (after Steps), then PGD and subscores — matching rebuttal column order
     score_cols = []
@@ -332,10 +333,10 @@ def generate_denoising_pgs_table(variant: str = "jsd") -> str:
         cells = [str(int(row["steps"]))]
         for k in score_cols:
             val = row.get(k, np.nan)
-            if pd.isna(val):
+            if val is None or pd.isna(val):  # type: ignore[arg-type]
                 cells.append("-")
             else:
-                cells.append(f"{val * 100:.2f}")
+                cells.append(f"{float(val) * 100:.2f}")
         lines.append(" & ".join(cells) + " \\\\")
 
     lines.append("\\bottomrule")

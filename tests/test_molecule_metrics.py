@@ -40,9 +40,9 @@ smiles_b = [
     "CCNc1nc(C#N)nc(N2CCCCC2)n1",
 ]
 
-mols_a = [AllChem.MolFromSmiles(smiles) for smiles in smiles_a]
+mols_a = [AllChem.MolFromSmiles(smiles) for smiles in smiles_a]  # type: ignore[attr-defined]
 mols_a = list(filter(lambda x: x is not None, mols_a))
-mols_b = [AllChem.MolFromSmiles(smiles) for smiles in smiles_b]
+mols_b = [AllChem.MolFromSmiles(smiles) for smiles in smiles_b]  # type: ignore[attr-defined]
 mols_b = list(filter(lambda x: x is not None, mols_b))
 num_mols = min(len(mols_a), len(mols_b))
 mols_a = mols_a[:num_mols]
