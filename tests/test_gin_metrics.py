@@ -1,30 +1,101 @@
+from typing import List
+
+import networkx as nx
 import numpy as np
+import pytest
+import torch
 
 from polygraph.metrics.frechet_distance import (
     GraphNeuralNetworkFrechetDistance,
 )
-from polygraph.metrics.rbf_mmd import (
-    RBFGraphNeuralNetworkMMD2,
-)
 from polygraph.metrics.linear_mmd import (
     LinearGraphNeuralNetworkMMD2,
 )
-import networkx as nx
-import pytest
-from typing import List
+from polygraph.metrics.rbf_mmd import (
+    RBFGraphNeuralNetworkMMD2,
+)
 
-import sys
-from pathlib import Path
+# Reference values precomputed with DGL 2.3.0 (PyTorch 2.3.1) using the
+# ggm_implementation.evaluator.Evaluator with torch.manual_seed(42).
+#
+# DGL is incompatible with PyTorch>=2.4 so we cannot use it as a runtime
+# dependency. The values below were produced once in an isolated environment
+# and are checked in as frozen references.
+#
+# Comparisons use rtol=1e-3 because minor floating-point differences are
+# expected across PyTorch versions (reference: 2.3.1, current: >=2.4).
+#
+# To regenerate, create a temporary pixi project and run:
+#
+#     pixi init /tmp/dgl_project --channel conda-forge
+#     cd /tmp/dgl_project
+#     pixi add python=3.10 "dgl=2.3.0" networkx pyyaml "torchdata<0.8"
+#     pixi add --pypi torch_geometric pydantic rdkit joblib appdirs \
+#         loguru pandas scikit-learn numba eden-kernel
+#
+#     PYTHONPATH="<repo>/tests:<repo>" KMP_DUPLICATE_LIB_OK=TRUE \
+#     pixi run python -c "
+#     import torch, dgl, networkx as nx, numpy as np
+#     from ggm_implementation.evaluator import Evaluator
+#     from polygraph.datasets import PlanarGraphDataset, SBMGraphDataset
+#
+#     # Unattributed
+#     planar = list(PlanarGraphDataset('train').to_nx())
+#     sbm = list(SBMGraphDataset('train').to_nx())
+#     torch.manual_seed(42)
+#     ev = Evaluator('gin', device='cpu')
+#     r = ev.evaluate_all(list(map(dgl.from_networkx, sbm)),
+#                         list(map(dgl.from_networkx, planar)))
+#     print(r)
+#
+#     # Attributed (4 combinations of node/edge features)
+#     # See attributed_networkx_graphs fixture for graph definitions.
+#     # ds1 = [g1, g2]*10, ds2 = [g3, g4]*10
+#     for na in [True, False]:
+#       for ea in [True, False]:
+#         ...  # see test body for DGL conversion details
+#         torch.manual_seed(42)
+#         ev = Evaluator('gin', device='cpu',
+#             node_feat_loc='feat' if na else None,
+#             edge_feat_loc='edge_attr' if ea else None,
+#             input_dim=2 if na else 1,
+#             edge_feat_dim=3 if ea else 0)
+#         r = ev.evaluate_all(ds2_dgl, ds1_dgl)
+#         print(na, ea, r)
+#     "
 
-sys.path.append(str(Path(__file__).parent / "ggm_implementation"))
-import dgl  # noqa: E402
-import torch  # noqa: E402
-from ggm_implementation.evaluator import Evaluator  # noqa: E402
+DGL_UNATTRIBUTED = {
+    "fid": 2957766.3744324073,
+    "mmd_rbf": 1.0580106228590012,
+    "mmd_linear": 2132179.0,
+}
+
+DGL_ATTRIBUTED = {
+    (True, True): {
+        "fid": 48254.679086046475,
+        "mmd_rbf": 1.4141081187990494,
+        "mmd_linear": 36761.42,
+    },
+    (True, False): {
+        "fid": 2151.094310505561,
+        "mmd_rbf": 1.2381987534463406,
+        "mmd_linear": 1836.352,
+    },
+    (False, True): {
+        "fid": 145.31360315744712,
+        "mmd_rbf": 1.0005450689932331,
+        "mmd_linear": 105.7898,
+    },
+    (False, False): {
+        "fid": 165.04879303953692,
+        "mmd_rbf": 1.5,
+        "mmd_linear": 126.114044,
+    },
+}
 
 
 @pytest.fixture
 def attributed_networkx_graphs():
-    # Create 4 simple graphs with 2D node attributes and 3D edge attributes
     g1 = nx.Graph()
     g1.add_edges_from([(0, 1), (1, 2), (2, 3)])
     nx.set_node_attributes(
@@ -120,33 +191,26 @@ def attributed_networkx_graphs():
 
 
 def test_gin_metrics_unattributed(datasets):
+    """Test GIN metrics against DGL 2.3.0 reference values.
+
+    See DGL_UNATTRIBUTED above for how to regenerate.
+    """
     planar, sbm = datasets
     planar, sbm = list(planar.to_nx()), list(sbm.to_nx())
-    planar_dgl = list(map(dgl.from_networkx, planar))
-    sbm_dgl = list(map(dgl.from_networkx, sbm))
-
-    torch.manual_seed(42)
-    baseline_eval = Evaluator("gin", device="cpu")
-    baseline_result = baseline_eval.evaluate_all(sbm_dgl, planar_dgl)
-    fid, mmd_rbf, mmd_linear = (
-        baseline_result["fid"],
-        baseline_result["mmd_rbf"],
-        baseline_result["mmd_linear"],
-    )
 
     torch.manual_seed(42)
     our_rbf_mmd = RBFGraphNeuralNetworkMMD2(planar, seed=None).compute(sbm)
-    assert np.isclose(our_rbf_mmd, mmd_rbf)
+    assert np.isclose(our_rbf_mmd, DGL_UNATTRIBUTED["mmd_rbf"], rtol=1e-3)
 
     torch.manual_seed(42)
     our_linear_mmd = LinearGraphNeuralNetworkMMD2(planar, seed=None).compute(
         sbm
     )
-    assert np.isclose(our_linear_mmd, mmd_linear)
+    assert np.isclose(our_linear_mmd, DGL_UNATTRIBUTED["mmd_linear"], rtol=1e-3)
 
     torch.manual_seed(42)
     our_fid = GraphNeuralNetworkFrechetDistance(planar, seed=None).compute(sbm)
-    assert np.isclose(our_fid, fid)
+    assert np.isclose(our_fid, DGL_UNATTRIBUTED["fid"], rtol=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -175,43 +239,16 @@ def test_gin_metrics_attributed(
     node_attributed: bool,
     edge_attributed: bool,
 ):
+    """Test attributed GIN metrics against DGL 2.3.0 reference values.
+
+    See DGL_ATTRIBUTED above for how to regenerate.
+    """
     g1, g2, g3, g4 = attributed_networkx_graphs
 
     ds1 = [g1, g2] * 10
     ds2 = [g3, g4] * 10
-    if edge_attributed:
-        # Need to first convert to directed graph for edge-attributed case
-        def to_dgl(g: nx.Graph):
-            return dgl.from_networkx(
-                nx.DiGraph(g),
-                node_attrs=["feat"] if node_attributed else None,
-                edge_attrs=["edge_attr"],
-            )
-    else:
 
-        def to_dgl(g: nx.Graph):
-            return dgl.from_networkx(
-                g, node_attrs=["feat"] if node_attributed else None
-            )
-
-    ds1_dgl = list(map(to_dgl, ds1))
-    ds2_dgl = list(map(to_dgl, ds2))
-
-    torch.manual_seed(42)
-    baseline_eval = Evaluator(
-        "gin",
-        device="cpu",
-        node_feat_loc="feat" if node_attributed else None,
-        edge_feat_loc="edge_attr" if edge_attributed else None,
-        input_dim=2 if node_attributed else 1,
-        edge_feat_dim=3 if edge_attributed else 0,
-    )
-    baseline_result = baseline_eval.evaluate_all(ds2_dgl, ds1_dgl)
-    fid, mmd_rbf, mmd_linear = (
-        baseline_result["fid"],
-        baseline_result["mmd_rbf"],
-        baseline_result["mmd_linear"],
-    )
+    ref = DGL_ATTRIBUTED[(node_attributed, edge_attributed)]
 
     if node_attributed:
         node_feat_loc = ["feat"]
@@ -236,7 +273,7 @@ def test_gin_metrics_attributed(
         edge_feat_dim=edge_feat_dim,
         seed=None,
     ).compute(ds2)
-    assert np.isclose(our_rbf_mmd, mmd_rbf)
+    assert np.isclose(our_rbf_mmd, ref["mmd_rbf"], rtol=1e-3)
 
     torch.manual_seed(42)
     our_linear_mmd = LinearGraphNeuralNetworkMMD2(
@@ -247,7 +284,7 @@ def test_gin_metrics_attributed(
         edge_feat_dim=edge_feat_dim,
         seed=None,
     ).compute(ds2)
-    assert np.isclose(our_linear_mmd, mmd_linear)
+    assert np.isclose(our_linear_mmd, ref["mmd_linear"], rtol=1e-3)
 
     torch.manual_seed(42)
     our_fid = GraphNeuralNetworkFrechetDistance(
@@ -258,24 +295,24 @@ def test_gin_metrics_attributed(
         edge_feat_dim=edge_feat_dim,
         seed=None,
     ).compute(ds2)
-    assert np.isclose(our_fid, fid)
+    assert np.isclose(our_fid, ref["fid"], rtol=1e-3)
 
-    # Finally, check that the unattributed case is not the same as the attributed case
     if node_attributed or edge_attributed:
+        unattr_ref = DGL_ATTRIBUTED[(False, False)]
         torch.manual_seed(42)
         unattributed_mmd = RBFGraphNeuralNetworkMMD2(ds1, seed=None).compute(
             ds2
         )
-        assert not np.isclose(unattributed_mmd, mmd_rbf)
+        assert not np.isclose(unattributed_mmd, ref["mmd_rbf"])
 
         torch.manual_seed(42)
         unattributed_linear_mmd = LinearGraphNeuralNetworkMMD2(
             ds1, seed=None
         ).compute(ds2)
-        assert not np.isclose(unattributed_linear_mmd, mmd_linear)
+        assert not np.isclose(unattributed_linear_mmd, ref["mmd_linear"])
 
         torch.manual_seed(42)
         unattributed_fid = GraphNeuralNetworkFrechetDistance(
             ds1, seed=None
         ).compute(ds2)
-        assert not np.isclose(unattributed_fid, fid)
+        assert not np.isclose(unattributed_fid, ref["fid"])
