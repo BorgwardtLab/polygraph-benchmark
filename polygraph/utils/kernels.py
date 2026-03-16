@@ -88,6 +88,11 @@ class DescriptorKernel(ABC, Generic[GraphType]):
     def pre_gram_block(self, x: Any, y: Any) -> np.ndarray: ...
 
     @abstractmethod
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        """Compute diagonal elements k(x_i, x_i) from featurized data."""
+        ...
+
+    @abstractmethod
     def get_subkernel(self, idx: int) -> "DescriptorKernel": ...
 
     @property
@@ -188,6 +193,9 @@ class LaplaceKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         assert isinstance(self.lbd, np.ndarray)
         return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        return np.ones(features.shape[0])
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.lbd, np.ndarray):
@@ -246,6 +254,9 @@ class GaussianTV(DescriptorKernel[GraphType], Generic[GraphType]):
         assert isinstance(self.bw, np.ndarray)
         return GaussianTV(self._descriptor_fn, self.bw[idx])
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        return np.ones(features.shape[0])
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
@@ -301,6 +312,9 @@ class RBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         assert isinstance(self.bw, np.ndarray)
         assert isinstance(idx, int), type(idx)
         return RBFKernel(self._descriptor_fn, self.bw[idx])
+
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        return np.ones(features.shape[0])
 
     @property
     def num_kernels(self) -> int:
@@ -366,6 +380,9 @@ class AdaptiveRBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
             self._descriptor_fn, self.bw[idx], variant=self._variant
         )
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        return np.ones(features.shape[0])
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
@@ -427,6 +444,12 @@ class LinearKernel(DescriptorKernel[GraphType], Generic[GraphType]):
     def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert idx == 0, idx
         return LinearKernel(self._descriptor_fn)
+
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        if isinstance(features, csr_array):
+            sq_norms = features.multiply(features).sum(axis=1)
+            return np.asarray(sq_norms, dtype=np.float64).flatten()
+        return np.einsum("ij,ij->i", features, features)
 
     def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2

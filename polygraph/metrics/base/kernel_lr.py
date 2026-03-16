@@ -16,12 +16,8 @@ from sklearn.preprocessing import KernelCenterer
 
 from polygraph.utils.descriptors import WeisfeilerLehmanDescriptor
 from polygraph.utils.kernels import (
-    AdaptiveRBFKernel,
     DescriptorKernel,
-    GaussianTV,
-    LaplaceKernel,
     LinearKernel,
-    RBFKernel,
 )
 
 __all__ = ["KernelLogisticRegression"]
@@ -79,6 +75,26 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         z = np.clip(z, -500, 500)
         return 1.0 / (1.0 + np.exp(-z))
 
+    def _resolve_kernel(
+        self,
+        is_array: bool,
+        show_progress: bool = False,
+    ) -> DescriptorKernel:
+        """Return the kernel to use for computation."""
+        if self.kernel is not None:
+            return self.kernel
+        if is_array:
+            return LinearKernel(lambda x: x)  # pyright: ignore[reportArgumentType,reportReturnType]
+        wl_descriptor = WeisfeilerLehmanDescriptor(
+            iterations=self.wl_iterations,
+            use_node_labels=self.use_node_labels,
+            node_label_key=self.node_label_key,
+            digest_size=self.digest_size,
+            n_jobs=self.n_jobs,
+            show_progress=show_progress,
+        )
+        return LinearKernel(wl_descriptor)
+
     def _compute_kernel_matrix(
         self,
         X1: Union[List[nx.Graph], np.ndarray, csr_array],
@@ -88,81 +104,22 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         if X2 is None:
             X2 = X1
 
-        if isinstance(X1, (np.ndarray, csr_array)):
-            features1 = X1
-            features2 = X2
+        is_array = isinstance(X1, (np.ndarray, csr_array))
+        kernel = self._resolve_kernel(is_array, show_progress=self.verbose)
 
-            if self.kernel is not None:
-                return self.kernel.pre_gram_block(features1, features2)
+        features1 = X1 if is_array else kernel.featurize(X1)
+        features2 = X2 if is_array else kernel.featurize(X2)  # pyright: ignore[reportArgumentType]
 
-            kernel = LinearKernel(lambda x: x)  # pyright: ignore[reportArgumentType]
-            return kernel.pre_gram_block(features1, features2)  # pyright: ignore[reportArgumentType]
-
-        if self.kernel is not None:
-            features1 = self.kernel.featurize(X1)
-            features2 = self.kernel.featurize(X2)  # pyright: ignore[reportArgumentType]
-            return self.kernel.pre_gram_block(features1, features2)
-
-        wl_descriptor = WeisfeilerLehmanDescriptor(
-            iterations=self.wl_iterations,
-            use_node_labels=self.use_node_labels,
-            node_label_key=self.node_label_key,
-            digest_size=self.digest_size,
-            n_jobs=self.n_jobs,
-            show_progress=self.verbose,
-        )
-        kernel = LinearKernel(wl_descriptor)
-
-        features1 = kernel.featurize(X1)
-        features2 = kernel.featurize(X2)  # pyright: ignore[reportArgumentType]
-
-        K = kernel.pre_gram_block(features1, features2)
-        return K
+        return kernel.pre_gram_block(features1, features2)  # pyright: ignore[reportArgumentType]
 
     def _compute_kernel_diag(
         self, X: Union[List[nx.Graph], np.ndarray, csr_array]
     ) -> np.ndarray:
         """Compute diagonal of the kernel matrix for X."""
-        if isinstance(X, (np.ndarray, csr_array)):
-            features = X
-            if self.kernel is not None:
-                kernel = self.kernel
-            else:
-                kernel = LinearKernel(lambda x: x)  # pyright: ignore[reportArgumentType]
-        else:
-            if self.kernel is not None:
-                kernel = self.kernel
-            else:
-                wl_descriptor = WeisfeilerLehmanDescriptor(
-                    iterations=self.wl_iterations,
-                    use_node_labels=self.use_node_labels,
-                    node_label_key=self.node_label_key,
-                    digest_size=self.digest_size,
-                    n_jobs=self.n_jobs,
-                    show_progress=False,
-                )
-                kernel = LinearKernel(wl_descriptor)
-
-            if isinstance(
-                kernel,
-                (RBFKernel, LaplaceKernel, AdaptiveRBFKernel, GaussianTV),
-            ):
-                return np.ones(len(X))
-
-            features = kernel.featurize(X)
-
-        if isinstance(
-            kernel, (RBFKernel, LaplaceKernel, AdaptiveRBFKernel, GaussianTV)
-        ):
-            return np.ones(features.shape[0])  # pyright: ignore[reportOptionalSubscript]
-
-        if hasattr(features, "multiply"):
-            sq_norms = features.multiply(features).sum(axis=1)  # pyright: ignore[reportAttributeAccessIssue]
-            if hasattr(sq_norms, "toarray"):
-                sq_norms = sq_norms.toarray()
-            return np.asarray(sq_norms, dtype=np.float64).flatten()
-        else:
-            return np.einsum("ij,ij->i", features, features)  # pyright: ignore[reportCallIssue, reportArgumentType]
+        is_array = isinstance(X, (np.ndarray, csr_array))
+        kernel = self._resolve_kernel(is_array)
+        features = X if is_array else kernel.featurize(X)
+        return kernel.kernel_diag(features)  # pyright: ignore[reportArgumentType]
 
     def _objective(
         self, alpha: np.ndarray, K: np.ndarray, y: np.ndarray
