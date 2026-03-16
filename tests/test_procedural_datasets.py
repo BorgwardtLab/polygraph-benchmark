@@ -17,6 +17,8 @@ ALL_PROCEDURAL_DATASETS = [
 ]
 
 
+@pytest.mark.slow
+@pytest.mark.xdist_group("graph_tool")
 @pytest.mark.parametrize("ds_cls", ALL_PROCEDURAL_DATASETS)
 def test_split_disjointness(ds_cls):
     train = ds_cls("train", num_graphs=20)

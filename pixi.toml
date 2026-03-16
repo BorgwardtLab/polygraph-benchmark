@@ -15,7 +15,8 @@ polygraph-benchmark = { path = ".", editable = true, extras = ["dev", "cluster"]
 
 [tasks]
 # Development
-test = "pytest -n auto -sv --skip-slow ./tests"
+test = "pytest -n auto --dist loadgroup -v --tb=short --skip-slow ./tests"
+test-all = "pytest -n auto --dist loadgroup -v --tb=short ./tests"
 docs = "mkdocs build"
 
 # Data download

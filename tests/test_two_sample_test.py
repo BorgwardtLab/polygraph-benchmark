@@ -44,6 +44,7 @@ def _create_tst_fn(kernel):
     return _bootstrap_tst_function
 
 
+@pytest.mark.slow
 def test_bootstrap_test(datasets, degree_linear_kernel):
     planar, sbm = datasets
     tst = BootStrapMMDTest(sbm.to_nx(), degree_linear_kernel)

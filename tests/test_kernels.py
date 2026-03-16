@@ -24,6 +24,9 @@ class MockDescriptorKernel(DescriptorKernel):
     def get_subkernel(self, idx):
         return self
 
+    def kernel_diag(self, features):
+        return np.ones(features.shape[0])
+
     @property
     def num_kernels(self):
         return 1

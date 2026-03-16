@@ -43,6 +43,7 @@ SYNTHETIC_DATASETS = [
 ]
 
 
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     [PlanarGraphDataset, SBMGraphDataset],
@@ -66,6 +67,8 @@ def test_sample_graph_size(ds_cls):
         _ = ds_val.sample_graph_size()
 
 
+@pytest.mark.slow
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -82,6 +85,7 @@ def test_cache(ds_cls):
     _ = ds_cls("train")
 
 
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -128,6 +132,8 @@ def test_graph_properties_slow(ds_cls):
         )
 
 
+@pytest.mark.slow
+@pytest.mark.xdist_group("graph_tool")
 @pytest.mark.parametrize("ds_cls", SYNTHETIC_DATASETS)
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
@@ -168,6 +174,7 @@ def test_invalid_inputs():
         SBMGraphDataset("invalid_split")
 
 
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -186,6 +193,7 @@ def test_dataset_consistency(ds_cls):
 
 
 # Ego datasets have non-unique graphs, which is apparently okay (?)
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     [

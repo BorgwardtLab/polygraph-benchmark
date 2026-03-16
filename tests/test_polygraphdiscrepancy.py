@@ -41,9 +41,10 @@ def sparse_graphs():
 @pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
 def test_classifier_metric(
-    descriptor, classifier, variant, dense_graphs, sparse_graphs
+    request, descriptor, classifier, variant, dense_graphs, sparse_graphs
 ):
     if classifier == "tabpfn":
+        request.applymarker(pytest.mark.slow)
         classifier = None
     else:
         classifier = LogisticRegression()
@@ -62,13 +63,16 @@ def test_classifier_metric(
 
 @pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_polygraphdiscrepancy(classifier, variant, dense_graphs, sparse_graphs):
+def test_polygraphdiscrepancy(
+    request, classifier, variant, dense_graphs, sparse_graphs
+):
     descriptors = {
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
     }
 
     if classifier == "tabpfn":
+        request.applymarker(pytest.mark.slow)
         classifier = None
     else:
         classifier = LogisticRegression()
@@ -96,13 +100,14 @@ def test_polygraphdiscrepancy(classifier, variant, dense_graphs, sparse_graphs):
 @pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
 def test_polygraphdiscrepancy_interval(
-    classifier, variant, dense_graphs, sparse_graphs
+    request, classifier, variant, dense_graphs, sparse_graphs
 ):
     descriptors = {
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
     }
     if classifier == "tabpfn":
+        request.applymarker(pytest.mark.slow)
         classifier = None
     else:
         classifier = LogisticRegression()
@@ -125,6 +130,7 @@ def test_polygraphdiscrepancy_interval(
     assert isinstance(result["pgd_descriptor"], dict)
 
 
+@pytest.mark.slow
 def test_standard_pgd(dense_graphs, sparse_graphs):
     metric = StandardPGD(dense_graphs)
     result = metric.compute(sparse_graphs)
