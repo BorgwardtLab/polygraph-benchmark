@@ -10,7 +10,6 @@ Usage:
 
 import json
 import sys
-from pathlib import Path
 from typing import Dict, List
 
 import hydra
@@ -18,7 +17,9 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset
@@ -36,10 +37,17 @@ def load_graphs(model: str, dataset: str) -> List:
     return _load(DATA_DIR, model, dataset)
 
 
-def compute_gklr_metrics(reference_graphs: List, generated_graphs: List,
-                         dataset: str = "", subset: bool = False) -> Dict:
+def compute_gklr_metrics(
+    reference_graphs: List,
+    generated_graphs: List,
+    dataset: str = "",
+    subset: bool = False,
+) -> Dict:
     """Compute PGD metrics using graph kernel descriptors with kernel logistic regression."""
-    from polygraph.metrics.base import KernelLogisticRegression, PolyGraphDiscrepancyInterval
+    from polygraph.metrics.base import (
+        KernelLogisticRegression,
+        PolyGraphDiscrepancyInterval,
+    )
     from polygraph.utils.descriptors import (
         WeisfeilerLehmanDescriptor,
         ShortestPathHistogramDescriptor,
@@ -84,7 +92,7 @@ def compute_gklr_metrics(reference_graphs: List, generated_graphs: List,
         "subscores": {
             name: {"mean": interval.mean, "std": interval.std}
             for name, interval in result["subscores"].items()
-        }
+        },
     }
 
 
@@ -100,7 +108,9 @@ def main(cfg: DictConfig) -> None:
     logger.info("Computing GKLR for {}/{}", model, dataset)
 
     try:
-        reference_graphs = get_reference_dataset(dataset, split="test", num_graphs=4096)
+        reference_graphs = get_reference_dataset(
+            dataset, split="test", num_graphs=4096
+        )
     except Exception as e:
         logger.error("Error loading reference dataset: {}", e)
         maybe_append_jsonl(
@@ -130,11 +140,13 @@ def main(cfg: DictConfig) -> None:
         )
         return
 
-    generated_graphs = generated_graphs[:len(reference_graphs)]
+    generated_graphs = generated_graphs[: len(reference_graphs)]
     result: Dict = {"dataset": dataset, "model": model}
 
     try:
-        gklr_results = compute_gklr_metrics(reference_graphs, generated_graphs, dataset=dataset, subset=subset)
+        gklr_results = compute_gklr_metrics(
+            reference_graphs, generated_graphs, dataset=dataset, subset=subset
+        )
         result["pgs_mean"] = gklr_results.get("pgd_mean", float("nan"))
         result["pgs_std"] = gklr_results.get("pgd_std", float("nan"))
         for key, value in gklr_results.get("subscores", {}).items():

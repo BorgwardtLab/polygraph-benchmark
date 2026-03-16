@@ -28,7 +28,9 @@ from omegaconf import DictConfig
 from pyprojroot import here
 
 from polygraph.metrics.base import MaxDescriptorMMD2Interval
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 from polygraph.utils.descriptors import (
     ClusteringHistogram,
     EigenvalueHistogram,
@@ -53,7 +55,14 @@ RESULTS_DIR = EXPERIMENT_RESULTS_DIR / Path(__file__).stem
 BANDWIDTHS = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
 
 # Descriptor names matching the original experiment
-DESCRIPTOR_NAMES = ["orbit4", "orbit5", "degree", "spectral", "clustering", "gin"]
+DESCRIPTOR_NAMES = [
+    "orbit4",
+    "orbit5",
+    "degree",
+    "spectral",
+    "clustering",
+    "gin",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +140,11 @@ def make_descriptor(name: str, reference_graphs: List[nx.Graph]):
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-@hydra.main(config_path="../configs", config_name="01_subsampling_mmd", version_base=None)
+@hydra.main(
+    config_path="../configs",
+    config_name="01_subsampling_mmd",
+    version_base=None,
+)
 def main(cfg: DictConfig) -> None:
     """Compute MMD for one (dataset, model, subsample_size, descriptor, variant) cell."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -145,7 +158,12 @@ def main(cfg: DictConfig) -> None:
 
     logger.info(
         "MMD subsampling: dataset={}, model={}, n={}, descriptor={}, variant={}, bootstraps={}",
-        dataset, model, subsample_size, descriptor_name, variant, num_bootstrap,
+        dataset,
+        model,
+        subsample_size,
+        descriptor_name,
+        variant,
+        num_bootstrap,
     )
 
     # -- Load reference graphs (train split, 10x subsample size as in original) --
@@ -215,7 +233,9 @@ def main(cfg: DictConfig) -> None:
     if subsample_size > min(len(reference_graphs), len(generated_graphs)):
         logger.warning(
             "Subsample size {} exceeds available graphs (ref={}, gen={}), skipping",
-            subsample_size, len(reference_graphs), len(generated_graphs),
+            subsample_size,
+            len(reference_graphs),
+            len(generated_graphs),
         )
         maybe_append_jsonl(
             {
@@ -286,10 +306,17 @@ def main(cfg: DictConfig) -> None:
             }
         )
     except Exception as e:
-        metric_runtime_perf_seconds = round(time.perf_counter() - metric_start, 6)
+        metric_runtime_perf_seconds = round(
+            time.perf_counter() - metric_start, 6
+        )
         logger.error(
             "Error computing MMD for {}/{}/n={}/{}/{}: {}",
-            dataset, model, subsample_size, descriptor_name, variant, e,
+            dataset,
+            model,
+            subsample_size,
+            descriptor_name,
+            variant,
+            e,
         )
         maybe_append_jsonl(
             {

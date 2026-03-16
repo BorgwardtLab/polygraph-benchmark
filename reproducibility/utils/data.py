@@ -78,14 +78,18 @@ def get_reference_dataset(
     }
 
     if dataset in procedural:
-        return list(procedural[dataset](split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            procedural[dataset](split=split, num_graphs=num_graphs).to_nx()
+        )
 
     if dataset == "proteins":
         from polygraph.datasets.proteins import DobsonDoigGraphDataset
+
         return list(DobsonDoigGraphDataset(split=split).to_nx())
 
     if dataset == "ego":
         from polygraph.datasets.ego import EgoGraphDataset
+
         graphs = list(EgoGraphDataset(split=split).to_nx())
         for g in graphs:
             g.remove_edges_from(nx.selfloop_edges(g))

@@ -23,7 +23,9 @@ from scipy.sparse import issparse
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
@@ -55,8 +57,12 @@ class ConcatenatedDescriptor:
     handles high-dimensional inputs natively).
     """
 
-    def __init__(self, descriptors: Dict, max_features: Optional[int] = 500,
-                 dataset_size: Optional[int] = None):
+    def __init__(
+        self,
+        descriptors: Dict,
+        max_features: Optional[int] = 500,
+        dataset_size: Optional[int] = None,
+    ):
         self.descriptors = descriptors
         self._use_pca = max_features is not None
         if self._use_pca:
@@ -92,7 +98,12 @@ class ConcatenatedDescriptor:
         return self._pca.transform(concatenated)
 
 
-def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset: bool = False, classifier=None) -> Dict:
+def compute_pgs_standard(
+    reference_graphs: List,
+    generated_graphs: List,
+    subset: bool = False,
+    classifier=None,
+) -> Dict:
     """Compute standard PGD (max over individual descriptors, TabPFN classifier)."""
     from polygraph.metrics import StandardPGDInterval
 
@@ -120,7 +131,13 @@ def compute_pgs_standard(reference_graphs: List, generated_graphs: List, subset:
     }
 
 
-def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, subset: bool = False, classifier=None, use_pca: bool = True) -> Dict:
+def compute_pgs_concatenated(
+    reference_graphs: List,
+    generated_graphs: List,
+    subset: bool = False,
+    classifier=None,
+    use_pca: bool = True,
+) -> Dict:
     """Compute concatenated PGD (all descriptors as one feature vector)."""
 
     from polygraph.metrics.base import PolyGraphDiscrepancyInterval
@@ -161,7 +178,9 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
         }
     dataset_size = min(len(reference_graphs), len(generated_graphs))
     concat_desc = ConcatenatedDescriptor(
-        desc_dict, max_features=500 if use_pca else None, dataset_size=dataset_size,
+        desc_dict,
+        max_features=500 if use_pca else None,
+        dataset_size=dataset_size,
     )
 
     metric = PolyGraphDiscrepancyInterval(
@@ -181,7 +200,9 @@ def compute_pgs_concatenated(reference_graphs: List, generated_graphs: List, sub
     }
 
 
-@hydra.main(config_path="../configs", config_name="07_concatenation", version_base=None)
+@hydra.main(
+    config_path="../configs", config_name="07_concatenation", version_base=None
+)
 def main(cfg: DictConfig) -> None:
     """Compute concatenation metrics for one (dataset, model) pair and save as JSON."""
     results_suffix: str = cfg.get("results_suffix", "")
@@ -201,9 +222,13 @@ def main(cfg: DictConfig) -> None:
         "v2.5": ModelVersion.V2_5,
     }
     if tabpfn_weights_version not in version_map:
-        raise ValueError(f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}")
+        raise ValueError(
+            f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}"
+        )
     classifier = TabPFNClassifier.create_default_for_version(
-        version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+        version_map[tabpfn_weights_version],
+        device="auto",
+        n_estimators=4,
     )
 
     # V2.5 handles high-dimensional inputs natively; skip PCA
@@ -242,7 +267,7 @@ def main(cfg: DictConfig) -> None:
         )
         return
 
-    generated_graphs = generated_graphs[:len(reference_graphs)]
+    generated_graphs = generated_graphs[: len(reference_graphs)]
     result: Dict = {
         "dataset": dataset,
         "model": model,
@@ -251,16 +276,31 @@ def main(cfg: DictConfig) -> None:
     }
 
     try:
-        std_results = compute_pgs_standard(reference_graphs, generated_graphs, subset=subset, classifier=classifier)
+        std_results = compute_pgs_standard(
+            reference_graphs,
+            generated_graphs,
+            subset=subset,
+            classifier=classifier,
+        )
         result.update(std_results)
     except Exception as e:
-        logger.error("Error computing standard PGD for {}/{}: {}", model, dataset, e)
+        logger.error(
+            "Error computing standard PGD for {}/{}: {}", model, dataset, e
+        )
 
     try:
-        cat_results = compute_pgs_concatenated(reference_graphs, generated_graphs, subset=subset, classifier=classifier, use_pca=use_pca)
+        cat_results = compute_pgs_concatenated(
+            reference_graphs,
+            generated_graphs,
+            subset=subset,
+            classifier=classifier,
+            use_pca=use_pca,
+        )
         result.update(cat_results)
     except Exception as e:
-        logger.error("Error computing concatenated PGD for {}/{}: {}", model, dataset, e)
+        logger.error(
+            "Error computing concatenated PGD for {}/{}: {}", model, dataset, e
+        )
 
     out_path = RESULTS_DIR / f"{dataset}_{model}.json"
     out_path.write_text(json.dumps(result, indent=2))

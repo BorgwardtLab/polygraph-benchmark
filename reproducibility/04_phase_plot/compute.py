@@ -9,20 +9,32 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
-RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "04_phase_plot" / "results"
+RESULTS_DIR = (
+    REPO_ROOT / "reproducibility" / "figures" / "04_phase_plot" / "results"
+)
 
 
-@hydra.main(config_path="../configs", config_name="04_phase_plot", version_base=None)
+@hydra.main(
+    config_path="../configs", config_name="04_phase_plot", version_base=None
+)
 def main(cfg: DictConfig) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     log_files = {
-        "sbm_small": DATA_DIR / "AUTOGRAPH" / "logs" / "sbm_proc_small_metrics.csv",
-        "sbm_large": DATA_DIR / "AUTOGRAPH" / "logs" / "sbm_proc_large_metrics.csv",
+        "sbm_small": DATA_DIR
+        / "AUTOGRAPH"
+        / "logs"
+        / "sbm_proc_small_metrics.csv",
+        "sbm_large": DATA_DIR
+        / "AUTOGRAPH"
+        / "logs"
+        / "sbm_proc_large_metrics.csv",
     }
 
     results = {}

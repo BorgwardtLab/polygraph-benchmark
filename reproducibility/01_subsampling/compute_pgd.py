@@ -43,10 +43,15 @@ def _make_tabpfn_classifier(weights_version: str):
         "v2.5": ModelVersion.V2_5,
     }
     if weights_version not in version_map:
-        raise ValueError(f"Unknown weights_version: {weights_version!r}. Must be one of {list(version_map)}")
+        raise ValueError(
+            f"Unknown weights_version: {weights_version!r}. Must be one of {list(version_map)}"
+        )
     return TabPFNClassifier.create_default_for_version(
-        version_map[weights_version], device="auto", n_estimators=4,
+        version_map[weights_version],
+        device="auto",
+        n_estimators=4,
     )
+
 
 # ---------------------------------------------------------------------------
 # Paths (resolved before Hydra touches CWD; we disable chdir in the config)
@@ -111,12 +116,18 @@ def get_reference_dataset(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-@hydra.main(config_path="../configs", config_name="01_subsampling_pgd", version_base=None)
+@hydra.main(
+    config_path="../configs",
+    config_name="01_subsampling_pgd",
+    version_base=None,
+)
 def main(cfg: DictConfig) -> None:
     """Compute PGD for one (dataset, model, subsample_size) cell."""
     results_suffix: str = cfg.get("results_suffix", "")
     tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
-    RESULTS_DIR = EXPERIMENT_RESULTS_DIR / f"{Path(__file__).stem}{results_suffix}"
+    RESULTS_DIR = (
+        EXPERIMENT_RESULTS_DIR / f"{Path(__file__).stem}{results_suffix}"
+    )
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset: str = cfg.dataset
@@ -127,7 +138,10 @@ def main(cfg: DictConfig) -> None:
 
     logger.info(
         "PGD subsampling: dataset={}, model={}, n={}, bootstraps={}",
-        dataset, model, subsample_size, num_bootstrap,
+        dataset,
+        model,
+        subsample_size,
+        num_bootstrap,
     )
 
     # -- Load reference graphs (train split, 10x subsample size as in original) --
@@ -191,7 +205,9 @@ def main(cfg: DictConfig) -> None:
     if subsample_size > min(len(reference_graphs), len(generated_graphs)):
         logger.warning(
             "Subsample size {} exceeds available graphs (ref={}, gen={}), skipping",
-            subsample_size, len(reference_graphs), len(generated_graphs),
+            subsample_size,
+            len(reference_graphs),
+            len(generated_graphs),
         )
         maybe_append_jsonl(
             {
@@ -263,10 +279,15 @@ def main(cfg: DictConfig) -> None:
             }
         )
     except Exception as e:
-        metric_runtime_perf_seconds = round(time.perf_counter() - metric_start, 6)
+        metric_runtime_perf_seconds = round(
+            time.perf_counter() - metric_start, 6
+        )
         logger.error(
             "Error computing PGD for {}/{}/n={}: {}",
-            dataset, model, subsample_size, e,
+            dataset,
+            model,
+            subsample_size,
+            e,
         )
         maybe_append_jsonl(
             {

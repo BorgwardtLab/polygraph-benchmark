@@ -3,7 +3,6 @@
 
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 TABLES_DIR = Path(__file__).parent / "tables"
@@ -51,7 +50,9 @@ def get_old_version(filename: str) -> str:
     try:
         result = subprocess.run(
             ["git", "show", f"HEAD:reproducibility/tables/{filename}"],
-            capture_output=True, text=True, check=True
+            capture_output=True,
+            text=True,
+            check=True,
         )
         return result.stdout
     except subprocess.CalledProcessError:
@@ -67,32 +68,36 @@ def latex_to_html_cell(cell: str) -> str:
     """Convert a single LaTeX cell to HTML."""
     cell = cell.strip()
     # Remove \textbf, \underline, \textsc
-    cell = re.sub(r'\\textbf\{([^}]*)\}', r'<b>\1</b>', cell)
-    cell = re.sub(r'\\underline\{([^}]*)\}', r'<u>\1</u>', cell)
-    cell = re.sub(r'\\textsc\{([^}]*)\}', r'<span style="font-variant:small-caps">\1</span>', cell)
+    cell = re.sub(r"\\textbf\{([^}]*)\}", r"<b>\1</b>", cell)
+    cell = re.sub(r"\\underline\{([^}]*)\}", r"<u>\1</u>", cell)
+    cell = re.sub(
+        r"\\textsc\{([^}]*)\}",
+        r'<span style="font-variant:small-caps">\1</span>',
+        cell,
+    )
     # Convert \pm\,\scriptstyle{X} to ± X
-    cell = re.sub(r'\$\\pm\\,\\scriptstyle\{([^}]*)\}\$', r'± \1', cell)
+    cell = re.sub(r"\$\\pm\\,\\scriptstyle\{([^}]*)\}\$", r"± \1", cell)
     # Convert $\uparrow$ etc.
-    cell = cell.replace(r'$\uparrow$', '↑').replace(r'$\downarrow$', '↓')
+    cell = cell.replace(r"$\uparrow$", "↑").replace(r"$\downarrow$", "↓")
     # Remove remaining $ signs
-    cell = cell.replace('$', '')
+    cell = cell.replace("$", "")
     # Remove \multicolumn but keep text
-    cell = re.sub(r'\\multicolumn\{\d+\}\{[^}]*\}\{([^}]*)\}', r'\1', cell)
+    cell = re.sub(r"\\multicolumn\{\d+\}\{[^}]*\}\{([^}]*)\}", r"\1", cell)
     return cell
 
 
 def extract_numeric(cell: str) -> float | None:
     """Extract the main numeric value from a cell."""
     cell = cell.strip()
-    if cell == '-' or cell == '':
+    if cell == "-" or cell == "":
         return None
     # Remove LaTeX formatting
-    clean = re.sub(r'\\textbf\{([^}]*)\}', r'\1', cell)
-    clean = re.sub(r'\\underline\{([^}]*)\}', r'\1', clean)
-    clean = re.sub(r'\$\\pm\\,\\scriptstyle\{[^}]*\}\$', '', clean)
-    clean = clean.replace('$', '').strip()
+    clean = re.sub(r"\\textbf\{([^}]*)\}", r"\1", cell)
+    clean = re.sub(r"\\underline\{([^}]*)\}", r"\1", clean)
+    clean = re.sub(r"\$\\pm\\,\\scriptstyle\{[^}]*\}\$", "", clean)
+    clean = clean.replace("$", "").strip()
     # Try to extract number
-    match = re.search(r'-?\d+\.?\d*', clean)
+    match = re.search(r"-?\d+\.?\d*", clean)
     if match:
         return float(match.group())
     return None
@@ -101,20 +106,28 @@ def extract_numeric(cell: str) -> float | None:
 def parse_latex_table(latex: str) -> list[list[str]]:
     """Parse LaTeX tabular into list of rows of cells."""
     rows = []
-    for line in latex.split('\n'):
+    for line in latex.split("\n"):
         line = line.strip()
-        if not line or line.startswith('\\begin') or line.startswith('\\end') or \
-           line.startswith('\\toprule') or line.startswith('\\midrule') or \
-           line.startswith('\\bottomrule') or line.startswith('\\cmidrule'):
+        if (
+            not line
+            or line.startswith("\\begin")
+            or line.startswith("\\end")
+            or line.startswith("\\toprule")
+            or line.startswith("\\midrule")
+            or line.startswith("\\bottomrule")
+            or line.startswith("\\cmidrule")
+        ):
             continue
         # Remove trailing \\
-        line = re.sub(r'\s*\\\\$', '', line)
-        cells = line.split('&')
+        line = re.sub(r"\s*\\\\$", "", line)
+        cells = line.split("&")
         rows.append([c.strip() for c in cells])
     return rows
 
 
-def compute_changes(old_rows: list[list[str]], new_rows: list[list[str]]) -> dict:
+def compute_changes(
+    old_rows: list[list[str]], new_rows: list[list[str]]
+) -> dict:
     """Compute numerical changes between old and new tables."""
     changes = []
     total_cells = 0
@@ -149,23 +162,27 @@ def compute_changes(old_rows: list[list[str]], new_rows: list[list[str]]) -> dic
     }
 
 
-def render_table_html(rows: list[list[str]], is_header_row: set[int] = None) -> str:
+def render_table_html(
+    rows: list[list[str]], is_header_row: set[int] = None
+) -> str:
     """Render parsed rows to an HTML table."""
     if is_header_row is None:
         is_header_row = {0}
-    html = '<table>\n'
+    html = "<table>\n"
     for i, row in enumerate(rows):
-        html += '  <tr>\n'
-        tag = 'th' if i in is_header_row else 'td'
+        html += "  <tr>\n"
+        tag = "th" if i in is_header_row else "td"
         for cell in row:
             content = latex_to_html_cell(cell)
-            html += f'    <{tag}>{content}</{tag}>\n'
-        html += '  </tr>\n'
-    html += '</table>\n'
+            html += f"    <{tag}>{content}</{tag}>\n"
+        html += "  </tr>\n"
+    html += "</table>\n"
     return html
 
 
-def render_diff_table(old_rows: list[list[str]], new_rows: list[list[str]]) -> str:
+def render_diff_table(
+    old_rows: list[list[str]], new_rows: list[list[str]]
+) -> str:
     """Render a diff table showing old→new with color coding."""
     html = '<table class="diff-table">\n'
 
@@ -177,41 +194,49 @@ def render_diff_table(old_rows: list[list[str]], new_rows: list[list[str]]) -> s
         new_row = new_rows[i] if i < len(new_rows) else []
 
         is_header = i == 0
-        tag = 'th' if is_header else 'td'
+        tag = "th" if is_header else "td"
 
-        html += '  <tr>\n'
+        html += "  <tr>\n"
         max_cols = max(len(old_row), len(new_row))
         for j in range(max_cols):
-            old_cell = old_row[j] if j < len(old_row) else ''
-            new_cell = new_row[j] if j < len(new_row) else ''
+            old_cell = old_row[j] if j < len(old_row) else ""
+            new_cell = new_row[j] if j < len(new_row) else ""
 
             old_val = extract_numeric(old_cell)
             new_val = extract_numeric(new_cell)
 
             new_content = latex_to_html_cell(new_cell)
 
-            css_class = ''
-            annotation = ''
+            css_class = ""
+            annotation = ""
             if not is_header:
                 if old_val is None and new_val is not None:
                     css_class = ' class="cell-new"'
-                    annotation = f' <span class="annotation">NEW</span>'
+                    annotation = ' <span class="annotation">NEW</span>'
                 elif old_val is not None and new_val is not None:
                     diff = new_val - old_val
                     if abs(diff) > 0.001:
                         if diff > 0:
                             css_class = ' class="cell-increased"'
-                            annotation = f' <span class="annotation">+{diff:.1f}</span>'
+                            annotation = (
+                                f' <span class="annotation">+{diff:.1f}</span>'
+                            )
                         else:
                             css_class = ' class="cell-decreased"'
-                            annotation = f' <span class="annotation">{diff:.1f}</span>'
-                elif old_cell.strip() != new_cell.strip() and old_cell.strip() and new_cell.strip():
+                            annotation = (
+                                f' <span class="annotation">{diff:.1f}</span>'
+                            )
+                elif (
+                    old_cell.strip() != new_cell.strip()
+                    and old_cell.strip()
+                    and new_cell.strip()
+                ):
                     # Text changed
                     css_class = ' class="cell-text-changed"'
 
-            html += f'    <{tag}{css_class}>{new_content}{annotation}</{tag}>\n'
-        html += '  </tr>\n'
-    html += '</table>\n'
+            html += f"    <{tag}{css_class}>{new_content}{annotation}</{tag}>\n"
+        html += "  </tr>\n"
+    html += "</table>\n"
     return html
 
 
@@ -241,22 +266,30 @@ def generate_html():
 
         summary_parts = []
         if stats["new_cells"] > 0:
-            summary_parts.append(f'<span class="stat-new">{stats["new_cells"]} new values</span>')
+            summary_parts.append(
+                f'<span class="stat-new">{stats["new_cells"]} new values</span>'
+            )
         if stats["changed_cells"] > 0:
-            summary_parts.append(f'<span class="stat-changed">{stats["changed_cells"]} changed values</span>')
+            summary_parts.append(
+                f'<span class="stat-changed">{stats["changed_cells"]} changed values</span>'
+            )
         if stats["max_abs_change"] > 0:
-            summary_parts.append(f'Max |Δ|: {stats["max_abs_change"]:.1f}')
-        summary = ' | '.join(summary_parts) if summary_parts else 'No numeric changes'
+            summary_parts.append(f"Max |Δ|: {stats['max_abs_change']:.1f}")
+        summary = (
+            " | ".join(summary_parts) if summary_parts else "No numeric changes"
+        )
 
-        sections.append({
-            "name": TABLE_NAMES.get(filename, filename),
-            "filename": filename,
-            "old_html": old_html,
-            "new_html": new_html,
-            "diff_html": diff_html,
-            "summary": summary,
-            "changed": True,
-        })
+        sections.append(
+            {
+                "name": TABLE_NAMES.get(filename, filename),
+                "filename": filename,
+                "old_html": old_html,
+                "new_html": new_html,
+                "diff_html": diff_html,
+                "summary": summary,
+                "changed": True,
+            }
+        )
 
     # Unchanged tables
     for filename in UNCHANGED_TABLES:
@@ -264,23 +297,27 @@ def generate_html():
         new_rows = parse_latex_table(new_latex)
         new_html = render_table_html(new_rows)
 
-        sections.append({
-            "name": TABLE_NAMES.get(filename, filename),
-            "filename": filename,
-            "new_html": new_html,
-            "changed": False,
-        })
+        sections.append(
+            {
+                "name": TABLE_NAMES.get(filename, filename),
+                "filename": filename,
+                "new_html": new_html,
+                "changed": False,
+            }
+        )
 
     # Build HTML
     toc_items = []
     for i, s in enumerate(sections):
-        status = '🔄' if s["changed"] else '✅'
-        toc_items.append(f'<li><a href="#table-{i}">{status} {s["name"]}</a></li>')
+        status = "🔄" if s["changed"] else "✅"
+        toc_items.append(
+            f'<li><a href="#table-{i}">{status} {s["name"]}</a></li>'
+        )
 
     content_sections = []
     for i, s in enumerate(sections):
         if s["changed"]:
-            content_sections.append(f'''
+            content_sections.append(f"""
 <div class="table-section" id="table-{i}">
     <h2>{s["name"]} <span class="badge badge-changed">CHANGED</span></h2>
     <p class="filename">{s["filename"]}</p>
@@ -300,17 +337,17 @@ def generate_html():
         </div>
     </div>
 </div>
-''')
+""")
         else:
-            content_sections.append(f'''
+            content_sections.append(f"""
 <div class="table-section" id="table-{i}">
     <h2>{s["name"]} <span class="badge badge-unchanged">UNCHANGED</span></h2>
     <p class="filename">{s["filename"]}</p>
     <div class="table-container">{s["new_html"]}</div>
 </div>
-''')
+""")
 
-    html = f'''<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -504,7 +541,7 @@ VUN (Valid Unique Novel) and MMD values are TabPFN-independent.</p>
 </footer>
 </body>
 </html>
-'''
+"""
     return html
 
 

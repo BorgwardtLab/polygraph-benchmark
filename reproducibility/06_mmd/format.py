@@ -14,7 +14,7 @@ Usage:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import pandas as pd
 import typer
@@ -28,7 +28,6 @@ from utils.formatting import (
     MODEL_DISPLAY,
     MODELS,
     best_two,
-    fmt_pgs,
     fmt_sci,
 )
 
@@ -72,16 +71,23 @@ def _fmt_pgs(mean: float, std: float, is_best=False, is_second=False) -> str:
 def generate_gtv_table(mmd_results: Dict, bench_results: Dict) -> str:
     """GTV table matches paper: includes VUN, PGD, and 4 GTV MMD columns."""
     metrics = ["gtv_degree", "gtv_clustering", "gtv_orbit", "gtv_spectral"]
-    metric_labels = ["GTV MMD$^2$ Deg.", "GTV MMD$^2$ Clust.", "GTV MMD$^2$ Orb.", "GTV MMD$^2$ Eig."]
+    metric_labels = [
+        "GTV MMD$^2$ Deg.",
+        "GTV MMD$^2$ Clust.",
+        "GTV MMD$^2$ Orb.",
+        "GTV MMD$^2$ Eig.",
+    ]
 
     lines = []
     lines.append("\\scalebox{0.6}{")
     lines.append("\\begin{tabular}{ll" + "c" * (2 + len(metrics)) + "}")
     lines.append("\\toprule")
-    header = (
-        ["\\textbf{Dataset}", "\\textbf{Model}", "\\textbf{VUN ($\\uparrow$)}", "\\textbf{PGD ($\\downarrow$)}"]
-        + [f"\\textbf{{{l} ($\\downarrow$)}}" for l in metric_labels]
-    )
+    header = [
+        "\\textbf{Dataset}",
+        "\\textbf{Model}",
+        "\\textbf{VUN ($\\uparrow$)}",
+        "\\textbf{PGD ($\\downarrow$)}",
+    ] + [f"\\textbf{{{lbl} ($\\downarrow$)}}" for lbl in metric_labels]
     lines.append(" & ".join(header) + " \\\\")
     lines.append("\\midrule")
 
@@ -114,15 +120,20 @@ def generate_gtv_table(mmd_results: Dict, bench_results: Dict) -> str:
 
             pgs_m = bench_r.get("pgs_mean", float("nan"))
             pgs_s = bench_r.get("pgs_std", float("nan"))
-            row.append(_fmt_pgs(pgs_m, pgs_s, model == pgs_best, model == pgs_second))
+            row.append(
+                _fmt_pgs(pgs_m, pgs_s, model == pgs_best, model == pgs_second)
+            )
 
             for m_key in metrics:
                 best, second = _best_two(ds_mmd, f"{m_key}_mean", lower=True)
-                row.append(_fmt_sci(
-                    mmd_r.get(f"{m_key}_mean", float("nan")),
-                    mmd_r.get(f"{m_key}_std", float("nan")),
-                    model == best, model == second,
-                ))
+                row.append(
+                    _fmt_sci(
+                        mmd_r.get(f"{m_key}_mean", float("nan")),
+                        mmd_r.get(f"{m_key}_std", float("nan")),
+                        model == best,
+                        model == second,
+                    )
+                )
 
             lines.append(" & ".join(row) + " \\\\")
         if i < len(DATASETS) - 1:
@@ -133,13 +144,17 @@ def generate_gtv_table(mmd_results: Dict, bench_results: Dict) -> str:
     return "\n".join(lines)
 
 
-def _generate_mmd_table(mmd_results: Dict, metrics: List[str], metric_labels: List[str]) -> str:
+def _generate_mmd_table(
+    mmd_results: Dict, metrics: List[str], metric_labels: List[str]
+) -> str:
     """Generic MMD table (RBF biased or UMVE)."""
     lines = []
     lines.append("\\scalebox{0.6}{")
     lines.append("\\begin{tabular}{ll" + "c" * len(metrics) + "}")
     lines.append("\\toprule")
-    header = ["\\textbf{Dataset}", "\\textbf{Model}"] + [f"\\textbf{{{l} ($\\downarrow$)}}" for l in metric_labels]
+    header = ["\\textbf{Dataset}", "\\textbf{Model}"] + [
+        f"\\textbf{{{lbl} ($\\downarrow$)}}" for lbl in metric_labels
+    ]
     lines.append(" & ".join(header) + " \\\\")
     lines.append("\\midrule")
 
@@ -155,11 +170,14 @@ def _generate_mmd_table(mmd_results: Dict, metrics: List[str], metric_labels: Li
 
             for m_key in metrics:
                 best, second = _best_two(ds_mmd, f"{m_key}_mean", lower=True)
-                row.append(_fmt_sci(
-                    r.get(f"{m_key}_mean", float("nan")),
-                    r.get(f"{m_key}_std", float("nan")),
-                    model == best, model == second,
-                ))
+                row.append(
+                    _fmt_sci(
+                        r.get(f"{m_key}_mean", float("nan")),
+                        r.get(f"{m_key}_std", float("nan")),
+                        model == best,
+                        model == second,
+                    )
+                )
             lines.append(" & ".join(row) + " \\\\")
         if i < len(DATASETS) - 1:
             lines.append("\\midrule")
@@ -171,7 +189,9 @@ def _generate_mmd_table(mmd_results: Dict, metrics: List[str], metric_labels: Li
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(None, "--paper-dir", help="Copy tables to paper dir"),
+    paper_dir: Optional[Path] = typer.Option(
+        None, "--paper-dir", help="Copy tables to paper dir"
+    ),
 ):
     """Generate LaTeX tables from pre-computed JSON results."""
     mmd_results = load_results(MMD_RESULTS_DIR)
@@ -205,6 +225,7 @@ def main(
 
     if paper_dir:
         import shutil
+
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         for name in ["mmd_gtv.tex", "mmd_rbf_biased.tex", "mmd_rbf_umve.tex"]:

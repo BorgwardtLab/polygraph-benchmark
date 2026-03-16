@@ -19,6 +19,7 @@ from loguru import logger
 # Isomorphism with SIGALRM timeout
 # ---------------------------------------------------------------------------
 
+
 class _TimeoutError(Exception):
     pass
 
@@ -52,14 +53,18 @@ class GraphSet:
 
     def add(self, g: nx.Graph) -> None:
         self.nx_graphs.append(g)
-        self._hash_set[nx.weisfeiler_lehman_graph_hash(g)].append(len(self.nx_graphs) - 1)
+        self._hash_set[nx.weisfeiler_lehman_graph_hash(g)].append(
+            len(self.nx_graphs) - 1
+        )
 
     def __contains__(self, g: nx.Graph) -> bool:
         fp = nx.weisfeiler_lehman_graph_hash(g)
         if fp not in self._hash_set:
             return False
         for idx in self._hash_set[fp]:
-            if _is_isomorphic_with_timeout(g, self.nx_graphs[idx], self._iso_timeout):
+            if _is_isomorphic_with_timeout(
+                g, self.nx_graphs[idx], self._iso_timeout
+            ):
                 return True
         return False
 
@@ -67,6 +72,7 @@ class GraphSet:
 # ---------------------------------------------------------------------------
 # Parallel worker functions (must be importable, not in __main__)
 # ---------------------------------------------------------------------------
+
 
 def _check_novel_worker(
     gen_graph_json: str,
@@ -91,12 +97,15 @@ def _check_validity_worker(graph_json: str, dataset: str) -> bool:
     g = nx.node_link_graph(json.loads(graph_json))
     if dataset == "planar":
         from polygraph.datasets.planar import is_planar_graph
+
         return is_planar_graph(g)
     elif dataset == "lobster":
         from polygraph.datasets.lobster import is_lobster_graph
+
         return is_lobster_graph(g)
     elif dataset == "sbm":
         from polygraph.datasets.sbm import is_sbm_graph
+
         return is_sbm_graph(g)
     return True
 
@@ -104,6 +113,7 @@ def _check_validity_worker(graph_json: str, dataset: str) -> bool:
 # ---------------------------------------------------------------------------
 # Main VUN computation
 # ---------------------------------------------------------------------------
+
 
 def compute_vun_parallel(
     train_graphs: List[nx.Graph],
@@ -116,7 +126,9 @@ def compute_vun_parallel(
     n = len(generated_graphs)
 
     logger.info("  Validity check ({} workers)...", n_workers)
-    gen_json_for_validity = [json.dumps(nx.node_link_data(g)) for g in generated_graphs]
+    gen_json_for_validity = [
+        json.dumps(nx.node_link_data(g)) for g in generated_graphs
+    ]
     worker_fn = partial(_check_validity_worker, dataset=dataset)
     with Pool(processes=n_workers) as pool:
         valid = pool.map(worker_fn, gen_json_for_validity, chunksize=32)

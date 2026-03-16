@@ -11,9 +11,8 @@ Usage:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
-import pandas as pd
 import typer
 from loguru import logger
 from pyprojroot import here
@@ -64,11 +63,18 @@ def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
     lines.append("\\resizebox{\\columnwidth}{!}{")
     lines.append("\\begin{tabular}{lllllll}")
     lines.append("        \\toprule")
-    lines.append("        \\textbf{Dataset} & \\textbf{Model} & & & \\multicolumn{3}{c}{\\textbf{Subscores}} \\\\")
+    lines.append(
+        "        \\textbf{Dataset} & \\textbf{Model} & & & \\multicolumn{3}{c}{\\textbf{Subscores}} \\\\"
+    )
     lines.append("        \\cmidrule(lr){5-7}")
-    lines.append("         &  & \\textbf{PGD ($\\downarrow$)} & \\textbf{PGD-GKLR ($\\downarrow$)} & "
-                  + " & ".join(f"\\textbf{{{label} ($\\downarrow$)}}" for _, label in KERNEL_SUBSCORES)
-                  + " \\\\")
+    lines.append(
+        "         &  & \\textbf{PGD ($\\downarrow$)} & \\textbf{PGD-GKLR ($\\downarrow$)} & "
+        + " & ".join(
+            f"\\textbf{{{label} ($\\downarrow$)}}"
+            for _, label in KERNEL_SUBSCORES
+        )
+        + " \\\\"
+    )
     lines.append("        \\midrule")
 
     for i, ds in enumerate(DATASETS):
@@ -88,29 +94,40 @@ def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
             br = ds_bench.get(model, {})
 
             row = []
-            row.append(f"        {DATASET_DISPLAY[ds]}" if first else "        ")
+            row.append(
+                f"        {DATASET_DISPLAY[ds]}" if first else "        "
+            )
             first = False
             row.append(MODEL_DISPLAY.get(model, model))
 
-            row.append(_fmt(
-                br.get("pgs_mean", float("nan")),
-                br.get("pgs_std", float("nan")),
-                model == pgd_best, model == pgd_second,
-            ))
+            row.append(
+                _fmt(
+                    br.get("pgs_mean", float("nan")),
+                    br.get("pgs_std", float("nan")),
+                    model == pgd_best,
+                    model == pgd_second,
+                )
+            )
 
-            row.append(_fmt(
-                gr.get("pgs_mean", float("nan")),
-                gr.get("pgs_std", float("nan")),
-                model == gklr_best, model == gklr_second,
-            ))
+            row.append(
+                _fmt(
+                    gr.get("pgs_mean", float("nan")),
+                    gr.get("pgs_std", float("nan")),
+                    model == gklr_best,
+                    model == gklr_second,
+                )
+            )
 
             for key, _ in KERNEL_SUBSCORES:
                 k_best, k_second = kernel_rankings[key]
-                row.append(_fmt(
-                    gr.get(f"{key}_mean", float("nan")),
-                    gr.get(f"{key}_std", float("nan")),
-                    model == k_best, model == k_second,
-                ))
+                row.append(
+                    _fmt(
+                        gr.get(f"{key}_mean", float("nan")),
+                        gr.get(f"{key}_std", float("nan")),
+                        model == k_best,
+                        model == k_second,
+                    )
+                )
 
             lines.append(" & ".join(row) + " \\\\")
         if i < len(DATASETS) - 1:
@@ -140,6 +157,7 @@ def main(
 
     if paper_dir:
         import shutil
+
         Path(paper_dir).mkdir(parents=True, exist_ok=True)
         shutil.copy2(out, Path(paper_dir) / "gklr.tex")
 

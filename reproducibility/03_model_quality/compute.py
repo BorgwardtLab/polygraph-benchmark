@@ -24,11 +24,15 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
-_RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality"
+_RESULTS_DIR_BASE = (
+    REPO_ROOT / "reproducibility" / "figures" / "03_model_quality"
+)
 
 
 def load_graphs(path: Path) -> List[nx.Graph]:
@@ -56,12 +60,15 @@ def get_reference_dataset(dataset, split="train", num_graphs=2048):
     """Get reference dataset from polygraph library."""
     if dataset == "planar":
         from polygraph.datasets.planar import ProceduralPlanarGraphDataset
+
         ds = ProceduralPlanarGraphDataset(split=split, num_graphs=num_graphs)
     elif dataset == "sbm":
         from polygraph.datasets.sbm import ProceduralSBMGraphDataset
+
         ds = ProceduralSBMGraphDataset(split=split, num_graphs=num_graphs)
     elif dataset == "lobster":
         from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
+
         ds = ProceduralLobsterGraphDataset(split=split, num_graphs=num_graphs)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
@@ -93,7 +100,9 @@ def main(cfg: DictConfig) -> None:
     }
     base_dir = DATA_DIR / "DIGRESS" / dir_map[curve_type]
     # For training, use per-dataset subdirectory if it exists
-    iteration_dir = base_dir / dataset if (base_dir / dataset).exists() else base_dir
+    iteration_dir = (
+        base_dir / dataset if (base_dir / dataset).exists() else base_dir
+    )
 
     if not iteration_dir.exists():
         logger.warning("Iteration directory not found: {}", iteration_dir)
@@ -139,7 +148,10 @@ def main(cfg: DictConfig) -> None:
 
     logger.info(
         "Processing {} checkpoints for {} curve, dataset={}, variant={}",
-        len(pkl_files), curve_type, dataset, variant,
+        len(pkl_files),
+        curve_type,
+        dataset,
+        variant,
     )
 
     try:
@@ -185,9 +197,13 @@ def main(cfg: DictConfig) -> None:
         "v2.5": ModelVersion.V2_5,
     }
     if tabpfn_weights_version not in version_map:
-        raise ValueError(f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}")
+        raise ValueError(
+            f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}"
+        )
     classifier = TabPFNClassifier.create_default_for_version(
-        version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+        version_map[tabpfn_weights_version],
+        device="auto",
+        n_estimators=4,
     )
 
     pgd_metric = StandardPGD(
@@ -203,7 +219,8 @@ def main(cfg: DictConfig) -> None:
             "orbit5_mmd": MaxDescriptorMMD2(
                 ref,
                 kernel=AdaptiveRBFKernel(
-                    descriptor_fn=OrbitCounts(graphlet_size=5), bw=bw,
+                    descriptor_fn=OrbitCounts(graphlet_size=5),
+                    bw=bw,
                 ),
                 variant="biased",
             ),
@@ -241,7 +258,9 @@ def main(cfg: DictConfig) -> None:
                 try:
                     entry[mmd_name] = mmd_metric.compute(gen)
                 except Exception as e:
-                    logger.error("MMD {} error at step {}: {}", mmd_name, steps, e)
+                    logger.error(
+                        "MMD {} error at step {}: {}", mmd_name, steps, e
+                    )
 
             try:
                 valid_count = sum(1 for g in gen if ds_obj.is_valid(g))

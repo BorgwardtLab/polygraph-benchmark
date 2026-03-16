@@ -25,11 +25,15 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
-_RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality"
+_RESULTS_DIR_BASE = (
+    REPO_ROOT / "reproducibility" / "figures" / "03_model_quality"
+)
 
 # Ensure reproducibility/utils is importable
 sys.path.insert(0, str(REPO_ROOT / "reproducibility"))
@@ -39,6 +43,7 @@ from utils.vun import compute_vun_parallel  # noqa: E402
 # ---------------------------------------------------------------------------
 # Graph loading (mirrors compute.py)
 # ---------------------------------------------------------------------------
+
 
 def load_graphs(path: Path) -> List[nx.Graph]:
     """Load graphs from pickle file and convert to networkx."""
@@ -61,16 +66,21 @@ def load_graphs(path: Path) -> List[nx.Graph]:
     return graphs
 
 
-def get_reference_dataset(dataset: str, split: str = "train", num_graphs: int = 2048):
+def get_reference_dataset(
+    dataset: str, split: str = "train", num_graphs: int = 2048
+):
     """Get reference dataset from polygraph library."""
     if dataset == "planar":
         from polygraph.datasets.planar import ProceduralPlanarGraphDataset
+
         ds = ProceduralPlanarGraphDataset(split=split, num_graphs=num_graphs)
     elif dataset == "sbm":
         from polygraph.datasets.sbm import ProceduralSBMGraphDataset
+
         ds = ProceduralSBMGraphDataset(split=split, num_graphs=num_graphs)
     elif dataset == "lobster":
         from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
+
         ds = ProceduralLobsterGraphDataset(split=split, num_graphs=num_graphs)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
@@ -80,6 +90,7 @@ def get_reference_dataset(dataset: str, split: str = "train", num_graphs: int = 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 @hydra.main(
     config_path="../configs",
@@ -114,22 +125,29 @@ def main(cfg: DictConfig) -> None:
                 all_done = False
                 break
         if all_done:
-            logger.info("VUN already present for all variants of denoising/{}, skipping", dataset)
+            logger.info(
+                "VUN already present for all variants of denoising/{}, skipping",
+                dataset,
+            )
             return
 
     # Locate checkpoint files
     base_dir = DATA_DIR / "DIGRESS" / "denoising-iterations"
-    iteration_dir = base_dir / dataset if (base_dir / dataset).exists() else base_dir
+    iteration_dir = (
+        base_dir / dataset if (base_dir / dataset).exists() else base_dir
+    )
 
     if not iteration_dir.exists():
         logger.warning("Iteration directory not found: {}", iteration_dir)
-        maybe_append_jsonl({
-            "experiment": "03_model_quality",
-            "script": "compute_vun.py",
-            "dataset": dataset,
-            "status": "skipped",
-            "reason": "iteration_dir_missing",
-        })
+        maybe_append_jsonl(
+            {
+                "experiment": "03_model_quality",
+                "script": "compute_vun.py",
+                "dataset": dataset,
+                "status": "skipped",
+                "reason": "iteration_dir_missing",
+            }
+        )
         return
 
     def _parse_steps(p: Path) -> int:
@@ -142,20 +160,28 @@ def main(cfg: DictConfig) -> None:
     pkl_files = sorted(iteration_dir.glob("*.pkl"), key=_parse_steps)
     if not pkl_files:
         logger.warning("No checkpoint files found in {}", iteration_dir)
-        maybe_append_jsonl({
-            "experiment": "03_model_quality",
-            "script": "compute_vun.py",
-            "dataset": dataset,
-            "status": "skipped",
-            "reason": "no_checkpoint_files",
-        })
+        maybe_append_jsonl(
+            {
+                "experiment": "03_model_quality",
+                "script": "compute_vun.py",
+                "dataset": dataset,
+                "status": "skipped",
+                "reason": "no_checkpoint_files",
+            }
+        )
         return
 
-    logger.info("Computing VUN for {} checkpoints, dataset={}", len(pkl_files), dataset)
+    logger.info(
+        "Computing VUN for {} checkpoints, dataset={}", len(pkl_files), dataset
+    )
 
     # Load training set for novelty checking
-    _, train_graphs = get_reference_dataset(dataset, split="train", num_graphs=num_graphs)
-    logger.info("Loaded {} training graphs for novelty checking", len(train_graphs))
+    _, train_graphs = get_reference_dataset(
+        dataset, split="train", num_graphs=num_graphs
+    )
+    logger.info(
+        "Loaded {} training graphs for novelty checking", len(train_graphs)
+    )
 
     # Compute VUN per checkpoint
     vun_by_steps: Dict[int, Dict[str, float]] = {}
@@ -170,27 +196,35 @@ def main(cfg: DictConfig) -> None:
 
         try:
             vun_result = compute_vun_parallel(
-                train_graphs, gen, dataset=dataset,
-                iso_timeout=iso_timeout, n_workers=n_workers,
+                train_graphs,
+                gen,
+                dataset=dataset,
+                iso_timeout=iso_timeout,
+                n_workers=n_workers,
             )
             vun_by_steps[steps] = vun_result
             logger.success(
                 "  Steps {}: VUN={:.4f} (V={:.4f}, U={:.4f}, N={:.4f})",
-                steps, vun_result["valid_unique_novel"],
-                vun_result["valid"], vun_result["unique"], vun_result["novel"],
+                steps,
+                vun_result["valid_unique_novel"],
+                vun_result["valid"],
+                vun_result["unique"],
+                vun_result["novel"],
             )
         except Exception as e:
             logger.error("VUN error at step {}: {}", steps, e)
 
     if not vun_by_steps:
         logger.warning("No VUN results computed")
-        maybe_append_jsonl({
-            "experiment": "03_model_quality",
-            "script": "compute_vun.py",
-            "dataset": dataset,
-            "status": "skipped",
-            "reason": "no_results_computed",
-        })
+        maybe_append_jsonl(
+            {
+                "experiment": "03_model_quality",
+                "script": "compute_vun.py",
+                "dataset": dataset,
+                "status": "skipped",
+                "reason": "no_results_computed",
+            }
+        )
         return
 
     # Patch all variant result JSONs
@@ -213,15 +247,22 @@ def main(cfg: DictConfig) -> None:
 
         data["vun_computed"] = True
         json_path.write_text(json.dumps(data, indent=2))
-        logger.success("Patched {}/{} entries in {}", patched, len(data.get("results", [])), json_path)
+        logger.success(
+            "Patched {}/{} entries in {}",
+            patched,
+            len(data.get("results", [])),
+            json_path,
+        )
 
-    maybe_append_jsonl({
-        "experiment": "03_model_quality",
-        "script": "compute_vun.py",
-        "dataset": dataset,
-        "status": "ok",
-        "num_steps": len(vun_by_steps),
-    })
+    maybe_append_jsonl(
+        {
+            "experiment": "03_model_quality",
+            "script": "compute_vun.py",
+            "dataset": dataset,
+            "status": "ok",
+            "num_steps": len(vun_by_steps),
+        }
+    )
 
 
 if __name__ == "__main__":

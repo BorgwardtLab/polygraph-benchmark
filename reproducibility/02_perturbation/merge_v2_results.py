@@ -14,7 +14,6 @@ Usage:
 import argparse
 import json
 import sys
-from pathlib import Path
 
 from pyprojroot import here
 
@@ -26,29 +25,54 @@ TABPFN_ONLY_DIR = BASE_DIR / "results_tabpfn_weights_v2_tabpfn_only"
 FULL_V2_DIR = BASE_DIR / "results_tabpfn_weights_v2"
 
 DATASETS = ["sbm", "planar", "lobster", "proteins", "ego"]
-PERTURBATIONS = ["edge_rewiring", "edge_swapping", "mixing", "edge_deletion", "edge_addition"]
+PERTURBATIONS = [
+    "edge_rewiring",
+    "edge_swapping",
+    "mixing",
+    "edge_deletion",
+    "edge_addition",
+]
 
 # 12 TabPFN classifier metrics (weight-dependent)
 TABPFN_KEYS = {
-    "orbit_tabpfn_informedness", "orbit_tabpfn_jsd",
-    "orbit5_tabpfn_informedness", "orbit5_tabpfn_jsd",
-    "degree_tabpfn_informedness", "degree_tabpfn_jsd",
-    "spectral_tabpfn_informedness", "spectral_tabpfn_jsd",
-    "clustering_tabpfn_informedness", "clustering_tabpfn_jsd",
-    "gin_tabpfn_informedness", "gin_tabpfn_jsd",
+    "orbit_tabpfn_informedness",
+    "orbit_tabpfn_jsd",
+    "orbit5_tabpfn_informedness",
+    "orbit5_tabpfn_jsd",
+    "degree_tabpfn_informedness",
+    "degree_tabpfn_jsd",
+    "spectral_tabpfn_informedness",
+    "spectral_tabpfn_jsd",
+    "clustering_tabpfn_informedness",
+    "clustering_tabpfn_jsd",
+    "gin_tabpfn_informedness",
+    "gin_tabpfn_jsd",
 }
 
 # 22 weight-independent metrics: 10 MMD + 12 LR classifier
 NON_TABPFN_KEYS = {
-    "orbit_tv", "degree_tv", "spectral_tv", "clustering_tv",
-    "orbit_rbf", "orbit5_rbf", "degree_rbf", "spectral_rbf",
-    "clustering_rbf", "gin_rbf",
-    "orbit_lr_informedness", "orbit_lr_jsd",
-    "orbit5_lr_informedness", "orbit5_lr_jsd",
-    "degree_lr_informedness", "degree_lr_jsd",
-    "spectral_lr_informedness", "spectral_lr_jsd",
-    "clustering_lr_informedness", "clustering_lr_jsd",
-    "gin_lr_informedness", "gin_lr_jsd",
+    "orbit_tv",
+    "degree_tv",
+    "spectral_tv",
+    "clustering_tv",
+    "orbit_rbf",
+    "orbit5_rbf",
+    "degree_rbf",
+    "spectral_rbf",
+    "clustering_rbf",
+    "gin_rbf",
+    "orbit_lr_informedness",
+    "orbit_lr_jsd",
+    "orbit5_lr_informedness",
+    "orbit5_lr_jsd",
+    "degree_lr_informedness",
+    "degree_lr_jsd",
+    "spectral_lr_informedness",
+    "spectral_lr_jsd",
+    "clustering_lr_informedness",
+    "clustering_lr_jsd",
+    "gin_lr_informedness",
+    "gin_lr_jsd",
 }
 
 ALL_METRIC_KEYS = TABPFN_KEYS | NON_TABPFN_KEYS
@@ -152,7 +176,8 @@ def merge_one(
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--execute", action="store_true",
+        "--execute",
+        action="store_true",
         help="Actually write merged files (default: dry-run)",
     )
     args = parser.parse_args()

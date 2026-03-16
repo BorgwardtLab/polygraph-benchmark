@@ -692,8 +692,11 @@ class ShortestPathHistogramDescriptor(GraphDescriptor[nx.Graph]):
         Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
     ]:
         n = len(nodes)
+        weight_kwargs = (
+            {"weight": self.weight_key} if self.weight_key is not None else {}
+        )
         adj = nx.to_scipy_sparse_array(
-            graph, nodelist=nodes, weight=self.weight_key, format="csr"
+            graph, nodelist=nodes, format="csr", **weight_kwargs
         )
         dist_matrix = csgraph.shortest_path(
             adj, directed=False, unweighted=(self.weight_key is None)

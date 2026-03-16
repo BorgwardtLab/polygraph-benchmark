@@ -8,7 +8,6 @@ polyscore and *_pgs fields, then copies them to results/ as well.
 import json
 import pickle
 import shutil
-from pathlib import Path
 
 import networkx as nx
 import numpy as np
@@ -18,8 +17,16 @@ from importlib.metadata import version as pkg_version
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
-RESULTS_V6_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results_tabpfn_v6"
-RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
+RESULTS_V6_DIR = (
+    REPO_ROOT
+    / "reproducibility"
+    / "figures"
+    / "03_model_quality"
+    / "results_tabpfn_v6"
+)
+RESULTS_DIR = (
+    REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
+)
 CHECKPOINT_DIR = DATA_DIR / "DIGRESS" / "training-iterations"
 
 DATASETS = ["planar", "sbm", "lobster"]
@@ -46,12 +53,15 @@ def load_graphs(path):
 def get_reference_dataset(dataset, split="train", num_graphs=2048):
     if dataset == "planar":
         from polygraph.datasets.planar import ProceduralPlanarGraphDataset
+
         ds = ProceduralPlanarGraphDataset(split=split, num_graphs=num_graphs)
     elif dataset == "sbm":
         from polygraph.datasets.sbm import ProceduralSBMGraphDataset
+
         ds = ProceduralSBMGraphDataset(split=split, num_graphs=num_graphs)
     elif dataset == "lobster":
         from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
+
         ds = ProceduralLobsterGraphDataset(split=split, num_graphs=num_graphs)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
@@ -83,6 +93,7 @@ def main():
             logger.info("Computing PGD for {} {} ...", dataset, variant)
 
             from polygraph.metrics import StandardPGD
+
             pgd_metric = StandardPGD(
                 reference_graphs=ref_graphs,
                 variant=variant,
@@ -110,6 +121,7 @@ def main():
                 except Exception as e:
                     logger.error("    PGD error at step {}: {}", steps, e)
                     import traceback
+
                     traceback.print_exc()
 
             data["tabpfn_package_version"] = tabpfn_version

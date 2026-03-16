@@ -195,9 +195,7 @@ class VUN(GenerationMetric[nx.Graph]):
         train_json = [
             json.dumps(nx.node_link_data(g)) for g in self._train_graphs
         ]
-        gen_json = [
-            json.dumps(nx.node_link_data(g)) for g in generated_graphs
-        ]
+        gen_json = [json.dumps(nx.node_link_data(g)) for g in generated_graphs]
         worker_fn = partial(
             _check_novel_worker,
             train_graphs_json=train_json,
@@ -210,9 +208,8 @@ class VUN(GenerationMetric[nx.Graph]):
     def _compute_valid_parallel(
         self, generated_graphs: List[nx.Graph]
     ) -> List[bool]:
-        gen_json = [
-            json.dumps(nx.node_link_data(g)) for g in generated_graphs
-        ]
+        gen_json = [json.dumps(nx.node_link_data(g)) for g in generated_graphs]
+        assert self._validity_fn is not None
         worker_fn = partial(
             _check_validity_worker, validity_fn=self._validity_fn
         )
@@ -246,9 +243,7 @@ class VUN(GenerationMetric[nx.Graph]):
         if self._n_jobs > 1:
             novel = self._compute_novel_parallel(generated_graphs)
         else:
-            novel = [
-                graph not in self._train_set for graph in generated_graphs
-            ]
+            novel = [graph not in self._train_set for graph in generated_graphs]
 
         # Uniqueness: always sequential (inherently order-dependent)
         unique = []
@@ -270,9 +265,7 @@ class VUN(GenerationMetric[nx.Graph]):
             if self._n_jobs > 1:
                 valid = self._compute_valid_parallel(generated_graphs)
             else:
-                valid = [
-                    self._validity_fn(graph) for graph in generated_graphs
-                ]
+                valid = [self._validity_fn(graph) for graph in generated_graphs]
             unique_novel_valid = [
                 un and v for un, v in zip(unique_novel, valid)
             ]

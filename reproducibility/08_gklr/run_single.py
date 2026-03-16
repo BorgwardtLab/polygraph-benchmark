@@ -8,13 +8,14 @@ Usage:
 import argparse
 import json
 import pickle
-from pathlib import Path
 from typing import Dict, List
 
 from loguru import logger
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
@@ -52,18 +53,32 @@ def load_graphs(model: str, dataset: str) -> List:
     return cleaned
 
 
-def get_reference_dataset(dataset: str, split: str = "test", num_graphs: int = 512):
+def get_reference_dataset(
+    dataset: str, split: str = "test", num_graphs: int = 512
+):
     from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
     from polygraph.datasets.planar import ProceduralPlanarGraphDataset
     from polygraph.datasets.proteins import DobsonDoigGraphDataset
     from polygraph.datasets.sbm import ProceduralSBMGraphDataset
 
     if dataset == "planar":
-        return list(ProceduralPlanarGraphDataset(split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            ProceduralPlanarGraphDataset(
+                split=split, num_graphs=num_graphs
+            ).to_nx()
+        )
     elif dataset == "lobster":
-        return list(ProceduralLobsterGraphDataset(split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            ProceduralLobsterGraphDataset(
+                split=split, num_graphs=num_graphs
+            ).to_nx()
+        )
     elif dataset == "sbm":
-        return list(ProceduralSBMGraphDataset(split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            ProceduralSBMGraphDataset(
+                split=split, num_graphs=num_graphs
+            ).to_nx()
+        )
     elif dataset == "proteins":
         return list(DobsonDoigGraphDataset(split=split).to_nx())
     else:
@@ -99,10 +114,17 @@ def main():
         )
         return
 
-    generated_graphs = generated_graphs[:len(reference_graphs)]
-    logger.info("Reference: {} graphs, Generated: {} graphs", len(reference_graphs), len(generated_graphs))
+    generated_graphs = generated_graphs[: len(reference_graphs)]
+    logger.info(
+        "Reference: {} graphs, Generated: {} graphs",
+        len(reference_graphs),
+        len(generated_graphs),
+    )
 
-    from polygraph.metrics.base import KernelLogisticRegression, PolyGraphDiscrepancyInterval
+    from polygraph.metrics.base import (
+        KernelLogisticRegression,
+        PolyGraphDiscrepancyInterval,
+    )
     from polygraph.utils.descriptors import (
         WeisfeilerLehmanDescriptor,
         ShortestPathHistogramDescriptor,

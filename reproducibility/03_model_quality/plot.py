@@ -20,7 +20,7 @@ Usage:
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -34,14 +34,23 @@ from pyprojroot import here
 app = typer.Typer()
 
 REPO_ROOT = here()
-RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
+RESULTS_DIR = (
+    REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
+)
 OUTPUT_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality"
 STYLE_FILE = Path(__file__).resolve().parent.parent / "polygraph.mplstyle"
 
 DATASETS = ["planar", "sbm", "lobster"]
 DATASET_DISPLAY = {"planar": "Planar-L", "sbm": "SBM-L", "lobster": "Lobster-L"}
 
-MMD_KEYS = ["orbit_mmd", "orbit5_mmd", "degree_mmd", "spectral_mmd", "clustering_mmd", "gin_mmd"]
+MMD_KEYS = [
+    "orbit_mmd",
+    "orbit5_mmd",
+    "degree_mmd",
+    "spectral_mmd",
+    "clustering_mmd",
+    "gin_mmd",
+]
 MMD_DISPLAY = {
     "orbit_mmd": "Orbit MMD",
     "orbit5_mmd": "Orbit5 MMD",
@@ -58,16 +67,20 @@ def setup_plotting():
     sns.set_style("ticks")
     sns.set_palette("colorblind")
     # Override font sizes to match original notebook
-    plt.rcParams.update({
-        "axes.labelsize": 11,
-        "axes.titlesize": 12,
-        "legend.fontsize": 9,
-        "xtick.labelsize": 10,
-        "ytick.labelsize": 10,
-    })
+    plt.rcParams.update(
+        {
+            "axes.labelsize": 11,
+            "axes.titlesize": 12,
+            "legend.fontsize": 9,
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 10,
+        }
+    )
 
 
-def load_results(curve_type: str, dataset: str, variant: str) -> Optional[pd.DataFrame]:
+def load_results(
+    curve_type: str, dataset: str, variant: str
+) -> Optional[pd.DataFrame]:
     """Load JSON results for a specific (curve_type, dataset, variant)."""
     path = RESULTS_DIR / f"{curve_type}_{dataset}_{variant}.json"
     if not path.exists():
@@ -77,7 +90,6 @@ def load_results(curve_type: str, dataset: str, variant: str) -> Optional[pd.Dat
     if not data.get("results"):
         return None
     return pd.DataFrame(data["results"])
-
 
 
 def _plot_multi_panel(
@@ -101,23 +113,38 @@ def _plot_multi_panel(
         "clustering": palette[3],
         "gin": palette[4],
     }
-    mmd_metrics = ["orbit_mmd", "degree_mmd", "spectral_mmd", "clustering_mmd", "gin_mmd"]
+    mmd_metrics = [
+        "orbit_mmd",
+        "degree_mmd",
+        "spectral_mmd",
+        "clustering_mmd",
+        "gin_mmd",
+    ]
 
     # Determine if polyscore is available in any dataset
     has_polyscore = any("polyscore" in df.columns for df in data_dict.values())
     n_cols = 3 if has_polyscore else 2
 
     if single:
-        fig, axes = plt.subplots(1, n_cols, figsize=(8 if has_polyscore else 5.5, 1.6), squeeze=False)
+        fig, axes = plt.subplots(
+            1, n_cols, figsize=(8 if has_polyscore else 5.5, 1.6), squeeze=False
+        )
     else:
-        fig, axes = plt.subplots(n_datasets, n_cols, figsize=(8 if has_polyscore else 5.5, n_datasets * 1.5), squeeze=False)
+        fig, axes = plt.subplots(
+            n_datasets,
+            n_cols,
+            figsize=(8 if has_polyscore else 5.5, n_datasets * 1.5),
+            squeeze=False,
+        )
 
     # Build legend elements
     legend_elements = [
         Line2D([0], [0], color="#7e9ef7", lw=2, label="Validity"),
     ]
     if has_polyscore:
-        legend_elements.append(Line2D([0], [0], color="black", lw=2, label=pgd_label))
+        legend_elements.append(
+            Line2D([0], [0], color="black", lw=2, label=pgd_label)
+        )
     for metric in mmd_metrics:
         desc = metric.replace("_mmd", "")
         color = descriptor_colors.get(desc, "black")
@@ -133,9 +160,15 @@ def _plot_multi_panel(
         # Dataset label on left margin (multi-dataset only)
         if not single and label:
             axes[i, 0].annotate(
-                label, xy=(0, 0.5), xycoords="axes fraction",
-                xytext=(-60, 0), textcoords="offset points",
-                rotation=90, va="center", fontsize=12, fontweight="bold",
+                label,
+                xy=(0, 0.5),
+                xycoords="axes fraction",
+                xytext=(-60, 0),
+                textcoords="offset points",
+                rotation=90,
+                va="center",
+                fontsize=12,
+                fontweight="bold",
                 annotation_clip=False,
             )
 
@@ -162,7 +195,9 @@ def _plot_multi_panel(
             ax_pgs.set_ylabel("PGD")
             ax_pgs.set_ylim([0, 1])
             ax_pgs.yaxis.set_major_locator(plt.MaxNLocator(6))
-            ax_pgs.xaxis.set_major_locator(plt.MaxNLocator(nbins=3, integer=True))
+            ax_pgs.xaxis.set_major_locator(
+                plt.MaxNLocator(nbins=3, integer=True)
+            )
             if i == 0:
                 ax_pgs.set_title(pgd_label)
             if i == n_datasets - 1:
@@ -192,16 +227,21 @@ def _plot_multi_panel(
             max_val = np.nanmax(metric_data)
             if max_val > 0:
                 power = int(np.floor(np.log10(max_val)))
-                scale_factor = 10 ** power
+                scale_factor = 10**power
                 scaled = metric_data / scale_factor
                 ax_twin.plot(steps, scaled, color=color)
                 ax_twin.tick_params(axis="y", labelcolor=color)
                 ax_twin.yaxis.set_major_locator(plt.MaxNLocator(6))
                 ax_twin.annotate(
                     f"$\\times 10^{{{power}}}$",
-                    xy=(1.0, 1.0), xycoords="axes fraction",
-                    xytext=(35 * j, 4), textcoords="offset points",
-                    color=color, fontsize=10, ha="center", va="bottom",
+                    xy=(1.0, 1.0),
+                    xycoords="axes fraction",
+                    xytext=(35 * j, 4),
+                    textcoords="offset points",
+                    color=color,
+                    fontsize=10,
+                    ha="center",
+                    va="bottom",
                     annotation_clip=False,
                 )
             else:
@@ -210,8 +250,11 @@ def _plot_multi_panel(
                 ax_twin.yaxis.set_major_locator(plt.MaxNLocator(6))
 
     fig.legend(
-        handles=legend_elements, loc="upper center",
-        bbox_to_anchor=(0.5, -0.02), ncol=4, frameon=False,
+        handles=legend_elements,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.02),
+        ncol=4,
+        frameon=False,
     )
     fig.savefig(str(output_path), bbox_inches="tight")
     plt.close(fig)
@@ -221,18 +264,31 @@ def _plot_multi_panel(
 @app.command()
 def main(
     paper_dir: Optional[Path] = typer.Option(
-        None, "--paper-dir",
+        None,
+        "--paper-dir",
         help="Copy outputs into paper figures/model_quality/ directory",
     ),
-    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
+    results_suffix: str = typer.Option(
+        "",
+        "--results-suffix",
+        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
+    ),
 ):
     """Generate all model quality figures for the paper."""
     setup_plotting()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    results_dir = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / f"results{results_suffix}"
+    results_dir = (
+        REPO_ROOT
+        / "reproducibility"
+        / "figures"
+        / "03_model_quality"
+        / f"results{results_suffix}"
+    )
 
-    def _load(curve_type: str, dataset: str, variant: str) -> Optional[pd.DataFrame]:
+    def _load(
+        curve_type: str, dataset: str, variant: str
+    ) -> Optional[pd.DataFrame]:
         path = results_dir / f"{curve_type}_{dataset}_{variant}.json"
         if not path.exists():
             return None
@@ -242,7 +298,9 @@ def main(
             return None
         return pd.DataFrame(data["results"])
 
-    import tempfile, shutil
+    import tempfile
+    import shutil
+
     use_tmp = bool(results_suffix)
     tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
     output_dir = tmp_dir if use_tmp else OUTPUT_DIR

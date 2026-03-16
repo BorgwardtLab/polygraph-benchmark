@@ -11,7 +11,7 @@ Usage:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import pandas as pd
 import typer
@@ -70,13 +70,21 @@ _best_two = best_two
 
 def generate_benchmark_table(all_results: Dict) -> str:
     lines = []
-    lines.append("\\begin{tabular}{llccp{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}}")
+    lines.append(
+        "\\begin{tabular}{llccp{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}p{1.6cm}}"
+    )
     lines.append("\\toprule")
-    lines.append("\\textbf{Dataset} & \\textbf{Model} &  &  & \\multicolumn{6}{c}{\\textbf{PGD subscores}} \\\\")
+    lines.append(
+        "\\textbf{Dataset} & \\textbf{Model} &  &  & \\multicolumn{6}{c}{\\textbf{PGD subscores}} \\\\"
+    )
     lines.append("\\cmidrule(lr){5-10}")
-    lines.append(" &  & \\textbf{VUN ($\\uparrow$)} & \\textbf{PGD ($\\downarrow$)} & "
-                  + " & ".join(f"\\textbf{{{label} ($\\downarrow$)}}" for _, label in SUBSCORES)
-                  + " \\\\")
+    lines.append(
+        " &  & \\textbf{VUN ($\\uparrow$)} & \\textbf{PGD ($\\downarrow$)} & "
+        + " & ".join(
+            f"\\textbf{{{label} ($\\downarrow$)}}" for _, label in SUBSCORES
+        )
+        + " \\\\"
+    )
     lines.append("\\midrule")
 
     for i, dataset in enumerate(DATASETS):
@@ -88,8 +96,14 @@ def generate_benchmark_table(all_results: Dict) -> str:
         for key, _ in SUBSCORES:
             mean_key = f"{key}_mean"
             alt_key = f"{key.replace('_pgs', '')}_mean"
-            lookup = mean_key if any(mean_key in ds_results.get(m, {}) for m in ds_results) else alt_key
-            sub_best[key], sub_second[key] = _best_two(ds_results, lookup, lower=True)
+            lookup = (
+                mean_key
+                if any(mean_key in ds_results.get(m, {}) for m in ds_results)
+                else alt_key
+            )
+            sub_best[key], sub_second[key] = _best_two(
+                ds_results, lookup, lower=True
+            )
 
         first = True
         for model in MODELS:
@@ -102,7 +116,11 @@ def generate_benchmark_table(all_results: Dict) -> str:
             row.append(MODEL_DISPLAY.get(model, model))
 
             if "vun" in r and not pd.isna(r.get("vun")):
-                vun_text = f"{r['vun'] * 100:.1f}" if isinstance(r['vun'], float) else f"{float(r['vun']) * 100:.1f}"
+                vun_text = (
+                    f"{r['vun'] * 100:.1f}"
+                    if isinstance(r["vun"], float)
+                    else f"{float(r['vun']) * 100:.1f}"
+                )
                 if model == vun_best:
                     vun_text = f"\\textbf{{{vun_text}}}"
                 elif model == vun_second:
@@ -111,18 +129,34 @@ def generate_benchmark_table(all_results: Dict) -> str:
             else:
                 row.append("-")
 
-            row.append(_fmt_pgs(
-                r.get("pgs_mean", float("nan")),
-                r.get("pgs_std", float("nan")),
-                model == pgs_best, model == pgs_second,
-            ))
+            row.append(
+                _fmt_pgs(
+                    r.get("pgs_mean", float("nan")),
+                    r.get("pgs_std", float("nan")),
+                    model == pgs_best,
+                    model == pgs_second,
+                )
+            )
 
             for key, _ in SUBSCORES:
-                row.append(_fmt_pgs(
-                    r.get(f"{key}_mean", r.get(f"{key.replace('_pgs', '')}_mean", float("nan"))),
-                    r.get(f"{key}_std", r.get(f"{key.replace('_pgs', '')}_std", float("nan"))),
-                    model == sub_best[key], model == sub_second[key],
-                ))
+                row.append(
+                    _fmt_pgs(
+                        r.get(
+                            f"{key}_mean",
+                            r.get(
+                                f"{key.replace('_pgs', '')}_mean", float("nan")
+                            ),
+                        ),
+                        r.get(
+                            f"{key}_std",
+                            r.get(
+                                f"{key.replace('_pgs', '')}_std", float("nan")
+                            ),
+                        ),
+                        model == sub_best[key],
+                        model == sub_second[key],
+                    )
+                )
 
             lines.append(" & ".join(row) + " \\\\")
 
@@ -136,14 +170,22 @@ def generate_benchmark_table(all_results: Dict) -> str:
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(None, "--paper-dir", help="Copy tables to paper dir"),
-    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
+    paper_dir: Optional[Path] = typer.Option(
+        None, "--paper-dir", help="Copy tables to paper dir"
+    ),
+    results_suffix: str = typer.Option(
+        "",
+        "--results-suffix",
+        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
+    ),
 ):
     """Generate LaTeX tables from pre-computed JSON results."""
     results_dir = OUTPUT_DIR / "results" / f"benchmark{results_suffix}"
     result_list = load_results(results_dir)
     if not result_list:
-        logger.error("No results found in {}. Run compute.py first.", results_dir)
+        logger.error(
+            "No results found in {}. Run compute.py first.", results_dir
+        )
         return
 
     all_results = _reshape(result_list)
@@ -156,6 +198,7 @@ def main(
 
     if paper_dir:
         import shutil
+
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(out, paper_dir / out.name)

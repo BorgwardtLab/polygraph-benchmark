@@ -38,8 +38,14 @@ def load_phase_data():
 
     results = {}
     log_files = {
-        "sbm_small": DATA_DIR / "AUTOGRAPH" / "logs" / "sbm_proc_small_metrics.csv",
-        "sbm_large": DATA_DIR / "AUTOGRAPH" / "logs" / "sbm_proc_large_metrics.csv",
+        "sbm_small": DATA_DIR
+        / "AUTOGRAPH"
+        / "logs"
+        / "sbm_proc_small_metrics.csv",
+        "sbm_large": DATA_DIR
+        / "AUTOGRAPH"
+        / "logs"
+        / "sbm_proc_large_metrics.csv",
     }
     for name, path in log_files.items():
         if not path.exists():
@@ -58,7 +64,9 @@ def load_phase_data():
 
 @app.command()
 def main(
-    paper_dir: Path = typer.Option(None, "--paper-dir", help="Copy output into paper figures dir"),
+    paper_dir: Path = typer.Option(
+        None, "--paper-dir", help="Copy output into paper figures dir"
+    ),
 ):
     """Generate phase plot matching the paper exactly."""
     if STYLE_FILE.exists():
@@ -66,7 +74,9 @@ def main(
 
     data = load_phase_data()
     if not data:
-        logger.error("No phase plot data found. Run compute.py or check data/AUTOGRAPH/logs/.")
+        logger.error(
+            "No phase plot data found. Run compute.py or check data/AUTOGRAPH/logs/."
+        )
         return
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -96,11 +106,15 @@ def main(
         lc.set_linewidth(1)
         ax.add_collection(lc)
 
-        scatter = ax.scatter(
-            x_vals, y_vals,
-            c=indices, cmap=cmap_name,
-            s=15, alpha=0.7,
-            edgecolors=edge_color, linewidth=0.3,
+        ax.scatter(
+            x_vals,
+            y_vals,
+            c=indices,
+            cmap=cmap_name,
+            s=15,
+            alpha=0.7,
+            edgecolors=edge_color,
+            linewidth=0.3,
             label=label,
         )
 
@@ -146,6 +160,7 @@ def main(
 
     if paper_dir is not None:
         import shutil
+
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(out_path, paper_dir / "phase_plot.pdf")

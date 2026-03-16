@@ -43,6 +43,7 @@ app = typer.Typer()
 # Per-pair isomorphism with SIGALRM timeout
 # ---------------------------------------------------------------------------
 
+
 class _TimeoutError(Exception):
     pass
 
@@ -67,7 +68,11 @@ def _is_isomorphic_with_timeout(g: nx.Graph, h: nx.Graph, timeout: int) -> bool:
 class _GraphSet:
     """Graph set with WL hash pre-filter and per-pair isomorphism timeout."""
 
-    def __init__(self, nx_graphs: Optional[Iterable[nx.Graph]] = None, iso_timeout: int = 10):
+    def __init__(
+        self,
+        nx_graphs: Optional[Iterable[nx.Graph]] = None,
+        iso_timeout: int = 10,
+    ):
         self.nx_graphs = [] if nx_graphs is None else list(nx_graphs)
         self._iso_timeout = iso_timeout
         self._hash_set: Dict[str, List[int]] = defaultdict(list)
@@ -76,14 +81,18 @@ class _GraphSet:
 
     def add(self, g: nx.Graph) -> None:
         self.nx_graphs.append(g)
-        self._hash_set[nx.weisfeiler_lehman_graph_hash(g)].append(len(self.nx_graphs) - 1)
+        self._hash_set[nx.weisfeiler_lehman_graph_hash(g)].append(
+            len(self.nx_graphs) - 1
+        )
 
     def __contains__(self, g: nx.Graph) -> bool:
         fp = nx.weisfeiler_lehman_graph_hash(g)
         if fp not in self._hash_set:
             return False
         for idx in self._hash_set[fp]:
-            if _is_isomorphic_with_timeout(g, self.nx_graphs[idx], self._iso_timeout):
+            if _is_isomorphic_with_timeout(
+                g, self.nx_graphs[idx], self._iso_timeout
+            ):
                 return True
         return False
 
@@ -91,6 +100,7 @@ class _GraphSet:
 # ---------------------------------------------------------------------------
 # Parallel novelty worker
 # ---------------------------------------------------------------------------
+
 
 def _check_novel_worker(
     gen_graph_json: str,
@@ -117,12 +127,15 @@ def _check_validity_worker(graph_json: str, dataset: str) -> bool:
     g = nx.node_link_graph(json.loads(graph_json))
     if dataset == "planar":
         from polygraph.datasets.planar import is_planar_graph
+
         return is_planar_graph(g)
     elif dataset == "lobster":
         from polygraph.datasets.lobster import is_lobster_graph
+
         return is_lobster_graph(g)
     elif dataset == "sbm":
         from polygraph.datasets.sbm import is_sbm_graph
+
         return is_sbm_graph(g)
     return True
 
@@ -138,11 +151,15 @@ def compute_vun_parallel(
     n = len(generated_graphs)
 
     logger.info("  Validity check ({} workers)...", n_workers)
-    gen_json_for_validity = [json.dumps(nx.node_link_data(g)) for g in generated_graphs]
+    gen_json_for_validity = [
+        json.dumps(nx.node_link_data(g)) for g in generated_graphs
+    ]
     worker_fn = partial(_check_validity_worker, dataset=dataset)
     valid = []
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
-        for is_valid in executor.map(worker_fn, gen_json_for_validity, chunksize=32):
+        for is_valid in executor.map(
+            worker_fn, gen_json_for_validity, chunksize=32
+        ):
             valid.append(is_valid)
     logger.info("  Valid: {}/{}", sum(valid), n)
 
@@ -192,7 +209,11 @@ def _get_validity_fn(dataset: str) -> Optional[Callable]:
     from polygraph.datasets.planar import is_planar_graph
     from polygraph.datasets.sbm import is_sbm_graph
 
-    return {"planar": is_planar_graph, "lobster": is_lobster_graph, "sbm": is_sbm_graph}.get(dataset)
+    return {
+        "planar": is_planar_graph,
+        "lobster": is_lobster_graph,
+        "sbm": is_sbm_graph,
+    }.get(dataset)
 
 
 def _get_result_dirs() -> List:
@@ -213,7 +234,9 @@ def _has_vun(result_dirs, dataset, model) -> bool:
     return False
 
 
-def _run_one(dataset: str, model: str, iso_timeout: int, n_workers: int, force: bool):
+def _run_one(
+    dataset: str, model: str, iso_timeout: int, n_workers: int, force: bool
+):
     """Compute VUN for a single (dataset, model) and patch all result JSONs."""
     result_dirs = _get_result_dirs()
     if not force and _has_vun(result_dirs, dataset, model):
@@ -232,14 +255,23 @@ def _run_one(dataset: str, model: str, iso_timeout: int, n_workers: int, force: 
     if not generated_graphs:
         logger.warning("No graphs for {}/{}", model, dataset)
         return
-    generated_graphs = generated_graphs[:len(ref_graphs)]
+    generated_graphs = generated_graphs[: len(ref_graphs)]
 
-    logger.info("Computing VUN for {}/{} ({} gen, {} train)...",
-                model, dataset, len(generated_graphs), len(train_graphs))
+    logger.info(
+        "Computing VUN for {}/{} ({} gen, {} train)...",
+        model,
+        dataset,
+        len(generated_graphs),
+        len(train_graphs),
+    )
 
     result = compute_vun_parallel(
-        train_graphs, generated_graphs, validity_fn,
-        iso_timeout=iso_timeout, n_workers=n_workers, dataset=dataset,
+        train_graphs,
+        generated_graphs,
+        validity_fn,
+        iso_timeout=iso_timeout,
+        n_workers=n_workers,
+        dataset=dataset,
     )
 
     vun_value = result["valid_unique_novel"]
@@ -257,12 +289,24 @@ def _run_one(dataset: str, model: str, iso_timeout: int, n_workers: int, force: 
 
 @app.command()
 def main(
-    dataset: Optional[str] = typer.Option(None, help="Dataset name (planar/lobster/sbm)"),
-    model: Optional[str] = typer.Option(None, help="Model name (AUTOGRAPH/DIGRESS/GRAN/ESGG)"),
-    all_missing: bool = typer.Option(False, "--all-missing", help="Run all combos missing VUN"),
-    iso_timeout: int = typer.Option(10, help="Per-pair isomorphism timeout in seconds"),
-    n_workers: int = typer.Option(8, help="Number of parallel workers for novelty checks"),
-    force: bool = typer.Option(False, help="Recompute even if VUN already present"),
+    dataset: Optional[str] = typer.Option(
+        None, help="Dataset name (planar/lobster/sbm)"
+    ),
+    model: Optional[str] = typer.Option(
+        None, help="Model name (AUTOGRAPH/DIGRESS/GRAN/ESGG)"
+    ),
+    all_missing: bool = typer.Option(
+        False, "--all-missing", help="Run all combos missing VUN"
+    ),
+    iso_timeout: int = typer.Option(
+        10, help="Per-pair isomorphism timeout in seconds"
+    ),
+    n_workers: int = typer.Option(
+        8, help="Number of parallel workers for novelty checks"
+    ),
+    force: bool = typer.Option(
+        False, help="Recompute even if VUN already present"
+    ),
 ):
     """Compute VUN for one or all dataset/model combos and patch JSON results."""
     if all_missing:

@@ -15,7 +15,6 @@ Usage:
 import json
 import sys
 from importlib.metadata import version as pkg_version
-from pathlib import Path
 from typing import Dict, List
 
 import hydra
@@ -23,7 +22,9 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
@@ -41,7 +42,10 @@ def get_reference_dataset(dataset: str, split: str = "test"):
 
 
 def compute_pgd_metrics(
-    reference_graphs: List, generated_graphs: List, subset: bool = False, classifier=None
+    reference_graphs: List,
+    generated_graphs: List,
+    subset: bool = False,
+    classifier=None,
 ) -> Dict:
     """Compute PGD metrics (reference=test, generated=train)."""
     from polygraph.metrics import StandardPGDInterval
@@ -57,8 +61,10 @@ def compute_pgd_metrics(
         num_samples = 10
 
     metric = StandardPGDInterval(
-        reference_graphs, subsample_size=subsample_size,
-        num_samples=num_samples, classifier=classifier,
+        reference_graphs,
+        subsample_size=subsample_size,
+        num_samples=num_samples,
+        classifier=classifier,
     )
     result = metric.compute(generated_graphs)
 
@@ -72,7 +78,11 @@ def compute_pgd_metrics(
     }
 
 
-@hydra.main(config_path="../configs", config_name="09_train_test_reference", version_base=None)
+@hydra.main(
+    config_path="../configs",
+    config_name="09_train_test_reference",
+    version_base=None,
+)
 def main(cfg: DictConfig) -> None:
     """Compute train-vs-test reference PGD for one dataset."""
     results_suffix: str = cfg.get("results_suffix", "")
@@ -98,7 +108,9 @@ def main(cfg: DictConfig) -> None:
             f"Must be one of {list(version_map)}"
         )
     classifier = TabPFNClassifier.create_default_for_version(
-        version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+        version_map[tabpfn_weights_version],
+        device="auto",
+        n_estimators=4,
     )
 
     logger.info("Computing train-vs-test reference PGD for {}", dataset)
@@ -108,13 +120,15 @@ def main(cfg: DictConfig) -> None:
         train_graphs = get_reference_dataset(dataset, split="train")
     except Exception as e:
         logger.error("Error loading dataset {}: {}", dataset, e)
-        maybe_append_jsonl({
-            "experiment": "09_train_test_reference",
-            "script": "compute.py",
-            "dataset": dataset,
-            "status": "error",
-            "error": str(e),
-        })
+        maybe_append_jsonl(
+            {
+                "experiment": "09_train_test_reference",
+                "script": "compute.py",
+                "dataset": dataset,
+                "status": "error",
+                "error": str(e),
+            }
+        )
         return
 
     logger.info("  train={}, test={}", len(train_graphs), len(test_graphs))
@@ -123,17 +137,22 @@ def main(cfg: DictConfig) -> None:
 
     try:
         pgd_results = compute_pgd_metrics(
-            test_graphs, train_graphs, subset=subset, classifier=classifier,
+            test_graphs,
+            train_graphs,
+            subset=subset,
+            classifier=classifier,
         )
     except Exception as e:
         logger.error("Error computing PGD for {}: {}", dataset, e)
-        maybe_append_jsonl({
-            "experiment": "09_train_test_reference",
-            "script": "compute.py",
-            "dataset": dataset,
-            "status": "error",
-            "error": str(e),
-        })
+        maybe_append_jsonl(
+            {
+                "experiment": "09_train_test_reference",
+                "script": "compute.py",
+                "dataset": dataset,
+                "status": "error",
+                "error": str(e),
+            }
+        )
         return
 
     result = {
@@ -149,14 +168,16 @@ def main(cfg: DictConfig) -> None:
 
     out_path.write_text(json.dumps(result, indent=2))
     logger.success("Result saved to {}", out_path)
-    maybe_append_jsonl({
-        "experiment": "09_train_test_reference",
-        "script": "compute.py",
-        "dataset": dataset,
-        "status": "ok",
-        "output_path": str(out_path),
-        "result": result,
-    })
+    maybe_append_jsonl(
+        {
+            "experiment": "09_train_test_reference",
+            "script": "compute.py",
+            "dataset": dataset,
+            "status": "ok",
+            "output_path": str(out_path),
+            "result": result,
+        }
+    )
 
 
 if __name__ == "__main__":

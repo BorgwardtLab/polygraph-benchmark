@@ -74,7 +74,7 @@ class StandardPGD(PolyGraphDiscrepancy[nx.Graph]):
     def __init__(
         self,
         reference_graphs: Collection[nx.Graph],
-        variant: str = "jsd",
+        variant: Literal["informedness", "jsd"] = "jsd",
         classifier=None,
     ):
         super().__init__(

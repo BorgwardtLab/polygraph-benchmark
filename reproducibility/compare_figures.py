@@ -2,17 +2,20 @@
 """Generate an HTML page for side-by-side visual comparison of old (paper) vs new (repo) figures."""
 
 import base64
-import io
 import os
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
-PAPER_DIR = Path("/fs/pool/pool-hartout/Documents/papers/polygraph_iclr_paper/figures")
-REPO_DIR = Path("/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figures")
+PAPER_DIR = Path(
+    "/fs/pool/pool-hartout/Documents/papers/polygraph_iclr_paper/figures"
+)
+REPO_DIR = Path(
+    "/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figures"
+)
 
 # Mapping: (repo_subdir, paper_subdir)
 SUBDIR_MAP = {
@@ -22,7 +25,9 @@ SUBDIR_MAP = {
     "04_phase_plot": "phase_plot",
 }
 
-OUTPUT_DIR = Path("/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figure_comparison")
+OUTPUT_DIR = Path(
+    "/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figure_comparison"
+)
 
 
 def pdf_to_png_base64(pdf_path: Path, dpi: int = 150) -> str:
@@ -32,7 +37,6 @@ def pdf_to_png_base64(pdf_path: Path, dpi: int = 150) -> str:
     ax.axis("off")
 
     # Use matplotlib's PDF renderer
-    from matplotlib.image import imread
     import subprocess
     import tempfile
 
@@ -82,12 +86,14 @@ def find_matching_figures():
 
         common = sorted(set(repo_pdfs.keys()) & set(paper_pdfs.keys()))
         for name in common:
-            matches.append({
-                "name": name,
-                "section": repo_subdir,
-                "paper_path": paper_pdfs[name],
-                "repo_path": repo_pdfs[name],
-            })
+            matches.append(
+                {
+                    "name": name,
+                    "section": repo_subdir,
+                    "paper_path": paper_pdfs[name],
+                    "repo_path": repo_pdfs[name],
+                }
+            )
 
     return matches
 
@@ -111,25 +117,36 @@ def find_tabpfn_matches():
         # Derive the default name by removing the suffix
         default_name = tabpfn_name.replace("_tabpfn_v6", "")
         if default_name in default_pdfs:
-            matches.append({
-                "name": default_name,
-                "section": "03_model_quality",
-                "paper_path": default_pdfs[default_name],  # "left" = default
-                "repo_path": tabpfn_path,                  # "right" = tabpfn_v6
-            })
+            matches.append(
+                {
+                    "name": default_name,
+                    "section": "03_model_quality",
+                    "paper_path": default_pdfs[
+                        default_name
+                    ],  # "left" = default
+                    "repo_path": tabpfn_path,  # "right" = tabpfn_v6
+                }
+            )
 
     return matches
 
 
-def generate_html(matches, output_name="comparison.html", title="Figure Comparison",
-                  subtitle_template="Paper (Old) vs Reproduced (New) &mdash; {n_total} matching figures",
-                  left_label="Paper (Old)", right_label="Repo (New)", left_class="old", right_class="new"):
+def generate_html(
+    matches,
+    output_name="comparison.html",
+    title="Figure Comparison",
+    subtitle_template="Paper (Old) vs Reproduced (New) &mdash; {n_total} matching figures",
+    left_label="Paper (Old)",
+    right_label="Repo (New)",
+    left_class="old",
+    right_class="new",
+):
     """Generate an HTML comparison page."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     rows = []
     for i, m in enumerate(matches):
-        print(f"  [{i+1}/{len(matches)}] Converting {m['name']}...")
+        print(f"  [{i + 1}/{len(matches)}] Converting {m['name']}...")
         try:
             paper_b64 = pdf_to_png_base64(m["paper_path"])
             repo_b64 = pdf_to_png_base64(m["repo_path"])
@@ -137,12 +154,14 @@ def generate_html(matches, output_name="comparison.html", title="Figure Comparis
             print(f"    ERROR: {e}")
             continue
 
-        rows.append({
-            "name": m["name"],
-            "section": m["section"],
-            "paper_b64": paper_b64,
-            "repo_b64": repo_b64,
-        })
+        rows.append(
+            {
+                "name": m["name"],
+                "section": m["section"],
+                "paper_b64": paper_b64,
+                "repo_b64": repo_b64,
+            }
+        )
 
     # Also check for repo-only figures (not in paper)
     new_only = []
@@ -152,10 +171,16 @@ def generate_html(matches, output_name="comparison.html", title="Figure Comparis
         paper_path = PAPER_DIR / paper_subdir
         if not repo_path.exists():
             continue
-        paper_names = {f.name for f in paper_path.glob("*.pdf")} if paper_path.exists() else set()
+        paper_names = (
+            {f.name for f in paper_path.glob("*.pdf")}
+            if paper_path.exists()
+            else set()
+        )
         for f in sorted(repo_path.glob("*.pdf")):
             if f.name not in paper_names and "tabpfn_v6" not in f.name:
-                new_only.append({"name": f.name, "section": repo_subdir, "path": f})
+                new_only.append(
+                    {"name": f.name, "section": repo_subdir, "path": f}
+                )
 
     html = """<!DOCTYPE html>
 <html lang="en">
@@ -269,25 +294,29 @@ function filterSection(section, btn) {{
             )
 
         fig_id = r["name"].replace(".", "_").replace(" ", "_")
-        toc_items.append(f'<li><a href="#{fig_id}">{r["name"]}</a> <span style="color:#666">({current_section})</span></li>')
+        toc_items.append(
+            f'<li><a href="#{fig_id}">{r["name"]}</a> <span style="color:#666">({current_section})</span></li>'
+        )
 
         comparisons.append(f"""
-<div class="comparison" data-section="{r['section']}" id="{fig_id}">
-  <div class="title">{r['name']}</div>
+<div class="comparison" data-section="{r["section"]}" id="{fig_id}">
+  <div class="title">{r["name"]}</div>
   <div class="panels">
     <div class="panel">
       <div class="panel-label {left_class}">{left_label}</div>
-      <img src="data:image/png;base64,{r['paper_b64']}" loading="lazy">
+      <img src="data:image/png;base64,{r["paper_b64"]}" loading="lazy">
     </div>
     <div class="panel">
       <div class="panel-label {right_class}">{right_label}</div>
-      <img src="data:image/png;base64,{r['repo_b64']}" loading="lazy">
+      <img src="data:image/png;base64,{r["repo_b64"]}" loading="lazy">
     </div>
   </div>
 </div>""")
 
     html = html.replace("{title}", title)
-    html = html.replace("{subtitle}", subtitle_template.replace("{n_total}", str(len(rows))))
+    html = html.replace(
+        "{subtitle}", subtitle_template.replace("{n_total}", str(len(rows)))
+    )
     html = html.replace("{left_label}", left_label)
     html = html.replace("{right_label}", right_label)
     html = html.replace("{left_class}", left_class)
@@ -303,7 +332,9 @@ function filterSection(section, btn) {{
     print(f"\nDone! Wrote {output_path}")
     print(f"  {len(rows)} matching figures compared")
     if new_only:
-        print(f"  {len(new_only)} repo-only figures (not in paper): {[x['name'] for x in new_only]}")
+        print(
+            f"  {len(new_only)} repo-only figures (not in paper): {[x['name'] for x in new_only]}"
+        )
 
     return output_path
 

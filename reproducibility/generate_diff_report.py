@@ -16,8 +16,12 @@ import numpy as np
 from PIL import Image
 
 REBUTTAL = Path("/fs/pool/pool-hartout/Documents/papers/rebuttal_iclr")
-CAMERA_READY = Path("/fs/pool/pool-hartout/Documents/papers/polygraph_iclr_paper")
-REPO = Path("/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility")
+CAMERA_READY = Path(
+    "/fs/pool/pool-hartout/Documents/papers/polygraph_iclr_paper"
+)
+REPO = Path(
+    "/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility"
+)
 OUT_HTML = REPO / "rebuttal_vs_camera_ready_diff.html"
 
 DPI = 150
@@ -25,6 +29,7 @@ DPI = 150
 # ═══════════════════════════════════════════════════════════════════════════
 # Figure helpers
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 def find_figure_pairs():
     pairs = []
@@ -69,7 +74,10 @@ def pdf_to_image(pdf_path: Path) -> Image.Image:
 
 
 def compute_diff_image(old_img, new_img):
-    w, h = max(old_img.width, new_img.width), max(old_img.height, new_img.height)
+    w, h = (
+        max(old_img.width, new_img.width),
+        max(old_img.height, new_img.height),
+    )
     old_r = Image.new("RGB", (w, h), (255, 255, 255))
     new_r = Image.new("RGB", (w, h), (255, 255, 255))
     old_r.paste(old_img, (0, 0))
@@ -98,6 +106,7 @@ def img_to_uri(img):
 # LaTeX table parser → structured cells with numeric extraction
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def _strip_latex(s: str) -> str:
     """Strip LaTeX formatting commands, return cleaned text."""
     s = s.strip()
@@ -105,16 +114,24 @@ def _strip_latex(s: str) -> str:
     if s.startswith("%"):
         return ""
     # Remove common wrappers
-    for cmd in [r"\textbf", r"\textsc", r"\bfseries", r"\underline",
-                r"\multirow", r"\multicolumn", r"\scriptstyle",
-                r"\scalebox", r"\resizebox"]:
+    for cmd in [
+        r"\textbf",
+        r"\textsc",
+        r"\bfseries",
+        r"\underline",
+        r"\multirow",
+        r"\multicolumn",
+        r"\scriptstyle",
+        r"\scalebox",
+        r"\resizebox",
+    ]:
         s = s.replace(cmd, "")
     # Remove \# (LaTeX escaped hash)
     s = s.replace(r"\#", "#")
     # Remove \pm etc for display but keep structure
     s = re.sub(r"\\[a-zA-Z]+", " ", s)  # remove remaining commands
-    s = s.replace("\\,", " ")             # remove \, (thin space)
-    s = re.sub(r"[{}\$#]", "", s)        # remove braces, $, and #
+    s = s.replace("\\,", " ")  # remove \, (thin space)
+    s = re.sub(r"[{}\$#]", "", s)  # remove braces, $, and #
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
@@ -244,24 +261,28 @@ def _cell_delta_html(old_cell: str, new_cell: str) -> str:
         else:
             cls = "cell-major"
 
-        return (f'<td class="{cls}">'
-                f'<span class="val-old">{html_mod.escape(old_display)}</span>'
-                f'<span class="val-arrow">→</span>'
-                f'<span class="val-new">{html_mod.escape(new_display)}</span>'
-                f'<span class="val-delta">({pct_str})</span>'
-                f'{within_std_tag}'
-                f'</td>')
+        return (
+            f'<td class="{cls}">'
+            f'<span class="val-old">{html_mod.escape(old_display)}</span>'
+            f'<span class="val-arrow">→</span>'
+            f'<span class="val-new">{html_mod.escape(new_display)}</span>'
+            f'<span class="val-delta">({pct_str})</span>'
+            f"{within_std_tag}"
+            f"</td>"
+        )
     else:
         # Non-numeric change (e.g. label changed)
         if old_display.strip() == "-" or new_display.strip() == "-":
             cls = "cell-moderate"
         else:
             cls = "cell-text-change"
-        return (f'<td class="{cls}">'
-                f'<span class="val-old">{html_mod.escape(old_display)}</span>'
-                f'<span class="val-arrow">→</span>'
-                f'<span class="val-new">{html_mod.escape(new_display)}</span>'
-                f'</td>')
+        return (
+            f'<td class="{cls}">'
+            f'<span class="val-old">{html_mod.escape(old_display)}</span>'
+            f'<span class="val-arrow">→</span>'
+            f'<span class="val-new">{html_mod.escape(new_display)}</span>'
+            f"</td>"
+        )
 
 
 _COLUMN_RENAMES = {
@@ -307,7 +328,6 @@ def _normalize_header(h: str) -> str:
     return _COLUMN_RENAMES.get(h, h)
 
 
-
 def _is_header_row(row: list[str]) -> bool:
     """Detect if a row is a header row (not data).
 
@@ -327,7 +347,9 @@ def _is_header_row(row: list[str]) -> bool:
             # Before declaring this a header, check if other cells have numbers.
             # Data rows often have bolded labels in the first column (e.g.
             # \textbf{PGD} & 0.6 & ...) — those are NOT headers.
-            if len(row) > 1 and any(_NUM_RE.search(_strip_latex(c)) for c in row[1:]):
+            if len(row) > 1 and any(
+                _NUM_RE.search(_strip_latex(c)) for c in row[1:]
+            ):
                 pass  # data row with bolded label
             else:
                 return True
@@ -335,6 +357,7 @@ def _is_header_row(row: list[str]) -> bool:
     # A cell is "numeric" if its stripped content is predominantly a number (e.g. "0.1879"),
     # not just containing a digit somewhere (e.g. "Orbit5 PGS" contains "5" but is a label).
     if len(row) > 1:
+
         def _is_numeric_cell(c: str) -> bool:
             clean = _strip_latex(c).strip()
             if not clean or clean == "-":
@@ -345,13 +368,16 @@ def _is_header_row(row: list[str]) -> bool:
                 return False
             num_chars = sum(len(n) for n in nums)
             return num_chars > len(clean) * 0.3
+
         numeric_count = sum(1 for c in row[1:] if _is_numeric_cell(c))
         if numeric_count == 0:
             return True
     return False
 
 
-def _build_column_mapping(old_headers: list[str], new_headers: list[str]) -> list[tuple[int, int]]:
+def _build_column_mapping(
+    old_headers: list[str], new_headers: list[str]
+) -> list[tuple[int, int]]:
     """Build a mapping of (old_col_idx, new_col_idx) pairs for columns that match.
 
     Returns a list of (old_idx, new_idx) tuples for matched columns,
@@ -387,10 +413,18 @@ def render_table_diff(old_path: Path, new_path: Path) -> tuple[str, dict]:
     new_rows = _parse_tex_table(new_path.read_text())
 
     if not old_rows and not new_rows:
-        return "<p>Could not parse table.</p>", {"cells_changed": 0, "cells_total": 0}
+        return "<p>Could not parse table.</p>", {
+            "cells_changed": 0,
+            "cells_total": 0,
+        }
 
-    stats = {"cells_changed": 0, "cells_total": 0, "max_pct": 0.0, "changes": [],
-             "top_changes": []}
+    stats = {
+        "cells_changed": 0,
+        "cells_total": 0,
+        "max_pct": 0.0,
+        "changes": [],
+        "top_changes": [],
+    }
 
     # Detect header rows — find ALL consecutive header rows at the top.
     # Use the one with the most cells for column mapping (e.g. the subheader
@@ -431,7 +465,7 @@ def render_table_diff(old_path: Path, new_path: Path) -> tuple[str, dict]:
         header_cells = []
         for h in new_rows[new_header_idx]:
             display = _strip_latex(h) or "-"
-            header_cells.append(f'<th>{html_mod.escape(display)}</th>')
+            header_cells.append(f"<th>{html_mod.escape(display)}</th>")
         html_rows.append(f'<tr class="header-row">{"".join(header_cells)}</tr>')
 
     # Resolve header labels for change tracking
@@ -455,7 +489,11 @@ def render_table_diff(old_path: Path, new_path: Path) -> tuple[str, dict]:
         # Determine row label (first cell of the data row)
         data_row = new_data[row_idx] if row_idx < len(new_data) else []
         row_label = _strip_latex(data_row[0]) if data_row else f"row {row_idx}"
-        col_label = new_header_labels[col_idx] if new_header_labels and col_idx < len(new_header_labels) else f"col {col_idx}"
+        col_label = (
+            new_header_labels[col_idx]
+            if new_header_labels and col_idx < len(new_header_labels)
+            else f"col {col_idx}"
+        )
         old_mean, old_std = _extract_mean_std(old_c)
         new_mean, new_std = _extract_mean_std(new_c)
         within_std = False
@@ -463,11 +501,16 @@ def render_table_diff(old_path: Path, new_path: Path) -> tuple[str, dict]:
             stds = [s for s in (old_std, new_std) if s is not None]
             if stds and max(stds) > 0:
                 within_std = abs(new_mean - old_mean) <= max(stds)
-        stats["top_changes"].append({
-            "row": row_label, "col": col_label,
-            "old": old_d, "new": new_d,
-            "pct": pct, "within_std": within_std,
-        })
+        stats["top_changes"].append(
+            {
+                "row": row_label,
+                "col": col_label,
+                "old": old_d,
+                "new": new_d,
+                "pct": pct,
+                "within_std": within_std,
+            }
+        )
 
     # Render data rows
     max_data_rows = max(len(old_data), len(new_data))
@@ -477,7 +520,11 @@ def render_table_diff(old_path: Path, new_path: Path) -> tuple[str, dict]:
 
         if col_mapping is not None:
             # Use column mapping: iterate over new columns, find matching old column
-            new_cols = len(new_rows[new_header_idx]) if new_header_idx is not None else len(new_r)
+            new_cols = (
+                len(new_rows[new_header_idx])
+                if new_header_idx is not None
+                else len(new_r)
+            )
             # Build a quick lookup: new_idx -> old_idx
             new_to_old = {new_idx: old_idx for old_idx, new_idx in col_mapping}
 
@@ -515,6 +562,7 @@ def render_table_diff(old_path: Path, new_path: Path) -> tuple[str, dict]:
 # Main
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def main():
     OUT_HTML.parent.mkdir(parents=True, exist_ok=True)
 
@@ -534,7 +582,11 @@ def main():
             new_uri = img_to_uri(new_img)
             diff_uri = img_to_uri(diff_img)
 
-            badge_class = "badge-ok" if pct < 0.5 else ("badge-minor" if pct < 5 else "badge-major")
+            badge_class = (
+                "badge-ok"
+                if pct < 0.5
+                else ("badge-minor" if pct < 5 else "badge-major")
+            )
             badge_label = "identical" if pct < 0.1 else f"{pct:.1f}% px changed"
 
             block = f"""
@@ -604,20 +656,22 @@ def main():
     biggest_rows = []
     for table_label, ch in all_table_changes[:top_n]:
         pct = ch["pct"]
-        std_badge = ('<span class="within-std">within std</span>'
-                     if ch["within_std"]
-                     else '<span class="outside-std">outside std</span>')
+        std_badge = (
+            '<span class="within-std">within std</span>'
+            if ch["within_std"]
+            else '<span class="outside-std">outside std</span>'
+        )
         biggest_rows.append(
-            f'<tr>'
-            f'<td>{html_mod.escape(table_label)}</td>'
-            f'<td>{html_mod.escape(ch["row"])}</td>'
-            f'<td>{html_mod.escape(ch["col"])}</td>'
+            f"<tr>"
+            f"<td>{html_mod.escape(table_label)}</td>"
+            f"<td>{html_mod.escape(ch['row'])}</td>"
+            f"<td>{html_mod.escape(ch['col'])}</td>"
             f'<td class="val-old">{html_mod.escape(ch["old"])}</td>'
             f'<td class="val-new">{html_mod.escape(ch["new"])}</td>'
             f'<td class="{"cell-major" if pct > 10 else "cell-moderate" if pct > 2 else "cell-minor"}">'
-            f'{pct:.1f}%</td>'
-            f'<td>{std_badge}</td>'
-            f'</tr>'
+            f"{pct:.1f}%</td>"
+            f"<td>{std_badge}</td>"
+            f"</tr>"
         )
     biggest_changes_html = f"""
     <div class="item">
@@ -648,7 +702,8 @@ def main():
         changed = sum(1 for pct, _ in items if pct >= 0.1)
         fig_html_parts.append(
             f'<h2 class="section-header">{html_mod.escape(section)} '
-            f'<span class="section-count">({changed}/{total} changed)</span></h2>')
+            f'<span class="section-count">({changed}/{total} changed)</span></h2>'
+        )
         for _, block in items:
             fig_html_parts.append(block)
 

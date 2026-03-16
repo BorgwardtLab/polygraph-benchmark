@@ -55,7 +55,6 @@ from typing import (
 )
 
 import numpy as np
-import torch
 from scipy.sparse import csr_array, issparse, vstack as sparse_vstack
 from sklearn.metrics import roc_curve
 from sklearn.model_selection import StratifiedKFold
@@ -135,7 +134,7 @@ def _is_constant(X) -> bool:
             if diff.nnz > 0:
                 return False
         return True
-    return np.all(X == X[0])
+    return bool(np.all(X == X[0]))
 
 
 def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
@@ -203,10 +202,12 @@ def _classifier_cross_validation(
     """
     # Combine data and create labels
     X = _vstack([train_ref_descriptions, train_gen_descriptions])
+    n_ref = train_ref_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
+    n_gen = train_gen_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
     y = np.concatenate(
         [
-            np.ones(train_ref_descriptions.shape[0]),
-            np.zeros(train_gen_descriptions.shape[0]),
+            np.ones(n_ref),
+            np.zeros(n_gen),
         ]
     )
 
@@ -214,9 +215,12 @@ def _classifier_cross_validation(
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=0)
     scores = []
 
-    for train_idx, val_idx in skf.split(X if not issparse(X) else np.zeros((X.shape[0], 1)), y):
+    for train_idx, val_idx in skf.split(
+        X if not issparse(X) else np.zeros((X.shape[0], 1)),  # pyright: ignore[reportOptionalSubscript]
+        y,
+    ):
         # Split data
-        X_train, X_val = X[train_idx], X[val_idx]
+        X_train, X_val = X[train_idx], X[val_idx]  # pyright: ignore[reportIndexIssue]
         y_train, y_val = y[train_idx], y[val_idx]
 
         try:
@@ -318,17 +322,15 @@ def _descriptions_to_classifier_metric(
             gen_descriptions = gen_descriptions.toarray()
             ref_descriptions = ref_descriptions.toarray()
 
-    n_ref = ref_descriptions.shape[0]
-    n_gen = gen_descriptions.shape[0]
+    n_ref = ref_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
+    n_gen = gen_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
     ref_train_idx = rng.choice(
         n_ref,
         size=n_ref // 2,
         replace=False,
     )
     ref_test_idx = np.setdiff1d(np.arange(n_ref), ref_train_idx)
-    gen_train_idx = rng.choice(
-        n_gen, size=n_gen // 2, replace=False
-    )
+    gen_train_idx = rng.choice(n_gen, size=n_gen // 2, replace=False)
     gen_test_idx = np.setdiff1d(np.arange(n_gen), gen_train_idx)
 
     train_ref_descriptions = ref_descriptions[ref_train_idx]
@@ -338,7 +340,9 @@ def _descriptions_to_classifier_metric(
     if scale:
         scaler = StandardScaler()
         scaler.fit(
-            np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
+            np.concatenate(
+                [train_ref_descriptions, train_gen_descriptions], axis=0
+            )
         )
         test_ref_descriptions = scaler.transform(test_ref_descriptions)
         test_gen_descriptions = scaler.transform(test_gen_descriptions)
@@ -378,8 +382,8 @@ def _descriptions_to_classifier_metric(
     )
     train_labels = np.concatenate(
         [
-            np.ones(train_ref_descriptions.shape[0]),
-            np.zeros(train_gen_descriptions.shape[0]),
+            np.ones(train_ref_descriptions.shape[0]),  # pyright: ignore[reportOptionalSubscript]
+            np.zeros(train_gen_descriptions.shape[0]),  # pyright: ignore[reportOptionalSubscript]
         ]
     )
 
@@ -391,15 +395,15 @@ def _descriptions_to_classifier_metric(
             )
             predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
         else:
-            clf.fit(train_all_descriptions, train_labels)
+            clf.fit(train_all_descriptions, train_labels)  # pyright: ignore[reportArgumentType]
             predict_proba = clf.predict_proba
 
-        ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]
-        gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]
+        ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
+        gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
 
         if variant == "informedness":
-            ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]
-            gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]
+            ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
+            gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
             _, threshold = _scores_to_informedness_and_threshold(
                 ref_train_pred, gen_train_pred
             )

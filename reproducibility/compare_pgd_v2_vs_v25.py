@@ -16,8 +16,12 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-FIGURES_DIR = Path("/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figures")
-OUTPUT_DIR = Path("/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figure_comparison/pgd_v2_vs_v25")
+FIGURES_DIR = Path(
+    "/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figures"
+)
+OUTPUT_DIR = Path(
+    "/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark/reproducibility/figure_comparison/pgd_v2_vs_v25"
+)
 
 SECTION_LABELS = {
     "01_subsampling": "Subsampling Experiments",
@@ -32,12 +36,19 @@ def pdf_to_png_bytes(pdf_path: Path, dpi: int = 150) -> bytes:
     try:
         subprocess.run(
             [
-                "gs", "-dNOPAUSE", "-dBATCH", "-dSAFER",
-                "-sDEVICE=png16m", f"-r{dpi}",
-                "-dFirstPage=1", "-dLastPage=1",
-                f"-sOutputFile={tmp_path}", str(pdf_path),
+                "gs",
+                "-dNOPAUSE",
+                "-dBATCH",
+                "-dSAFER",
+                "-sDEVICE=png16m",
+                f"-r{dpi}",
+                "-dFirstPage=1",
+                "-dLastPage=1",
+                f"-sOutputFile={tmp_path}",
+                str(pdf_path),
             ],
-            capture_output=True, check=True,
+            capture_output=True,
+            check=True,
         )
         with open(tmp_path, "rb") as f:
             return f.read()
@@ -49,7 +60,9 @@ def png_bytes_to_b64(data: bytes) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
-def compute_diff_image(png_bytes_a: bytes, png_bytes_b: bytes) -> tuple[str, float, int]:
+def compute_diff_image(
+    png_bytes_a: bytes, png_bytes_b: bytes
+) -> tuple[str, float, int]:
     """Compute a diff heatmap image. Returns (b64_png, pct_diff, max_diff)."""
     img_a = np.array(Image.open(io.BytesIO(png_bytes_a)))
     img_b = np.array(Image.open(io.BytesIO(png_bytes_b)))
@@ -107,18 +120,22 @@ def find_pairs():
     for key in all_keys:
         section, base = key
         if key in v2_files and key in v25_files:
-            pairs.append({
-                "section": section,
-                "base": base,
-                "v2_path": v2_files[key],
-                "v25_path": v25_files[key],
-            })
+            pairs.append(
+                {
+                    "section": section,
+                    "base": base,
+                    "v2_path": v2_files[key],
+                    "v25_path": v25_files[key],
+                }
+            )
         elif key in v25_files:
-            v25_only.append({
-                "section": section,
-                "base": base,
-                "v25_path": v25_files[key],
-            })
+            v25_only.append(
+                {
+                    "section": section,
+                    "base": base,
+                    "v25_path": v25_files[key],
+                }
+            )
 
     return pairs, v25_only
 
@@ -128,25 +145,29 @@ def generate_html(pairs, v25_only):
 
     rows = []
     for i, p in enumerate(pairs):
-        print(f"  [{i+1}/{len(pairs)}] Converting {p['base']}...")
+        print(f"  [{i + 1}/{len(pairs)}] Converting {p['base']}...")
         try:
             v25_bytes = pdf_to_png_bytes(p["v25_path"])
             v2_bytes = pdf_to_png_bytes(p["v2_path"])
-            diff_b64, pct_diff, max_diff = compute_diff_image(v25_bytes, v2_bytes)
+            diff_b64, pct_diff, max_diff = compute_diff_image(
+                v25_bytes, v2_bytes
+            )
         except Exception as e:
             print(f"    ERROR: {e}")
             continue
-        rows.append({
-            "section": p["section"],
-            "base": p["base"],
-            "v2_b64": png_bytes_to_b64(v2_bytes),
-            "v25_b64": png_bytes_to_b64(v25_bytes),
-            "diff_b64": diff_b64,
-            "pct_diff": pct_diff,
-            "max_diff": max_diff,
-            "v2_path": str(p["v2_path"]),
-            "v25_path": str(p["v25_path"]),
-        })
+        rows.append(
+            {
+                "section": p["section"],
+                "base": p["base"],
+                "v2_b64": png_bytes_to_b64(v2_bytes),
+                "v25_b64": png_bytes_to_b64(v25_bytes),
+                "diff_b64": diff_b64,
+                "pct_diff": pct_diff,
+                "max_diff": max_diff,
+                "v2_path": str(p["v2_path"]),
+                "v25_path": str(p["v25_path"]),
+            }
+        )
 
     # Sort by diff percentage descending so biggest changes are first within each section
     rows.sort(key=lambda r: (r["section"], -r["pct_diff"]))
@@ -167,11 +188,19 @@ def generate_html(pairs, v25_only):
             count = section_counts[current_section]
             comparisons.append(
                 f'<div class="section-header" data-section="{current_section}">'
-                f'{label} ({count} figures)</div>'
+                f"{label} ({count} figures)</div>"
             )
 
-        fig_id = f"{r['section']}_{r['base']}".replace(".", "_").replace(" ", "_")
-        diff_color = "#4cc9f0" if r["pct_diff"] < 1 else "#ffa500" if r["pct_diff"] < 5 else "#e94560"
+        fig_id = f"{r['section']}_{r['base']}".replace(".", "_").replace(
+            " ", "_"
+        )
+        diff_color = (
+            "#4cc9f0"
+            if r["pct_diff"] < 1
+            else "#ffa500"
+            if r["pct_diff"] < 5
+            else "#e94560"
+        )
         diff_badge = f'<span class="diff-badge" style="color:{diff_color}">{r["pct_diff"]:.1f}% pixels differ</span>'
 
         toc_items.append(
@@ -181,24 +210,24 @@ def generate_html(pairs, v25_only):
         )
 
         comparisons.append(f"""
-<div class="comparison" data-section="{r['section']}" id="{fig_id}">
-  <div class="title">{r['base']} {diff_badge}</div>
+<div class="comparison" data-section="{r["section"]}" id="{fig_id}">
+  <div class="title">{r["base"]} {diff_badge}</div>
   <div class="file-paths">
-    <span class="path-label v25">v2.5:</span> <code>{r['v25_path']}</code><br>
-    <span class="path-label v2">v2:</span> <code>{r['v2_path']}</code>
+    <span class="path-label v25">v2.5:</span> <code>{r["v25_path"]}</code><br>
+    <span class="path-label v2">v2:</span> <code>{r["v2_path"]}</code>
   </div>
   <div class="panels three-panel">
     <div class="panel">
       <div class="panel-label v25">TabPFN Weights v2.5</div>
-      <img src="data:image/png;base64,{r['v25_b64']}" loading="lazy">
+      <img src="data:image/png;base64,{r["v25_b64"]}" loading="lazy">
     </div>
     <div class="panel">
       <div class="panel-label v2">TabPFN Weights v2</div>
-      <img src="data:image/png;base64,{r['v2_b64']}" loading="lazy">
+      <img src="data:image/png;base64,{r["v2_b64"]}" loading="lazy">
     </div>
     <div class="panel diff-panel">
       <div class="panel-label diff">Diff (red = change, 3x amplified)</div>
-      <img src="data:image/png;base64,{r['diff_b64']}" loading="lazy">
+      <img src="data:image/png;base64,{r["diff_b64"]}" loading="lazy">
     </div>
   </div>
 </div>""")
@@ -208,7 +237,9 @@ def generate_html(pairs, v25_only):
     if v25_only:
         v25_only_items = []
         for item in v25_only:
-            v25_only_items.append(f"<li><code>{item['base']}</code> ({item['section']})</li>")
+            v25_only_items.append(
+                f"<li><code>{item['base']}</code> ({item['section']})</li>"
+            )
         v25_only_html = f"""
 <div class="section-header" style="background:#4a1942;">v2.5-only figures (no v2 counterpart) &mdash; {len(v25_only)}</div>
 <div class="comparison" style="padding:15px;">
@@ -216,15 +247,21 @@ def generate_html(pairs, v25_only):
 </div>"""
 
     # Filter buttons
-    filter_buttons = ['<button class="active" onclick="filterSection(\'all\', this)">All</button>']
+    filter_buttons = [
+        '<button class="active" onclick="filterSection(\'all\', this)">All</button>'
+    ]
     for section in sorted(section_counts.keys()):
         label = SECTION_LABELS.get(section, section)
         count = section_counts[section]
         filter_buttons.append(
-            f'<button onclick="filterSection(\'{section}\', this)">{label} ({count})</button>'
+            f"<button onclick=\"filterSection('{section}', this)\">{label} ({count})</button>"
         )
-    filter_buttons.append('<button onclick="filterDiff(5, this)">Diff > 5%</button>')
-    filter_buttons.append('<button onclick="filterDiff(1, this)">Diff > 1%</button>')
+    filter_buttons.append(
+        '<button onclick="filterDiff(5, this)">Diff > 5%</button>'
+    )
+    filter_buttons.append(
+        '<button onclick="filterDiff(1, this)">Diff > 1%</button>'
+    )
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -326,8 +363,12 @@ function filterDiff(threshold, btn) {{
 
     # Summary stats
     diffs = [r["pct_diff"] for r in rows]
-    print(f"  Diff stats: mean={np.mean(diffs):.1f}%, max={np.max(diffs):.1f}%, median={np.median(diffs):.1f}%")
-    print(f"  > 1%: {sum(1 for d in diffs if d >= 1)}, > 5%: {sum(1 for d in diffs if d >= 5)}")
+    print(
+        f"  Diff stats: mean={np.mean(diffs):.1f}%, max={np.max(diffs):.1f}%, median={np.median(diffs):.1f}%"
+    )
+    print(
+        f"  > 1%: {sum(1 for d in diffs if d >= 1)}, > 5%: {sum(1 for d in diffs if d >= 5)}"
+    )
 
     return output_path
 

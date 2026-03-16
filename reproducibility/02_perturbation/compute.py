@@ -39,7 +39,9 @@ from omegaconf import DictConfig
 from pyprojroot import here
 from sklearn.linear_model import LogisticRegression
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 from polygraph.datasets.ego import EgoGraphDataset
 from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
@@ -72,7 +74,9 @@ from polygraph.utils.descriptors import OrbitCounts
 from polygraph.utils.kernels import AdaptiveRBFKernel
 
 REPO_ROOT = here()
-_RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "figures" / "02_perturbation"
+_RESULTS_DIR_BASE = (
+    REPO_ROOT / "reproducibility" / "figures" / "02_perturbation"
+)
 
 # Adaptive RBF bandwidths (matching the library's RBFOrbitMMD2 internals)
 _RBF_BW = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
@@ -123,7 +127,9 @@ def edge_swapping(graph: nx.Graph, noise_level: float) -> nx.Graph:
     original_degrees = dict(perturbed.degree())
 
     edges = list(perturbed.edges())
-    selected = [i for i in range(len(edges)) if np.random.random() < noise_level]
+    selected = [
+        i for i in range(len(edges)) if np.random.random() < noise_level
+    ]
     random.shuffle(selected)
 
     num_pairs = len(selected) // 2
@@ -137,8 +143,12 @@ def edge_swapping(graph: nx.Graph, noise_level: float) -> nx.Graph:
         if len({a, b, c, d}) < 4:
             continue
 
-        option1_valid = not perturbed.has_edge(a, d) and not perturbed.has_edge(c, b)
-        option2_valid = not perturbed.has_edge(a, c) and not perturbed.has_edge(b, d)
+        option1_valid = not perturbed.has_edge(a, d) and not perturbed.has_edge(
+            c, b
+        )
+        option2_valid = not perturbed.has_edge(a, c) and not perturbed.has_edge(
+            b, d
+        )
 
         if not option1_valid and not option2_valid:
             continue
@@ -341,9 +351,13 @@ def _make_classifier(name: str, tabpfn_weights_version: str = "v2.5"):
             "v2.5": ModelVersion.V2_5,
         }
         if tabpfn_weights_version not in version_map:
-            raise ValueError(f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}")
+            raise ValueError(
+                f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}"
+            )
         return TabPFNClassifier.create_default_for_version(
-            version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+            version_map[tabpfn_weights_version],
+            device="auto",
+            n_estimators=4,
         )
     elif name == "lr":
         return LogisticRegression(max_iter=1000)
@@ -370,32 +384,37 @@ def build_metrics(
 
     if tabpfn_only:
         classifiers = ["tabpfn"]
-        logger.info("tabpfn_only=True: skipping MMD metrics, using classifiers={}", classifiers)
+        logger.info(
+            "tabpfn_only=True: skipping MMD metrics, using classifiers={}",
+            classifiers,
+        )
 
     metrics: Dict[str, object] = {}
 
     if not tabpfn_only:
-        metrics.update({
-            # GaussianTV kernel (4 metrics)
-            "orbit_tv": GaussianTVOrbitMMD2(reference_graphs),
-            "degree_tv": GaussianTVDegreeMMD2(reference_graphs),
-            "spectral_tv": GaussianTVSpectralMMD2(reference_graphs),
-            "clustering_tv": GaussianTVClusteringMMD2(reference_graphs),
-            # Adaptive RBF kernel (6 metrics)
-            "orbit_rbf": RBFOrbitMMD2(reference_graphs),
-            "orbit5_rbf": MaxDescriptorMMD2(
-                reference_graphs=reference_graphs,
-                kernel=AdaptiveRBFKernel(
-                    descriptor_fn=OrbitCounts(graphlet_size=5),
-                    bw=_RBF_BW,
+        metrics.update(
+            {
+                # GaussianTV kernel (4 metrics)
+                "orbit_tv": GaussianTVOrbitMMD2(reference_graphs),
+                "degree_tv": GaussianTVDegreeMMD2(reference_graphs),
+                "spectral_tv": GaussianTVSpectralMMD2(reference_graphs),
+                "clustering_tv": GaussianTVClusteringMMD2(reference_graphs),
+                # Adaptive RBF kernel (6 metrics)
+                "orbit_rbf": RBFOrbitMMD2(reference_graphs),
+                "orbit5_rbf": MaxDescriptorMMD2(
+                    reference_graphs=reference_graphs,
+                    kernel=AdaptiveRBFKernel(
+                        descriptor_fn=OrbitCounts(graphlet_size=5),
+                        bw=_RBF_BW,
+                    ),
+                    variant="biased",
                 ),
-                variant="biased",
-            ),
-            "degree_rbf": RBFDegreeMMD2(reference_graphs),
-            "spectral_rbf": RBFSpectralMMD2(reference_graphs),
-            "clustering_rbf": RBFClusteringMMD2(reference_graphs),
-            "gin_rbf": RBFGraphNeuralNetworkMMD2(reference_graphs),
-        })
+                "degree_rbf": RBFDegreeMMD2(reference_graphs),
+                "spectral_rbf": RBFSpectralMMD2(reference_graphs),
+                "clustering_rbf": RBFClusteringMMD2(reference_graphs),
+                "gin_rbf": RBFGraphNeuralNetworkMMD2(reference_graphs),
+            }
+        )
 
     # Classifier metrics (6 descriptors x classifiers x variants)
     for clf_name, variant in product(classifiers, variants):
@@ -419,15 +438,19 @@ def build_metrics(
             variant=variant,
             classifier=_make_classifier(clf_name, tabpfn_weights_version),
         )
-        metrics[f"clustering_{clf_name}_{variant}"] = ClassifierClusteringMetric(
-            reference_graphs,
-            variant=variant,
-            classifier=_make_classifier(clf_name, tabpfn_weights_version),
+        metrics[f"clustering_{clf_name}_{variant}"] = (
+            ClassifierClusteringMetric(
+                reference_graphs,
+                variant=variant,
+                classifier=_make_classifier(clf_name, tabpfn_weights_version),
+            )
         )
-        metrics[f"gin_{clf_name}_{variant}"] = GraphNeuralNetworkClassifierMetric(
-            reference_graphs,
-            variant=variant,
-            classifier=_make_classifier(clf_name, tabpfn_weights_version),
+        metrics[f"gin_{clf_name}_{variant}"] = (
+            GraphNeuralNetworkClassifierMetric(
+                reference_graphs,
+                variant=variant,
+                classifier=_make_classifier(clf_name, tabpfn_weights_version),
+            )
         )
 
     return metrics
@@ -517,7 +540,11 @@ def main(cfg: DictConfig) -> None:
     logger.info(
         "Computing perturbation metrics: dataset={}, perturbation={}, "
         "num_graphs={}, num_steps={}, max_noise_level={}",
-        dataset, perturbation, num_graphs, num_steps, max_noise_level,
+        dataset,
+        perturbation,
+        num_graphs,
+        num_steps,
+        max_noise_level,
     )
 
     random.seed(seed)
@@ -528,11 +555,14 @@ def main(cfg: DictConfig) -> None:
     )
     logger.info(
         "Loaded {} reference graphs and {} base graphs for perturbation",
-        len(reference_graphs), len(perturbed_base_graphs),
+        len(reference_graphs),
+        len(perturbed_base_graphs),
     )
 
     metrics = build_metrics(
-        reference_graphs, classifiers=classifiers, variants=variants,
+        reference_graphs,
+        classifiers=classifiers,
+        variants=variants,
         tabpfn_weights_version=tabpfn_weights_version,
         tabpfn_only=tabpfn_only,
     )
@@ -561,7 +591,8 @@ def main(cfg: DictConfig) -> None:
 
         logger.info(
             "  Completed {} metrics at noise_level={:.4f}",
-            len(scores) - 1, noise_level,
+            len(scores) - 1,
+            noise_level,
         )
 
     output = {

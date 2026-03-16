@@ -11,7 +11,7 @@ Usage:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 import pandas as pd
 import typer
@@ -57,15 +57,21 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
     lines = []
     lines.append("\\begin{tabular}{llccc}")
     lines.append("\\toprule")
-    lines.append("\\textbf{Dataset} & \\textbf{Model} & \\textbf{VUN ($\\uparrow$)} & \\textbf{PGD ($\\downarrow$)} & \\textbf{PGD-Concat. ($\\downarrow$)} \\\\")
+    lines.append(
+        "\\textbf{Dataset} & \\textbf{Model} & \\textbf{VUN ($\\uparrow$)} & \\textbf{PGD ($\\downarrow$)} & \\textbf{PGD-Concat. ($\\downarrow$)} \\\\"
+    )
     lines.append("\\midrule")
 
     for i, ds in enumerate(DATASETS):
         ds_concat = concat_results.get(ds, {})
         ds_bench = bench_results.get(ds, {})
 
-        std_best, std_second = _best_two(ds_concat, "pgs_standard_mean", lower=True)
-        cat_best, cat_second = _best_two(ds_concat, "pgs_concatenated_mean", lower=True)
+        std_best, std_second = _best_two(
+            ds_concat, "pgs_standard_mean", lower=True
+        )
+        cat_best, cat_second = _best_two(
+            ds_concat, "pgs_concatenated_mean", lower=True
+        )
         vun_best, vun_second = _best_two(ds_bench, "vun", lower=False)
 
         first = True
@@ -89,16 +95,22 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
             else:
                 row.append("-")
 
-            row.append(_fmt(
-                cr.get("pgs_standard_mean", float("nan")),
-                cr.get("pgs_standard_std", float("nan")),
-                model == std_best, model == std_second,
-            ))
-            row.append(_fmt(
-                cr.get("pgs_concatenated_mean", float("nan")),
-                cr.get("pgs_concatenated_std", float("nan")),
-                model == cat_best, model == cat_second,
-            ))
+            row.append(
+                _fmt(
+                    cr.get("pgs_standard_mean", float("nan")),
+                    cr.get("pgs_standard_std", float("nan")),
+                    model == std_best,
+                    model == std_second,
+                )
+            )
+            row.append(
+                _fmt(
+                    cr.get("pgs_concatenated_mean", float("nan")),
+                    cr.get("pgs_concatenated_std", float("nan")),
+                    model == cat_best,
+                    model == cat_second,
+                )
+            )
 
             lines.append(" & ".join(row) + " \\\\")
         if i < len(DATASETS) - 1:
@@ -112,7 +124,11 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
 @app.command()
 def main(
     paper_dir: Optional[Path] = typer.Option(None, "--paper-dir"),
-    results_suffix: str = typer.Option("", "--results-suffix", help="Suffix for results dir and output files (e.g. _tabpfn_v6)"),
+    results_suffix: str = typer.Option(
+        "",
+        "--results-suffix",
+        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
+    ),
 ):
     results_dir = OUTPUT_DIR / "results" / f"concatenation{results_suffix}"
     benchmark_dir = OUTPUT_DIR / "results" / f"benchmark{results_suffix}"
@@ -131,6 +147,7 @@ def main(
 
     if paper_dir:
         import shutil
+
         Path(paper_dir).mkdir(parents=True, exist_ok=True)
         shutil.copy2(out, Path(paper_dir) / out.name)
 

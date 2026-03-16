@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """Quantify PGD v2 vs v2.5 differences."""
+
 import json
 from pathlib import Path
 import numpy as np
 
-BASE = Path("/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark")
-v2_dir = BASE / "reproducibility/figures/01_subsampling/results/compute_pgd_tabpfn_weights_v2"
-v25_dir = BASE / "reproducibility/figures/01_subsampling/results/compute_pgd_tabpfn_weights_v2.5"
+BASE = Path(
+    "/fs/gpfs41/lv11/fileset01/pool/pool-hartout/Documents/Git/polygraph-benchmark"
+)
+v2_dir = (
+    BASE
+    / "reproducibility/figures/01_subsampling/results/compute_pgd_tabpfn_weights_v2"
+)
+v25_dir = (
+    BASE
+    / "reproducibility/figures/01_subsampling/results/compute_pgd_tabpfn_weights_v2.5"
+)
 
 diffs = []
 for f in sorted(v2_dir.glob("*.json")):
@@ -31,4 +40,6 @@ print(f"> 0.05: {(arr > 0.05).sum()}/{len(arr)}")
 print()
 print("Top 20 largest differences:")
 for name, key, v2_val, v25_val, diff in diffs[:20]:
-    print(f"  {name} / {key}: v2={v2_val:.4f}  v25={v25_val:.4f}  diff={diff:.4f}")
+    print(
+        f"  {name} / {key}: v2={v2_val:.4f}  v25={v25_val:.4f}  diff={diff:.4f}"
+    )

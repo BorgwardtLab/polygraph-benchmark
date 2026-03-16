@@ -11,7 +11,6 @@ Usage:
 import json
 import sys
 from importlib.metadata import version as pkg_version
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import hydra
@@ -19,7 +18,9 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
@@ -42,7 +43,13 @@ def get_reference_dataset(dataset: str, split: str = "test"):
     return _get_ref(dataset, split=split, num_graphs=num)
 
 
-def compute_pgs_metrics(reference_graphs: List, generated_graphs: List, dataset: str = "", subset: bool = False, classifier=None) -> Dict:
+def compute_pgs_metrics(
+    reference_graphs: List,
+    generated_graphs: List,
+    dataset: str = "",
+    subset: bool = False,
+    classifier=None,
+) -> Dict:
     """Compute PGD metrics using the polygraph library."""
     from polygraph.metrics import StandardPGDInterval
 
@@ -57,7 +64,12 @@ def compute_pgs_metrics(reference_graphs: List, generated_graphs: List, dataset:
         subsample_size = min(int(min_subset * 0.5), 2048)
         num_samples = 10
 
-    metric = StandardPGDInterval(reference_graphs, subsample_size=subsample_size, num_samples=num_samples, classifier=classifier)
+    metric = StandardPGDInterval(
+        reference_graphs,
+        subsample_size=subsample_size,
+        num_samples=num_samples,
+        classifier=classifier,
+    )
     result = metric.compute(generated_graphs)
 
     return {
@@ -66,11 +78,16 @@ def compute_pgs_metrics(reference_graphs: List, generated_graphs: List, dataset:
         "subscores": {
             name: {"mean": interval.mean, "std": interval.std}
             for name, interval in result["subscores"].items()
-        }
+        },
     }
 
 
-def compute_vun_metrics(train_graphs: List, generated_graphs: List, dataset: str, subset: bool = False) -> Optional[Dict]:
+def compute_vun_metrics(
+    train_graphs: List,
+    generated_graphs: List,
+    dataset: str,
+    subset: bool = False,
+) -> Optional[Dict]:
     """Compute VUN metrics for datasets that support validity checking."""
     from polygraph.datasets.lobster import is_lobster_graph
     from polygraph.datasets.planar import is_planar_graph
@@ -101,7 +118,9 @@ def compute_vun_metrics(train_graphs: List, generated_graphs: List, dataset: str
     return results
 
 
-@hydra.main(config_path="../configs", config_name="05_benchmark", version_base=None)
+@hydra.main(
+    config_path="../configs", config_name="05_benchmark", version_base=None
+)
 def main(cfg: DictConfig) -> None:
     """Compute benchmark metrics for one (dataset, model) pair and save as JSON."""
     results_suffix: str = cfg.get("results_suffix", "")
@@ -122,9 +141,13 @@ def main(cfg: DictConfig) -> None:
         "v2.5": ModelVersion.V2_5,
     }
     if tabpfn_weights_version not in version_map:
-        raise ValueError(f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}")
+        raise ValueError(
+            f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}"
+        )
     classifier = TabPFNClassifier.create_default_for_version(
-        version_map[tabpfn_weights_version], device="auto", n_estimators=4,
+        version_map[tabpfn_weights_version],
+        device="auto",
+        n_estimators=4,
     )
 
     logger.info("Computing benchmark for {}/{}", model, dataset)
@@ -161,7 +184,7 @@ def main(cfg: DictConfig) -> None:
         )
         return
 
-    generated_graphs = generated_graphs[:len(reference_graphs)]
+    generated_graphs = generated_graphs[: len(reference_graphs)]
     result: Dict = {
         "dataset": dataset,
         "model": model,
@@ -172,7 +195,13 @@ def main(cfg: DictConfig) -> None:
     out_path = RESULTS_DIR / f"{dataset}_{model}.json"
 
     try:
-        pgs_results = compute_pgs_metrics(reference_graphs, generated_graphs, dataset=dataset, subset=subset, classifier=classifier)
+        pgs_results = compute_pgs_metrics(
+            reference_graphs,
+            generated_graphs,
+            dataset=dataset,
+            subset=subset,
+            classifier=classifier,
+        )
         result["pgs_mean"] = pgs_results.get("polyscore_mean", float("nan"))
         result["pgs_std"] = pgs_results.get("polyscore_std", float("nan"))
         for key, value in pgs_results.get("subscores", {}).items():
@@ -187,9 +216,13 @@ def main(cfg: DictConfig) -> None:
 
     if not skip_vun:
         try:
-            vun_results = compute_vun_metrics(train_graphs, generated_graphs, dataset, subset=subset)
+            vun_results = compute_vun_metrics(
+                train_graphs, generated_graphs, dataset, subset=subset
+            )
             if vun_results:
-                result["vun"] = vun_results.get("valid_unique_novel", float("nan"))
+                result["vun"] = vun_results.get(
+                    "valid_unique_novel", float("nan")
+                )
         except Exception as e:
             logger.error("Error computing VUN for {}/{}: {}", model, dataset, e)
 

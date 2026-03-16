@@ -17,7 +17,9 @@ from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
 
-from polygraph.utils.io import maybe_append_reproducibility_jsonl as maybe_append_jsonl
+from polygraph.utils.io import (
+    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+)
 
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
@@ -39,7 +41,9 @@ def get_reference_dataset(dataset: str, split: str = "test"):
     return _get_ref(dataset, split=split, num_graphs=4096)
 
 
-def compute_mmd_metrics(reference_graphs: List, generated_graphs: List, subset: bool = False) -> Dict:
+def compute_mmd_metrics(
+    reference_graphs: List, generated_graphs: List, subset: bool = False
+) -> Dict:
     """Compute MMD² metrics using the polygraph library."""
     import numpy as np
 
@@ -84,7 +88,11 @@ def compute_mmd_metrics(reference_graphs: List, generated_graphs: List, subset: 
 
     for name, MetricClass in rbf_metrics.items():
         try:
-            metric = MetricClass(reference_graphs, subsample_size=subsample_size, num_samples=num_samples)
+            metric = MetricClass(
+                reference_graphs,
+                subsample_size=subsample_size,
+                num_samples=num_samples,
+            )
             result = metric.compute(generated_graphs)
             results[f"{name}_mean"] = result.mean
             results[f"{name}_std"] = result.std
@@ -102,7 +110,11 @@ def compute_mmd_metrics(reference_graphs: List, generated_graphs: List, subset: 
 
     for name, MetricClass in gtv_metrics.items():
         try:
-            metric = MetricClass(reference_graphs, subsample_size=subsample_size, num_samples=num_samples)
+            metric = MetricClass(
+                reference_graphs,
+                subsample_size=subsample_size,
+                num_samples=num_samples,
+            )
             result = metric.compute(generated_graphs)
             results[f"{name}_mean"] = result.mean
             results[f"{name}_std"] = result.std
@@ -123,8 +135,11 @@ def compute_mmd_metrics(reference_graphs: List, generated_graphs: List, subset: 
         try:
             kernel = AdaptiveRBFKernel(descriptor, bw=bws)
             metric = MaxDescriptorMMD2Interval(
-                reference_graphs, kernel=kernel, variant="umve",
-                subsample_size=subsample_size, num_samples=num_samples,
+                reference_graphs,
+                kernel=kernel,
+                variant="umve",
+                subsample_size=subsample_size,
+                num_samples=num_samples,
             )
             result = metric.compute(generated_graphs)
             results[f"{name}_mean"] = result.mean
@@ -180,11 +195,13 @@ def main(cfg: DictConfig) -> None:
         )
         return
 
-    generated_graphs = generated_graphs[:len(reference_graphs)]
+    generated_graphs = generated_graphs[: len(reference_graphs)]
     result: Dict = {"dataset": dataset, "model": model}
 
     try:
-        mmd_results = compute_mmd_metrics(reference_graphs, generated_graphs, subset=subset)
+        mmd_results = compute_mmd_metrics(
+            reference_graphs, generated_graphs, subset=subset
+        )
         result.update(mmd_results)
     except Exception as e:
         logger.error("Error computing MMD for {}/{}: {}", model, dataset, e)

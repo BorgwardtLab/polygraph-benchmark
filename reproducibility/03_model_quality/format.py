@@ -29,7 +29,9 @@ from scipy import stats
 app = typer.Typer()
 
 REPO_ROOT = here()
-RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
+RESULTS_DIR = (
+    REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / "results"
+)
 TABLES_DIR = REPO_ROOT / "reproducibility" / "tables"
 
 DATASETS = ["planar", "sbm", "lobster"]
@@ -39,7 +41,13 @@ DATASET_DISPLAY = {
     "lobster": "\\textsc{Lobster-L}",
 }
 
-MMD_KEYS = ["orbit_mmd", "degree_mmd", "spectral_mmd", "clustering_mmd", "gin_mmd"]
+MMD_KEYS = [
+    "orbit_mmd",
+    "degree_mmd",
+    "spectral_mmd",
+    "clustering_mmd",
+    "gin_mmd",
+]
 MMD_SHORT = {
     "orbit_mmd": "Orb.",
     "orbit5_mmd": "Orb5.",
@@ -50,7 +58,14 @@ MMD_SHORT = {
 }
 MMD_SUFFIX = "RBF"
 
-PGS_SUBSCORE_KEYS = ["orbit4_pgs", "orbit5_pgs", "degree_pgs", "spectral_pgs", "clustering_pgs", "gin_pgs"]
+PGS_SUBSCORE_KEYS = [
+    "orbit4_pgs",
+    "orbit5_pgs",
+    "degree_pgs",
+    "spectral_pgs",
+    "clustering_pgs",
+    "gin_pgs",
+]
 PGS_SHORT = {
     "orbit4_pgs": "Orb.",
     "orbit5_pgs": "Orb5.",
@@ -61,7 +76,9 @@ PGS_SHORT = {
 }
 
 
-def load_results(curve_type: str, dataset: str, variant: str) -> Optional[pd.DataFrame]:
+def load_results(
+    curve_type: str, dataset: str, variant: str
+) -> Optional[pd.DataFrame]:
     path = RESULTS_DIR / f"{curve_type}_{dataset}_{variant}.json"
     if not path.exists():
         return None
@@ -81,12 +98,14 @@ def _neg_pearson(x, y):
     return -r
 
 
-
 # ---------------------------------------------------------------------------
 # Table 1 & 3: Pearson correlation of validity with other metrics
 # ---------------------------------------------------------------------------
 
-def _format_row_with_ranking(values: list[float], fmt: str = "{:.2f}") -> list[str]:
+
+def _format_row_with_ranking(
+    values: list[float], fmt: str = "{:.2f}"
+) -> list[str]:
     """Format values with bold for best and underline for second-best per row."""
     numeric = [(i, v) for i, v in enumerate(values) if not np.isnan(v)]
     if len(numeric) < 2:
@@ -117,7 +136,9 @@ def generate_pearson_correlation_table(variant: str) -> str:
 
     metric_cols = ["polyscore"] + MMD_KEYS
     pgd_label = "TV-PGD" if variant == "informedness" else "PGD"
-    metric_labels = [pgd_label] + [MMD_SHORT[k] + f" {MMD_SUFFIX}" for k in MMD_KEYS]
+    metric_labels = [pgd_label] + [
+        MMD_SHORT[k] + f" {MMD_SUFFIX}" for k in MMD_KEYS
+    ]
 
     # Collect all (curve_type, dataset, values) rows
     rows: list[tuple[str, str, list[float]]] = []
@@ -171,6 +192,7 @@ def generate_pearson_correlation_table(variant: str) -> str:
 # Table 2 & 4: Spearman correlation with training iterations
 # ---------------------------------------------------------------------------
 
+
 def generate_spearman_training_table(variant: str) -> str:
     """Generate Spearman correlation table of metrics with training steps.
 
@@ -180,7 +202,9 @@ def generate_spearman_training_table(variant: str) -> str:
     # Metrics where higher values = better (no sign flip needed)
     higher_is_better = {"validity"}
     metric_cols = ["validity", "polyscore"] + MMD_KEYS
-    metric_labels = ["Val."] + ["PGD"] + [MMD_SHORT[k] + f" {MMD_SUFFIX}" for k in MMD_KEYS]
+    metric_labels = (
+        ["Val."] + ["PGD"] + [MMD_SHORT[k] + f" {MMD_SUFFIX}" for k in MMD_KEYS]
+    )
 
     lines = []
     lines.append("\\begin{tabular}{l" + "c" * len(metric_cols) + "}")
@@ -202,11 +226,15 @@ def generate_spearman_training_table(variant: str) -> str:
 
         for col in metric_cols:
             if col in df.columns:
-                mask = np.isfinite(df[col].values.astype(float)) & np.isfinite(steps)
+                mask = np.isfinite(df[col].values.astype(float)) & np.isfinite(
+                    steps
+                )
                 if mask.sum() < 3:
                     values.append(np.nan)
                 else:
-                    rho, _ = stats.spearmanr(steps[mask], df[col].values.astype(float)[mask])
+                    rho, _ = stats.spearmanr(
+                        steps[mask], df[col].values.astype(float)[mask]
+                    )
                     if col not in higher_is_better:
                         rho = -rho
                     values.append(rho * 100)
@@ -225,6 +253,7 @@ def generate_spearman_training_table(variant: str) -> str:
 # ---------------------------------------------------------------------------
 # Table 5: Denoising iterations MMD values
 # ---------------------------------------------------------------------------
+
 
 def generate_denoising_mmd_table() -> str:
     """Generate table of MMD values per denoising step."""
@@ -265,6 +294,7 @@ def generate_denoising_mmd_table() -> str:
 # Table 6: Denoising iterations PGS values
 # ---------------------------------------------------------------------------
 
+
 def generate_denoising_pgs_table(variant: str = "jsd") -> str:
     """Generate table of PGS values per denoising step, with optional VUN column."""
     df = load_results("denoising", "planar", variant)
@@ -281,8 +311,12 @@ def generate_denoising_pgs_table(variant: str = "jsd") -> str:
     if has_vun:
         score_cols.append("vun")
         score_labels.append("VUN")
-    score_cols += ["polyscore"] + [k for k in PGS_SUBSCORE_KEYS if k in df.columns]
-    score_labels += ["PGD"] + [PGS_SHORT.get(k, k) for k in PGS_SUBSCORE_KEYS if k in df.columns]
+    score_cols += ["polyscore"] + [
+        k for k in PGS_SUBSCORE_KEYS if k in df.columns
+    ]
+    score_labels += ["PGD"] + [
+        PGS_SHORT.get(k, k) for k in PGS_SUBSCORE_KEYS if k in df.columns
+    ]
 
     lines = []
     lines.append("\\begin{tabular}{r" + "c" * len(score_cols) + "}")
@@ -312,27 +346,49 @@ def generate_denoising_pgs_table(variant: str = "jsd") -> str:
 @app.command()
 def main(
     paper_dir: Optional[Path] = typer.Option(
-        None, "--paper-dir", help="Copy tables into paper tables/ directory",
+        None,
+        "--paper-dir",
+        help="Copy tables into paper tables/ directory",
     ),
     results_suffix: str = typer.Option(
-        "", "--results-suffix", help="Suffix for results dir (e.g. _tabpfn_weights_v2.5)",
+        "",
+        "--results-suffix",
+        help="Suffix for results dir (e.g. _tabpfn_weights_v2.5)",
     ),
 ):
     """Generate all model quality LaTeX tables."""
     global RESULTS_DIR
-    RESULTS_DIR = REPO_ROOT / "reproducibility" / "figures" / "03_model_quality" / f"results{results_suffix}"
+    RESULTS_DIR = (
+        REPO_ROOT
+        / "reproducibility"
+        / "figures"
+        / "03_model_quality"
+        / f"results{results_suffix}"
+    )
     logger.info("Using results dir: {}", RESULTS_DIR)
 
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
     table_map = {
-        "digress-pearson-correlation-jsd.tex": lambda: generate_pearson_correlation_table("jsd"),
-        "correlation-across-training-jsd.tex": lambda: generate_spearman_training_table("jsd"),
-        "digress-pearson-correlation-informedness.tex": lambda: generate_pearson_correlation_table("informedness"),
-        "correlation-across-training-informedness.tex": lambda: generate_spearman_training_table("informedness"),
+        "digress-pearson-correlation-jsd.tex": lambda: (
+            generate_pearson_correlation_table("jsd")
+        ),
+        "correlation-across-training-jsd.tex": lambda: (
+            generate_spearman_training_table("jsd")
+        ),
+        "digress-pearson-correlation-informedness.tex": lambda: (
+            generate_pearson_correlation_table("informedness")
+        ),
+        "correlation-across-training-informedness.tex": lambda: (
+            generate_spearman_training_table("informedness")
+        ),
         "digress-denoising-iters-mmd.tex": generate_denoising_mmd_table,
-        "digress-denoising-iters-pgs-jsd.tex": lambda: generate_denoising_pgs_table("jsd"),
-        "digress-denoising-iters-pgs-informedness.tex": lambda: generate_denoising_pgs_table("informedness"),
+        "digress-denoising-iters-pgs-jsd.tex": lambda: (
+            generate_denoising_pgs_table("jsd")
+        ),
+        "digress-denoising-iters-pgs-informedness.tex": lambda: (
+            generate_denoising_pgs_table("informedness")
+        ),
     }
 
     for fname, generator in table_map.items():
@@ -346,6 +402,7 @@ def main(
 
     if paper_dir is not None:
         import shutil
+
         paper_dir = Path(paper_dir)
         paper_dir.mkdir(parents=True, exist_ok=True)
         for tex in TABLES_DIR.glob("*.tex"):

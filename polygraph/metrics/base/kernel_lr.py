@@ -95,12 +95,12 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
             if self.kernel is not None:
                 return self.kernel.pre_gram_block(features1, features2)
 
-            kernel = LinearKernel(lambda x: x)
-            return kernel.pre_gram_block(features1, features2)
+            kernel = LinearKernel(lambda x: x)  # pyright: ignore[reportArgumentType]
+            return kernel.pre_gram_block(features1, features2)  # pyright: ignore[reportArgumentType]
 
         if self.kernel is not None:
             features1 = self.kernel.featurize(X1)
-            features2 = self.kernel.featurize(X2)
+            features2 = self.kernel.featurize(X2)  # pyright: ignore[reportArgumentType]
             return self.kernel.pre_gram_block(features1, features2)
 
         wl_descriptor = WeisfeilerLehmanDescriptor(
@@ -114,7 +114,7 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         kernel = LinearKernel(wl_descriptor)
 
         features1 = kernel.featurize(X1)
-        features2 = kernel.featurize(X2)
+        features2 = kernel.featurize(X2)  # pyright: ignore[reportArgumentType]
 
         K = kernel.pre_gram_block(features1, features2)
         return K
@@ -128,7 +128,7 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
             if self.kernel is not None:
                 kernel = self.kernel
             else:
-                kernel = LinearKernel(lambda x: x)
+                kernel = LinearKernel(lambda x: x)  # pyright: ignore[reportArgumentType]
         else:
             if self.kernel is not None:
                 kernel = self.kernel
@@ -154,15 +154,15 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         if isinstance(
             kernel, (RBFKernel, LaplaceKernel, AdaptiveRBFKernel, GaussianTV)
         ):
-            return np.ones(features.shape[0])
+            return np.ones(features.shape[0])  # pyright: ignore[reportOptionalSubscript]
 
         if hasattr(features, "multiply"):
-            sq_norms = features.multiply(features).sum(axis=1)
+            sq_norms = features.multiply(features).sum(axis=1)  # pyright: ignore[reportAttributeAccessIssue]
             if hasattr(sq_norms, "toarray"):
                 sq_norms = sq_norms.toarray()
             return np.asarray(sq_norms, dtype=np.float64).flatten()
         else:
-            return np.einsum("ij,ij->i", features, features)
+            return np.einsum("ij,ij->i", features, features)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
     def _objective(
         self, alpha: np.ndarray, K: np.ndarray, y: np.ndarray
@@ -215,7 +215,7 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
             K = self.centerer_.transform(K)
 
         self.kernel_ = K
-        alpha_init = np.zeros(X.shape[0])
+        alpha_init = np.zeros(len(X))
 
         result = minimize(
             fun=self._objective,

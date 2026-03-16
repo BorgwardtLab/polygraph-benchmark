@@ -8,7 +8,6 @@ Usage:
 
 import shutil
 import subprocess
-from pathlib import Path
 
 import typer
 from loguru import logger
@@ -59,12 +58,18 @@ def _download_and_extract() -> None:
 
 @app.command()
 def download(
-    subset: bool = typer.Option(False, "--subset", help="Download only a small subset for CI testing"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force re-download even if data exists"),
+    subset: bool = typer.Option(
+        False, "--subset", help="Download only a small subset for CI testing"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force re-download even if data exists"
+    ),
 ):
     """Download graph data from MPCDF DataShare."""
     if check_data_exists() and not force:
-        logger.info("Data already exists at {} — use --force to re-download", DATA_DIR)
+        logger.info(
+            "Data already exists at {} — use --force to re-download", DATA_DIR
+        )
         return
 
     if subset:
@@ -129,10 +134,14 @@ def create_subset_data():
         "moses_autograph.smiles",
         "moses_digress.smiles",
     ]:
-        (mol_dir / fname).write_text("# Placeholder for CI testing\nC\nCC\nCCC\n")
+        (mol_dir / fname).write_text(
+            "# Placeholder for CI testing\nC\nCC\nCCC\n"
+        )
         logger.debug("Created {}", mol_dir / fname)
 
-    logger.success("Subset data created (placeholder only — download full dataset for reproducibility)")
+    logger.success(
+        "Subset data created (placeholder only — download full dataset for reproducibility)"
+    )
 
 
 if __name__ == "__main__":

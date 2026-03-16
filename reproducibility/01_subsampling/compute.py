@@ -32,18 +32,32 @@ EXPERIMENT_RESULTS_DIR = (
 RESULTS_DIR = EXPERIMENT_RESULTS_DIR / Path(__file__).stem
 
 
-def get_reference_dataset(dataset: str = "planar", split: str = "test", num_graphs: int = 4096):
+def get_reference_dataset(
+    dataset: str = "planar", split: str = "test", num_graphs: int = 4096
+):
     """Get reference dataset from polygraph library."""
     from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
     from polygraph.datasets.planar import ProceduralPlanarGraphDataset
     from polygraph.datasets.sbm import ProceduralSBMGraphDataset
 
     if dataset == "planar":
-        return list(ProceduralPlanarGraphDataset(split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            ProceduralPlanarGraphDataset(
+                split=split, num_graphs=num_graphs
+            ).to_nx()
+        )
     elif dataset == "lobster":
-        return list(ProceduralLobsterGraphDataset(split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            ProceduralLobsterGraphDataset(
+                split=split, num_graphs=num_graphs
+            ).to_nx()
+        )
     elif dataset == "sbm":
-        return list(ProceduralSBMGraphDataset(split=split, num_graphs=num_graphs).to_nx())
+        return list(
+            ProceduralSBMGraphDataset(
+                split=split, num_graphs=num_graphs
+            ).to_nx()
+        )
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -69,7 +83,11 @@ def compute_pgs_for_subsample_size(
     }
 
 
-@hydra.main(config_path="../configs", config_name="01_subsampling_pgd", version_base=None)
+@hydra.main(
+    config_path="../configs",
+    config_name="01_subsampling_pgd",
+    version_base=None,
+)
 def main(cfg: DictConfig) -> None:
     """Compute PGD metrics for one subsample size and save result as JSON."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -78,7 +96,11 @@ def main(cfg: DictConfig) -> None:
     subsample_size = cfg.subsample_size
     num_bootstrap = 3 if cfg.subset else cfg.num_bootstrap
 
-    logger.info("Computing PGD for dataset={}, subsample_size={}", dataset, subsample_size)
+    logger.info(
+        "Computing PGD for dataset={}, subsample_size={}",
+        dataset,
+        subsample_size,
+    )
 
     try:
         reference_graphs = get_reference_dataset(dataset, split="test")
@@ -98,7 +120,10 @@ def main(cfg: DictConfig) -> None:
         return
 
     if subsample_size > min(len(reference_graphs), len(train_graphs)):
-        logger.warning("Subsample size {} exceeds available graphs, skipping", subsample_size)
+        logger.warning(
+            "Subsample size {} exceeds available graphs, skipping",
+            subsample_size,
+        )
         maybe_append_jsonl(
             {
                 "experiment": "01_subsampling",
@@ -114,7 +139,8 @@ def main(cfg: DictConfig) -> None:
     try:
         metric_start = time.perf_counter()
         result = compute_pgs_for_subsample_size(
-            reference_graphs, train_graphs,
+            reference_graphs,
+            train_graphs,
             subsample_size=subsample_size,
             num_bootstrap=num_bootstrap,
         )
@@ -145,8 +171,12 @@ def main(cfg: DictConfig) -> None:
             }
         )
     except Exception as e:
-        metric_runtime_perf_seconds = round(time.perf_counter() - metric_start, 6)
-        logger.error("Error computing PGD for subsample_size={}: {}", subsample_size, e)
+        metric_runtime_perf_seconds = round(
+            time.perf_counter() - metric_start, 6
+        )
+        logger.error(
+            "Error computing PGD for subsample_size={}: {}", subsample_size, e
+        )
         maybe_append_jsonl(
             {
                 "experiment": "01_subsampling",
