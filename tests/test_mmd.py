@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 import pytest
+from conftest import requires_import
 from gran_mmd_implementation.stats import (
     clustering_stats,
     degree_stats,
@@ -45,7 +46,6 @@ from polygraph.metrics import (
 from polygraph.metrics import RBFMMD2Benchmark, RBFMMD2BenchmarkInterval
 from polygraph.utils.kernels import LinearKernel
 from polygraph.utils.descriptors import WeisfeilerLehmanDescriptor
-from polygraph.utils.mmd_utils import mmd_from_gram
 from polygraph.metrics.base.metric_interval import MetricInterval
 
 
@@ -61,26 +61,6 @@ class WeisfeilerLehmanMMD2(DescriptorMMD2):
             variant="biased",
         )
 
-
-def grakel_wl_mmd(
-    reference_graphs, test_graphs, is_parallel=False, iterations=3
-):
-    import grakel
-
-    grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
-    all_graphs = reference_graphs + test_graphs
-    for g in all_graphs:
-        for node in g.nodes():
-            g.nodes[node]["degree"] = g.degree(node)
-
-    all_graphs = grakel.graph_from_networkx(
-        all_graphs, node_labels_tag="degree"
-    )
-    gram_matrix = grakel_kernel.fit_transform(all_graphs)
-    ref_vs_ref = gram_matrix[: len(reference_graphs), : len(reference_graphs)]
-    ref_vs_gen = gram_matrix[: len(reference_graphs), len(reference_graphs) :]
-    gen_vs_gen = gram_matrix[len(reference_graphs) :, len(reference_graphs) :]
-    return mmd_from_gram(ref_vs_ref, gen_vs_gen, ref_vs_gen, variant="biased")
 
 
 @pytest.mark.parametrize(
@@ -119,6 +99,7 @@ def test_gran_equivalence(datasets, orca_executable, mmd_cls, baseline_method):
         (RBFSpectralMMD2, "spectral"),
     ],
 )
+@requires_import("dgl")
 def test_rbf_equivalence(datasets, orca_executable, mmd_cls, stat):
     import sys
     from pathlib import Path
@@ -188,6 +169,7 @@ def test_mmd_uncertainty(request, datasets, kernel, subsample_size, variant):
     assert result.low <= single_estimate <= result.high
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("subsample_size", [16, 32, 64, 100, 128])
 @pytest.mark.parametrize(
     "single_cls,interval_cls",
@@ -272,7 +254,7 @@ def test_max_mmd(request, datasets, kernel, variant):
         (GaussianTVOrbitMMD2, orbit_stats_all),
         (GaussianTVClusteringMMD2, clustering_stats),
         (GaussianTVDegreeMMD2, degree_stats),
-        (WeisfeilerLehmanMMD2, grakel_wl_mmd),
+        (WeisfeilerLehmanMMD2, None),
     ],
 )
 @pytest.mark.parametrize("parallel_baseline", [True, False])

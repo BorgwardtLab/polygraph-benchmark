@@ -277,57 +277,85 @@ def test_weisfeiler_lehman_with_molecules(
     assert np.allclose(blocks.ref_vs_gen, expected_ref_gen.toarray())
 
 
+# Reference gram matrices precomputed with grakel 0.1.10 (numpy<2).
+#
+# grakel is incompatible with numpy>=2 so we cannot use it as a runtime
+# dependency. The values below were produced once in an isolated environment
+# and are checked in as frozen references.
+#
+# To regenerate, create a temporary environment and run:
+#
+#     pip install "numpy<2" grakel networkx
+#     python -c "
+#     import grakel, networkx as nx
+#
+#     # ---- ER graphs (same seeds as the sample_graphs fixture) ----
+#     graphs = [nx.erdos_renyi_graph(n, p, seed=s)
+#               for n, p, s in [(10,.3,42),(15,.2,43),(12,.25,44),(10,.3,45)]]
+#     for g in graphs:
+#         for node in g.nodes():
+#             g.nodes[node]['degree'] = g.degree(node)
+#     ref, gen = graphs[:2], graphs[2:]
+#     for it in (2, 3):
+#         k = grakel.WeisfeilerLehman(n_iter=it)
+#         k.fit(grakel.graph_from_networkx(ref, node_labels_tag='degree'))
+#         r = k.transform(grakel.graph_from_networkx(gen, node_labels_tag='degree'))
+#         print(f'ER  it={it}  ref_vs_gen={r.T.tolist()}')
+#
+#     # ---- QM9 molecules (first 5 from the test split) ----
+#     # Molecules must be exported from the pixi env as JSON because
+#     # QM9 requires rdkit. See tests/conftest.py::sample_molecules.
+#     import json
+#     from networkx.readwrite import json_graph
+#     with open('/tmp/sample_molecules_fixed.json') as f:
+#         mols = [json_graph.node_link_graph(d) for d in json.load(f)]
+#     ref, gen = mols[:2], mols[2:]
+#     for it in (2, 3):
+#         k = grakel.WeisfeilerLehman(n_iter=it)
+#         k.fit(grakel.graph_from_networkx(ref, node_labels_tag='atom_labels'))
+#         r = k.transform(grakel.graph_from_networkx(gen, node_labels_tag='atom_labels'))
+#         print(f'MOL it={it}  ref_vs_gen={r.T.tolist()}')
+#     "
+GRAKEL_ER_REF_VS_GEN = {
+    2: np.array([[32.0, 21.0], [42.0, 35.0]]),
+    3: np.array([[32.0, 21.0], [42.0, 35.0]]),
+}
+
+GRAKEL_MOL_REF_VS_GEN = {
+    2: np.array([[10.0, 12.0, 9.0], [56.0, 50.0, 86.0]]),
+    3: np.array([[10.0, 12.0, 9.0], [56.0, 50.0, 86.0]]),
+}
+
+
 @pytest.mark.parametrize("iterations", [2, 3])
 def test_weisfeiler_lehman_vs_grakel_er_graphs(sample_graphs, iterations):
-    """Test our WL kernel implementation against grakel's implementation."""
-    import grakel
+    """Test our WL kernel against grakel 0.1.10 reference values.
 
+    See GRAKEL_ER_REF_VS_GEN above for how to regenerate.
+    """
     wl_descriptor = WeisfeilerLehmanDescriptor(
         iterations=iterations, use_node_labels=False, n_jobs=1
     )
     our_kernel = LinearKernel(wl_descriptor)
 
-    grakel_kernel = grakel.WeisfeilerLehman(n_iter=iterations)
-
-    # Convert sample graphs to grakel format
-    node_label_graphs = []
-    for graph in sample_graphs:
-        # Add node degree as an attribute to each node
-        nx_graph_with_degree = graph.copy()
-        for node in nx_graph_with_degree.nodes():
-            nx_graph_with_degree.nodes[node]["degree"] = (
-                nx_graph_with_degree.degree(node)
-            )
-        node_label_graphs.append(nx_graph_with_degree)
-
-    node_label_graphs_ref = node_label_graphs[:2]
-    node_label_graphs_gen = node_label_graphs[2:]
-
     ref_graphs = sample_graphs[:2]
     gen_graphs = sample_graphs[2:]
-    grakel_ref = grakel.graph_from_networkx(
-        node_label_graphs_ref, node_labels_tag="degree"
-    )
-    grakel_gen = grakel.graph_from_networkx(
-        node_label_graphs_gen, node_labels_tag="degree"
-    )
 
     ref_features = our_kernel.featurize(ref_graphs)
     gen_features = our_kernel.featurize(gen_graphs)
     our_blocks = our_kernel(ref_features, gen_features)
 
-    grakel_kernel.fit(grakel_ref)
-    grakel_blocks = grakel_kernel.transform(grakel_gen)
-    assert np.allclose(our_blocks.ref_vs_gen, grakel_blocks.T), (
-        ref_features,
-        gen_features,
-    )
+    assert np.allclose(
+        our_blocks.ref_vs_gen, GRAKEL_ER_REF_VS_GEN[iterations]
+    ), (ref_features, gen_features)
 
 
 @pytest.mark.parametrize("iterations", [2, 3])
 def test_weisfeiler_lehman_vs_grakel_molecules(sample_molecules, iterations):
-    import grakel
+    """Test our WL kernel against grakel 0.1.10 reference values.
 
+    See GRAKEL_MOL_REF_VS_GEN above for how to regenerate.
+    """
     wl_descriptor_mol = WeisfeilerLehmanDescriptor(
         iterations=iterations,
         use_node_labels=True,
@@ -336,21 +364,13 @@ def test_weisfeiler_lehman_vs_grakel_molecules(sample_molecules, iterations):
     )
     our_kernel_mol = LinearKernel(wl_descriptor_mol)
 
-    grakel_kernel_mol = grakel.WeisfeilerLehman(n_iter=iterations)
-
     ref_molecules = sample_molecules[:2]
     gen_molecules = sample_molecules[2:]
-    grakel_ref_mol = grakel.graph_from_networkx(
-        sample_molecules[:2], node_labels_tag="atom_labels"
-    )
-    grakel_gen_mol = grakel.graph_from_networkx(
-        sample_molecules[2:], node_labels_tag="atom_labels"
-    )
 
     ref_features_mol = our_kernel_mol.featurize(ref_molecules)
     gen_features_mol = our_kernel_mol.featurize(gen_molecules)
     our_blocks_mol = our_kernel_mol(ref_features_mol, gen_features_mol)
 
-    grakel_kernel_mol.fit(grakel_ref_mol)
-    grakel_matrix_mol = grakel_kernel_mol.transform(grakel_gen_mol)
-    assert np.allclose(our_blocks_mol.ref_vs_gen, grakel_matrix_mol.T)
+    assert np.allclose(
+        our_blocks_mol.ref_vs_gen, GRAKEL_MOL_REF_VS_GEN[iterations]
+    )
