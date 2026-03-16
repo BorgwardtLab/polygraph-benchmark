@@ -298,7 +298,6 @@ def test_gin_metrics_attributed(
     assert np.isclose(our_fid, ref["fid"], rtol=1e-3)
 
     if node_attributed or edge_attributed:
-        unattr_ref = DGL_ATTRIBUTED[(False, False)]
         torch.manual_seed(42)
         unattributed_mmd = RBFGraphNeuralNetworkMMD2(ds1, seed=None).compute(
             ds2

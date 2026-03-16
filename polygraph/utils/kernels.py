@@ -194,7 +194,8 @@ class LaplaceKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
     def kernel_diag(self, features: MatrixLike) -> np.ndarray:
-        return np.ones(features.shape[0])
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
 
     @property
     def num_kernels(self) -> int:
@@ -255,7 +256,8 @@ class GaussianTV(DescriptorKernel[GraphType], Generic[GraphType]):
         return GaussianTV(self._descriptor_fn, self.bw[idx])
 
     def kernel_diag(self, features: MatrixLike) -> np.ndarray:
-        return np.ones(features.shape[0])
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
 
     @property
     def num_kernels(self) -> int:
@@ -314,7 +316,8 @@ class RBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         return RBFKernel(self._descriptor_fn, self.bw[idx])
 
     def kernel_diag(self, features: MatrixLike) -> np.ndarray:
-        return np.ones(features.shape[0])
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
 
     @property
     def num_kernels(self) -> int:
@@ -381,7 +384,8 @@ class AdaptiveRBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         )
 
     def kernel_diag(self, features: MatrixLike) -> np.ndarray:
-        return np.ones(features.shape[0])
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
 
     @property
     def num_kernels(self) -> int:
