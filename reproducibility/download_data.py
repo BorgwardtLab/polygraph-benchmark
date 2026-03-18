@@ -6,8 +6,10 @@ Usage:
     python download_data.py --subset  # Download small subset for CI
 """
 
+import hashlib
 import shutil
 import subprocess
+from pathlib import Path
 
 import typer
 from loguru import logger
@@ -23,6 +25,9 @@ DOWNLOAD_URL = f"{DATA_URL}/download"
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
 
+# SHA-256 hash of the data archive. Update after publishing a new version.
+EXPECTED_SHA256 = "TODO_COMPUTE_AND_SET_HASH"
+
 EXPECTED_DIRS = ["AUTOGRAPH", "DIGRESS", "ESGG", "GRAN"]
 
 
@@ -31,6 +36,35 @@ def check_data_exists() -> bool:
     if not DATA_DIR.exists():
         return False
     return all((DATA_DIR / d).exists() for d in EXPECTED_DIRS)
+
+
+def _verify_sha256(path: Path, expected: str) -> None:
+    """Verify the SHA-256 hash of a file.
+
+    Args:
+        path: Path to the file to verify.
+        expected: Expected hex-encoded SHA-256 digest.
+
+    Raises:
+        ValueError: If the computed hash does not match *expected*.
+    """
+    if expected == "TODO_COMPUTE_AND_SET_HASH":
+        logger.warning("EXPECTED_SHA256 is unset — skipping hash verification")
+        return
+
+    sha256 = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            sha256.update(chunk)
+    computed = sha256.hexdigest()
+
+    if computed != expected:
+        path.unlink()
+        raise ValueError(
+            f"SHA-256 mismatch for {path.name}: "
+            f"expected {expected}, got {computed}"
+        )
+    logger.info("SHA-256 verified: {}", computed)
 
 
 def _download_and_extract() -> None:
@@ -48,6 +82,8 @@ def _download_and_extract() -> None:
             ["curl", "-L", "-o", str(archive_path), DOWNLOAD_URL],
             check=True,
         )
+
+    _verify_sha256(archive_path, EXPECTED_SHA256)
 
     logger.info("Extracting archive to {}", DATA_DIR)
     DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -53,8 +53,8 @@ def test_classifier_metric(
     train, test = clf_metric.compute(sparse_graphs)
 
     assert isinstance(train, float) and isinstance(test, float)
-    assert train >= 0.5, f"Train score {train} is less than 0.5"
-    assert test >= 0.5, f"Test score {test} is less than 0.5"
+    assert train >= 0.7, f"Train score {train} is less than 0.7"
+    assert test >= 0.7, f"Test score {test} is less than 0.7"
 
     train, test = clf_metric.compute(dense_graphs)
     assert train <= 0.2, f"Train score {train} is greater than 0.2"
@@ -87,8 +87,8 @@ def test_polygraphdiscrepancy(
     assert len(result["subscores"]) == len(descriptors)
     assert result["pgd"] == result["subscores"][result["pgd_descriptor"]]
 
-    assert result["pgd"] >= 0.5, (
-        f"PolyGraphDiscrepancy {result['pgd']} is less than 0.5"
+    assert result["pgd"] >= 0.7, (
+        f"PolyGraphDiscrepancy {result['pgd']} is less than 0.7"
     )
 
     result = pgd.compute(dense_graphs)
