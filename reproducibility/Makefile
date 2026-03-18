@@ -55,6 +55,7 @@ compute-tables:
 	python 06_mmd/compute.py --multirun
 	python 07_concatenation/compute.py --multirun
 	python 08_gklr/compute.py --multirun
+	python 09_train_test_reference/compute.py --multirun
 
 # ── Plot (lightweight figure generation from JSON results) ────────────
 
@@ -88,10 +89,11 @@ submit-tables:
 	python 06_mmd/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
 	python 07_concatenation/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
 	python 08_gklr/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
+	python 09_train_test_reference/compute.py --multirun hydra/launcher=$(SLURM_LAUNCHER)
 
 # ── Individual experiments ───────────────────────────────────────────
 
-.PHONY: 01 02 03 04 05 06 07 08
+.PHONY: 01 02 03 04 05 06 07 08 09
 
 01: ## Subsampling bias/variance figures
 	python 01_subsampling/compute_mmd.py --multirun
@@ -127,6 +129,9 @@ submit-tables:
 	python 08_gklr/compute.py --multirun
 	python 08_gklr/format.py
 
+09: ## Train-test reference PGD
+	python 09_train_test_reference/compute.py --multirun
+
 # ── Cleanup ──────────────────────────────────────────────────────────
 
 clean:
@@ -155,7 +160,7 @@ help:
 	@echo "  plot-all         - Generate all figures from pre-computed JSON results"
 	@echo "  format-all       - Generate all LaTeX tables from pre-computed JSON results"
 	@echo ""
-	@echo "  01 .. 08         - Run a single experiment end-to-end (locally)"
+	@echo "  01 .. 09         - Run a single experiment end-to-end (locally)"
 	@echo ""
 	@echo "  submit           - Submit ALL computations to SLURM"
 	@echo "  submit-figures   - Submit figure computations to SLURM"
