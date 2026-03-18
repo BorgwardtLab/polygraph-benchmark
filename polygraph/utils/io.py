@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+import numpy as np
+
 
 def _json_default(obj: Any) -> Any:
     """Fallback serializer for ``json.dumps``.
@@ -18,11 +20,8 @@ def _json_default(obj: Any) -> Any:
     """
     if isinstance(obj, (dt.datetime, dt.date)):
         return obj.isoformat()
-    if hasattr(obj, "item"):
-        try:
-            return obj.item()
-        except Exception:
-            return str(obj)
+    if isinstance(obj, np.generic):
+        return obj.item()
     if isinstance(obj, Path):
         return str(obj)
     return str(obj)

@@ -669,8 +669,7 @@ class ShortestPathHistogramDescriptor(GraphDescriptor[nx.Graph]):
         if self.node_label_key is None:
             return None
         return {
-            u: str(graph.nodes[u].get(self.node_label_key, "__UNK__"))
-            for u in graph.nodes()
+            u: str(graph.nodes[u][self.node_label_key]) for u in graph.nodes()
         }
 
     def _hash_feature_key(
@@ -868,17 +867,14 @@ class PyramidMatchDescriptor(GraphDescriptor[nx.Graph]):
             feats = [d for _, d in graph.degree()]
             feats = np.array(feats).reshape(-1, 1)
         else:
-            try:
-                feats_list = []
-                for _, data in graph.nodes(data=True):
-                    val = data.get(self.node_label_key, 0)
-                    if isinstance(val, (list, np.ndarray)):
-                        feats_list.append(val)
-                    else:
-                        feats_list.append([val])
-                feats = np.array(feats_list)
-            except Exception:
-                return {}
+            feats_list = []
+            for _, data in graph.nodes(data=True):
+                val = data[self.node_label_key]
+                if isinstance(val, (list, np.ndarray)):
+                    feats_list.append(val)
+                else:
+                    feats_list.append([val])
+            feats = np.array(feats_list)
 
         if len(feats) == 0:
             return {}

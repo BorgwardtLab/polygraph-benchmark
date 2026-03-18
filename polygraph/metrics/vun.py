@@ -28,8 +28,11 @@ Example:
 """
 
 import json
-import signal
 from collections import defaultdict
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    TimeoutError as FuturesTimeoutError,
+)
 from functools import partial
 from multiprocessing import Pool
 from typing import (
@@ -76,34 +79,23 @@ class BinomConfidenceInterval:
         )
 
 
-class _IsomorphismTimeout(Exception):
-    pass
-
-
-def _timeout_handler(signum, frame):
-    raise _IsomorphismTimeout()
-
-
 def _is_isomorphic_with_timeout(
     g: nx.Graph,
     h: nx.Graph,
     timeout: int,
 ) -> bool:
-    """Run isomorphism check with a SIGALRM timeout.
+    """Run isomorphism check with a timeout.
 
     If the check exceeds ``timeout`` seconds, conservatively returns True
-    (i.e. treats the pair as isomorphic).
+    (i.e. treats the pair as isomorphic). This is safe for novelty/
+    uniqueness metrics because it can only decrease the reported score.
     """
-    old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-    signal.alarm(timeout)
-    try:
-        result = nx.is_isomorphic(g, h)
-    except _IsomorphismTimeout:
-        result = True
-    finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, old_handler)
-    return result
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(nx.is_isomorphic, g, h)
+        try:
+            return future.result(timeout=timeout)
+        except FuturesTimeoutError:
+            return True
 
 
 class _GraphSet:
@@ -138,11 +130,6 @@ class _GraphSet:
         return False
 
 
-# ---------------------------------------------------------------------------
-# Parallel worker functions (must be importable, not in __main__)
-# ---------------------------------------------------------------------------
-
-
 def _check_novel_worker(
     gen_graph_json: str,
     train_graphs_json: List[str],
@@ -150,12 +137,14 @@ def _check_novel_worker(
     iso_timeout: int,
 ) -> bool:
     """Check if a single generated graph is novel (not in training set)."""
-    g = nx.node_link_graph(json.loads(gen_graph_json))
+    g = nx.node_link_graph(json.loads(gen_graph_json), edges="links")
     fp = nx.weisfeiler_lehman_graph_hash(g)
     if fp not in train_hashes:
         return True
     for idx in train_hashes[fp]:
-        h = nx.node_link_graph(json.loads(train_graphs_json[idx]))
+        h = nx.node_link_graph(
+            json.loads(train_graphs_json[idx]), edges="links"
+        )
         if _is_isomorphic_with_timeout(g, h, iso_timeout):
             return False
     return True
@@ -163,7 +152,7 @@ def _check_novel_worker(
 
 def _check_validity_worker(graph_json: str, validity_fn: Callable) -> bool:
     """Check validity of a single graph in a worker process."""
-    g = nx.node_link_graph(json.loads(graph_json))
+    g = nx.node_link_graph(json.loads(graph_json), edges="links")
     return validity_fn(g)
 
 
@@ -215,9 +204,13 @@ class VUN(GenerationMetric[nx.Graph]):
         self, generated_graphs: List[nx.Graph]
     ) -> List[bool]:
         train_json = [
-            json.dumps(nx.node_link_data(g)) for g in self._train_graphs
+            json.dumps(nx.node_link_data(g, edges="links"))
+            for g in self._train_graphs
         ]
-        gen_json = [json.dumps(nx.node_link_data(g)) for g in generated_graphs]
+        gen_json = [
+            json.dumps(nx.node_link_data(g, edges="links"))
+            for g in generated_graphs
+        ]
         worker_fn = partial(
             _check_novel_worker,
             train_graphs_json=train_json,
@@ -230,7 +223,10 @@ class VUN(GenerationMetric[nx.Graph]):
     def _compute_valid_parallel(
         self, generated_graphs: List[nx.Graph]
     ) -> List[bool]:
-        gen_json = [json.dumps(nx.node_link_data(g)) for g in generated_graphs]
+        gen_json = [
+            json.dumps(nx.node_link_data(g, edges="links"))
+            for g in generated_graphs
+        ]
         assert self._validity_fn is not None
         worker_fn = partial(
             _check_validity_worker, validity_fn=self._validity_fn

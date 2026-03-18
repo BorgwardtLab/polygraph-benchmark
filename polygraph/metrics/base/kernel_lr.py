@@ -37,13 +37,11 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         use_node_labels: bool = False,
         node_label_key: Optional[str] = None,
         digest_size: int = 4,
-        project_dim: Optional[int] = None,
         C: float = 1.0,
         max_iter: int = 100,
         tol: float = 1e-4,
         n_jobs: int = 1,
         verbose: bool = False,
-        random_state: Optional[int] = None,
         normalize_kernel: bool = True,
         center_kernel: bool = True,
     ):
@@ -52,13 +50,11 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         self.use_node_labels = use_node_labels
         self.node_label_key = node_label_key
         self.digest_size = digest_size
-        self.project_dim = project_dim
         self.C = C
         self.max_iter = max_iter
         self.tol = tol
         self.n_jobs = n_jobs
         self.verbose = verbose
-        self.random_state = random_state
         self.normalize_kernel = normalize_kernel
         self.center_kernel = center_kernel
 
@@ -101,15 +97,15 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         X2: Optional[Union[List[nx.Graph], np.ndarray, csr_array]] = None,
     ) -> np.ndarray:
         """Compute kernel matrix between X1 and X2."""
-        if X2 is None:
-            X2 = X1
-
         is_array = isinstance(X1, (np.ndarray, csr_array))
         kernel = self._resolve_kernel(is_array, show_progress=self.verbose)
 
+        if X2 is None:
+            features1 = X1 if is_array else kernel.featurize(X1)
+            return kernel.pre_gram_block(features1, features1)  # pyright: ignore[reportArgumentType]
+
         features1 = X1 if is_array else kernel.featurize(X1)
         features2 = X2 if is_array else kernel.featurize(X2)  # pyright: ignore[reportArgumentType]
-
         return kernel.pre_gram_block(features1, features2)  # pyright: ignore[reportArgumentType]
 
     def _compute_kernel_diag(
@@ -121,26 +117,28 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         features = X if is_array else kernel.featurize(X)
         return kernel.kernel_diag(features)  # pyright: ignore[reportArgumentType]
 
-    def _objective(
-        self, alpha: np.ndarray, K: np.ndarray, y: np.ndarray
-    ) -> float:
-        """Objective function minimizing log-likelihood plus regularization."""
-        f = K @ alpha
-        yf = y * f
-        log_likelihood = np.sum(np.log(1 + np.exp(-yf)))
-        regularization = (1.0 / (2.0 * self.C)) * (alpha.T @ K @ alpha)
-        return log_likelihood + regularization
+    def _objective_and_gradient(
+        self,
+        alpha: np.ndarray,
+        K: np.ndarray,
+        y: np.ndarray,
+    ) -> tuple[float, np.ndarray]:
+        """Objective and gradient for L-BFGS-B optimization.
 
-    def _gradient(
-        self, alpha: np.ndarray, K: np.ndarray, y: np.ndarray
-    ) -> np.ndarray:
-        """Gradient of the objective function."""
-        f = K @ alpha
-        yf = y * f
+        Returns both to avoid redundant K @ alpha computation.
+        """
+        Ka = K @ alpha
+        yf = y * Ka
+        log_likelihood = np.sum(np.logaddexp(0, -yf))
+        regularization = (1.0 / (2.0 * self.C)) * (alpha.T @ Ka)
+        objective = log_likelihood + regularization
+
         sigmoid_neg_yf = self._sigmoid(-yf)
         grad_log_likelihood = -K.T @ (y * sigmoid_neg_yf)
-        grad_regularization = (1.0 / self.C) * (K @ alpha)
-        return grad_log_likelihood + grad_regularization
+        grad_regularization = (1.0 / self.C) * Ka
+        gradient = grad_log_likelihood + grad_regularization
+
+        return objective, gradient
 
     def fit(
         self, X: Union[List[nx.Graph], np.ndarray, csr_array], y: np.ndarray
@@ -172,14 +170,14 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
             K = self.centerer_.transform(K)
 
         self.kernel_ = K
-        alpha_init = np.zeros(len(X))
+        alpha_init = np.zeros(K.shape[0])
 
         result = minimize(
-            fun=self._objective,
+            fun=self._objective_and_gradient,
             x0=alpha_init,
             args=(K, y),
             method="L-BFGS-B",
-            jac=self._gradient,
+            jac=True,
             options={"maxiter": self.max_iter, "ftol": self.tol},
         )
 
