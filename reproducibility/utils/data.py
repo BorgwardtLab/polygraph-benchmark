@@ -96,3 +96,24 @@ def get_reference_dataset(
         return graphs
 
     raise ValueError(f"Unknown dataset: {dataset}")
+
+
+def make_tabpfn_classifier(weights_version: str = "v2.5"):
+    """Create a TabPFN classifier for the given weights version."""
+    from tabpfn import TabPFNClassifier
+    from tabpfn.classifier import ModelVersion
+
+    version_map = {
+        "v2": ModelVersion.V2,
+        "v2.5": ModelVersion.V2_5,
+    }
+    if weights_version not in version_map:
+        raise ValueError(
+            f"Unknown weights_version: {weights_version!r}. "
+            f"Must be one of {list(version_map)}"
+        )
+    return TabPFNClassifier.create_default_for_version(
+        version_map[weights_version],
+        device="auto",
+        n_estimators=4,
+    )

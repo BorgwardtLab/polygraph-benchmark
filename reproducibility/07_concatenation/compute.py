@@ -30,6 +30,7 @@ from polygraph.utils.io import (
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
 from utils.data import load_graphs as _load
+from utils.data import make_tabpfn_classifier
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
@@ -210,22 +211,7 @@ def main(cfg: DictConfig) -> None:
     model = cfg.model
     subset = cfg.subset
 
-    from tabpfn import TabPFNClassifier
-    from tabpfn.classifier import ModelVersion
-
-    version_map = {
-        "v2": ModelVersion.V2,
-        "v2.5": ModelVersion.V2_5,
-    }
-    if tabpfn_weights_version not in version_map:
-        raise ValueError(
-            f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}"
-        )
-    classifier = TabPFNClassifier.create_default_for_version(
-        version_map[tabpfn_weights_version],
-        device="auto",
-        n_estimators=4,
-    )
+    classifier = make_tabpfn_classifier(tabpfn_weights_version)
 
     # V2.5 handles high-dimensional inputs natively; skip PCA
     use_pca = tabpfn_weights_version != "v2.5"

@@ -18,6 +18,7 @@ import numpy as np
 import orbit_count
 import torch
 from scipy.sparse import csgraph, csr_array
+from scipy.sparse.linalg import eigsh
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
@@ -225,14 +226,24 @@ class EigenvalueHistogram(GraphDescriptor[nx.Graph]):
         else:
             self._bins = None
 
+    _SPARSE_THRESHOLD = 500
+
     def __call__(
         self, graphs: Iterable[nx.Graph]
     ) -> Union[np.ndarray, csr_array]:
         all_eigs = []
         for g in graphs:
-            eigs = np.linalg.eigvalsh(
-                nx.normalized_laplacian_matrix(g).todense()
-            )
+            n = g.number_of_nodes()
+            laplacian = nx.normalized_laplacian_matrix(g)
+            if n > self._SPARSE_THRESHOLD:
+                k = min(n - 2, self._n_bins)
+                eigs = eigsh(
+                    laplacian.astype(np.float64),
+                    k=k,
+                    return_eigenvectors=False,
+                )
+            else:
+                eigs = np.linalg.eigvalsh(laplacian.todense())
             all_eigs.append(eigs)
 
         if self._sparse:

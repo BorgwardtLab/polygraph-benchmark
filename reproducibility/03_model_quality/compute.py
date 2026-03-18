@@ -13,6 +13,7 @@ Usage:
 
 import json
 import pickle
+import sys
 from importlib.metadata import version as pkg_version
 from pathlib import Path
 from typing import Any, List, Literal, cast
@@ -27,6 +28,9 @@ from pyprojroot import here
 from polygraph.utils.io import (
     maybe_append_jsonl,
 )
+
+sys.path.insert(0, str(here() / "reproducibility"))
+from utils.data import make_tabpfn_classifier
 
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
@@ -192,22 +196,7 @@ def main(cfg: DictConfig) -> None:
     if subset:
         ref = ref[:30]
 
-    from tabpfn import TabPFNClassifier
-    from tabpfn.classifier import ModelVersion
-
-    version_map = {
-        "v2": ModelVersion.V2,
-        "v2.5": ModelVersion.V2_5,
-    }
-    if tabpfn_weights_version not in version_map:
-        raise ValueError(
-            f"Unknown tabpfn_weights_version: {tabpfn_weights_version!r}. Must be one of {list(version_map)}"
-        )
-    classifier = TabPFNClassifier.create_default_for_version(
-        version_map[tabpfn_weights_version],
-        device="auto",
-        n_estimators=4,
-    )
+    classifier = make_tabpfn_classifier(tabpfn_weights_version)
 
     pgd_metric = StandardPGD(
         reference_graphs=ref,

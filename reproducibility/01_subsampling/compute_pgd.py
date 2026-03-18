@@ -15,6 +15,7 @@ Usage:
 
 import json
 import pickle
+import sys
 import time
 from importlib.metadata import version as pkg_version
 from pathlib import Path
@@ -32,25 +33,8 @@ from polygraph.utils.io import (
     maybe_append_jsonl,
 )
 
-
-def _make_tabpfn_classifier(weights_version: str):
-    """Create a TabPFN classifier for the given weights version."""
-    from tabpfn import TabPFNClassifier
-    from tabpfn.classifier import ModelVersion
-
-    version_map = {
-        "v2": ModelVersion.V2,
-        "v2.5": ModelVersion.V2_5,
-    }
-    if weights_version not in version_map:
-        raise ValueError(
-            f"Unknown weights_version: {weights_version!r}. Must be one of {list(version_map)}"
-        )
-    return TabPFNClassifier.create_default_for_version(
-        version_map[weights_version],
-        device="auto",
-        n_estimators=4,
-    )
+sys.path.insert(0, str(here() / "reproducibility"))
+from utils.data import make_tabpfn_classifier
 
 
 REPO_ROOT = here()
@@ -122,7 +106,7 @@ def main(cfg: DictConfig) -> None:
     model: str = cfg.model
     subsample_size: int = cfg.subsample_size
     num_bootstrap: int = 3 if cfg.subset else cfg.num_bootstrap
-    classifier = _make_tabpfn_classifier(tabpfn_weights_version)
+    classifier = make_tabpfn_classifier(tabpfn_weights_version)
 
     logger.info(
         "PGD subsampling: dataset={}, model={}, n={}, bootstraps={}",
