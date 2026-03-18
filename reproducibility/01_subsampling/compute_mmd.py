@@ -29,7 +29,7 @@ from pyprojroot import here
 
 from polygraph.metrics.base import MaxDescriptorMMD2Interval
 from polygraph.utils.io import (
-    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+    maybe_append_jsonl,
 )
 from polygraph.utils.descriptors import (
     ClusteringHistogram,

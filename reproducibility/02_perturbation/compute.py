@@ -40,7 +40,7 @@ from pyprojroot import here
 from sklearn.linear_model import LogisticRegression
 
 from polygraph.utils.io import (
-    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+    maybe_append_jsonl,
 )
 
 from polygraph.datasets.ego import EgoGraphDataset

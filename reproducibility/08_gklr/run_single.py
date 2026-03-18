@@ -14,7 +14,7 @@ from loguru import logger
 from pyprojroot import here
 
 from polygraph.utils.io import (
-    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+    maybe_append_jsonl,
 )
 
 REPO_ROOT = here()

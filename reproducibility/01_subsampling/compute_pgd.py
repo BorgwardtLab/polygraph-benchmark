@@ -29,7 +29,7 @@ from pyprojroot import here
 
 from polygraph.metrics import StandardPGDInterval
 from polygraph.utils.io import (
-    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+    maybe_append_jsonl,
 )
 
 

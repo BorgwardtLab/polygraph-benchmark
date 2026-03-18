@@ -24,7 +24,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from polygraph.utils.io import (
-    maybe_append_reproducibility_jsonl as maybe_append_jsonl,
+    maybe_append_jsonl,
 )
 
 sys.path.insert(0, str(here() / "reproducibility"))

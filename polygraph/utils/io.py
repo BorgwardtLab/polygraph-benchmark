@@ -29,7 +29,12 @@ def _json_default(obj: Any) -> Any:
 
 
 def append_jsonl_locked(path: str | Path, row: Mapping[str, Any]) -> None:
-    """Append a JSON row to a shared file using an exclusive lock."""
+    """Append one JSON row to a file, protected by an exclusive lock.
+
+    Args:
+        path: Destination JSONL file (created if missing).
+        row: Key-value data to serialize as a single JSON line.
+    """
     out_path = Path(path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -47,24 +52,20 @@ def append_jsonl_locked(path: str | Path, row: Mapping[str, Any]) -> None:
             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
-def maybe_append_reproducibility_jsonl(
-    row: Mapping[str, Any],
-    *,
-    path: Optional[str] = None,
-    env_var: str = "POLYGRAPH_ASYNC_RESULTS_FILE",
-) -> None:
-    """Append a reproducibility result row if an output path is configured."""
-    target = path or os.environ.get(env_var)
-    if not target:
-        return
-    append_jsonl_locked(target, row)
-
-
 def maybe_append_jsonl(
     row: Mapping[str, Any],
     *,
     path: Optional[str] = None,
     env_var: str = "POLYGRAPH_ASYNC_RESULTS_FILE",
 ) -> None:
-    """Backward-compatible alias for reproducibility JSONL streaming."""
-    maybe_append_reproducibility_jsonl(row, path=path, env_var=env_var)
+    """Append a result row if an output path is configured.
+
+    Args:
+        row: Key-value data to serialize.
+        path: Explicit file path. Falls back to ``env_var``.
+        env_var: Environment variable holding the output path.
+    """
+    target = path or os.environ.get(env_var)
+    if not target:
+        return
+    append_jsonl_locked(target, row)
