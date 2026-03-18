@@ -12,11 +12,10 @@ Usage:
 """
 
 import json
-import pickle
 import sys
 from importlib.metadata import version as pkg_version
 from pathlib import Path
-from typing import Any, List, Literal, cast
+from typing import Any, List, Literal, Tuple, cast
 
 import hydra
 import networkx as nx
@@ -30,6 +29,7 @@ from polygraph.utils.io import (
 )
 
 sys.path.insert(0, str(here() / "reproducibility"))
+from utils.data import load_graphs as _load
 from utils.data import make_tabpfn_classifier
 
 REPO_ROOT = here()
@@ -40,46 +40,37 @@ _RESULTS_DIR_BASE = (
 
 
 def load_graphs(path: Path) -> List[nx.Graph]:
-    """Load graphs from pickle file and convert to networkx."""
-    if not path.exists():
-        logger.warning("{} not found", path)
-        return []
-    with open(path, "rb") as f:
-        data = pickle.load(f)
-    graphs = []
-    for item in data:
-        if isinstance(item, nx.Graph):
-            graphs.append(item)
-        elif isinstance(item, (tuple, list)) and len(item) >= 2:
-            adj = item[1]
-            if hasattr(adj, "numpy"):
-                adj = adj.numpy()
-            graphs.append(nx.from_numpy_array(adj))
-        else:
-            graphs.append(nx.from_numpy_array(np.array(item)))
-    return graphs
+    """Load graphs from a single pickle file.
+
+    Delegates to ``utils.data.load_graphs`` by extracting the parent
+    directory and stem so that the caller-facing ``(path)`` signature
+    is preserved.
+    """
+    return _load(path.parent, "", path.stem)
 
 
 def get_reference_dataset(
     dataset: str,
     split: Literal["train", "val", "test"] = "train",
     num_graphs: int = 2048,
-):
-    """Get reference dataset from polygraph library."""
-    if dataset == "planar":
-        from polygraph.datasets.planar import ProceduralPlanarGraphDataset
+) -> Tuple[Any, List[nx.Graph]]:
+    """Get reference dataset from polygraph library.
 
-        ds = ProceduralPlanarGraphDataset(split=split, num_graphs=num_graphs)
-    elif dataset == "sbm":
-        from polygraph.datasets.sbm import ProceduralSBMGraphDataset
+    Returns ``(dataset_object, graphs)`` so callers can also call
+    ``dataset_object.is_valid()``.
+    """
+    from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
+    from polygraph.datasets.planar import ProceduralPlanarGraphDataset
+    from polygraph.datasets.sbm import ProceduralSBMGraphDataset
 
-        ds = ProceduralSBMGraphDataset(split=split, num_graphs=num_graphs)
-    elif dataset == "lobster":
-        from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
-
-        ds = ProceduralLobsterGraphDataset(split=split, num_graphs=num_graphs)
-    else:
+    procedural = {
+        "planar": ProceduralPlanarGraphDataset,
+        "lobster": ProceduralLobsterGraphDataset,
+        "sbm": ProceduralSBMGraphDataset,
+    }
+    if dataset not in procedural:
         raise ValueError(f"Unknown dataset: {dataset}")
+    ds = procedural[dataset](split=split, num_graphs=num_graphs)
     return ds, list(ds.to_nx())
 
 

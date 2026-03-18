@@ -14,7 +14,6 @@ Usage:
 """
 
 import json
-import pickle
 import sys
 import time
 from importlib.metadata import version as pkg_version
@@ -23,7 +22,6 @@ from typing import Dict, List
 
 import hydra
 import networkx as nx
-import torch
 from loguru import logger
 from omegaconf import DictConfig
 from pyprojroot import here
@@ -34,6 +32,8 @@ from polygraph.utils.io import (
 )
 
 sys.path.insert(0, str(here() / "reproducibility"))
+from utils.data import get_reference_dataset
+from utils.data import load_graphs as _load
 from utils.data import make_tabpfn_classifier
 
 
@@ -46,49 +46,7 @@ EXPERIMENT_RESULTS_DIR = (
 
 def load_graphs(model: str, dataset: str) -> List[nx.Graph]:
     """Load model-generated graphs from ``data/{model}/{dataset}.pkl``."""
-    pkl_path = DATA_DIR / model / f"{dataset}.pkl"
-    if not pkl_path.exists():
-        raise FileNotFoundError(f"{pkl_path} not found")
-    with open(pkl_path, "rb") as f:
-        graphs = pickle.load(f)
-
-    cleaned: List[nx.Graph] = []
-    for g in graphs:
-        if isinstance(g, nx.Graph):
-            simple = nx.Graph(g)
-        elif isinstance(g, (list, tuple)) and len(g) == 2:
-            try:
-                _node_feat, adj = g
-                if isinstance(adj, torch.Tensor):
-                    adj = adj.numpy()
-                simple = nx.from_numpy_array(adj)
-            except Exception as e:
-                logger.warning("Could not convert graph: {}", e)
-                continue
-        else:
-            logger.warning("Unknown graph format: {}", type(g))
-            continue
-        simple.remove_edges_from(nx.selfloop_edges(simple))
-        cleaned.append(simple)
-    return cleaned
-
-
-def get_reference_dataset(
-    dataset: str, split: str = "train", num_graphs: int = 4096
-) -> List[nx.Graph]:
-    """Get reference dataset from polygraph procedural generators."""
-    from polygraph.datasets.lobster import ProceduralLobsterGraphDataset
-    from polygraph.datasets.planar import ProceduralPlanarGraphDataset
-    from polygraph.datasets.sbm import ProceduralSBMGraphDataset
-
-    classes = {
-        "planar": ProceduralPlanarGraphDataset,
-        "lobster": ProceduralLobsterGraphDataset,
-        "sbm": ProceduralSBMGraphDataset,
-    }
-    if dataset not in classes:
-        raise ValueError(f"Unknown dataset: {dataset}")
-    return list(classes[dataset](split=split, num_graphs=num_graphs).to_nx())
+    return _load(DATA_DIR, model, dataset)
 
 
 @hydra.main(

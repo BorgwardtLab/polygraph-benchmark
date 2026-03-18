@@ -7,9 +7,7 @@ Usage:
     python format.py
 """
 
-import json
 import sys
-from pathlib import Path
 from typing import Dict
 
 import pandas as pd
@@ -25,6 +23,7 @@ from utils.formatting import (
     MODELS,
     best_two,
     fmt_pgs,
+    load_results,
 )
 
 app = typer.Typer()
@@ -33,19 +32,6 @@ REPO_ROOT = here()
 OUTPUT_DIR = REPO_ROOT / "reproducibility" / "tables"
 RESULTS_DIR = OUTPUT_DIR / "results" / "concatenation"
 BENCHMARK_DIR = OUTPUT_DIR / "results" / "benchmark"
-
-
-def load_results(results_dir: Path) -> Dict[str, Dict]:
-    all_r: Dict[str, Dict] = {}
-    if not results_dir.exists():
-        return all_r
-    for f in sorted(results_dir.glob("*.json")):
-        with open(f) as fh:
-            r = json.load(fh)
-        ds, model = r.get("dataset"), r.get("model")
-        if ds and model:
-            all_r.setdefault(ds, {})[model] = r
-    return all_r
 
 
 def generate_table(concat_results: Dict, bench_results: Dict) -> str:

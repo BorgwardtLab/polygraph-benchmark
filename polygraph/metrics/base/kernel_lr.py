@@ -156,6 +156,14 @@ class KernelLogisticRegression(BaseEstimator, ClassifierMixin):
         self.X_train_ = X
         self.y_train_ = y
 
+        n_samples = len(X) if isinstance(X, list) else int(X.shape[0])  # pyright: ignore[reportOptionalSubscript]
+        if n_samples > 10_000:
+            warnings.warn(
+                f"Kernel matrix will require ~{n_samples**2 * 8 / 1e9:.1f} GB "
+                f"of memory for {n_samples} samples. Consider reducing the "
+                f"dataset size."
+            )
+
         K = self._compute_kernel_matrix(X)
         if self.normalize_kernel:
             self.train_diag_ = np.diag(K).astype(np.float64)

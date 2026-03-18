@@ -7,10 +7,8 @@ Usage:
     python format.py
 """
 
-import json
 import sys
-from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
 import typer
@@ -25,6 +23,7 @@ from utils.formatting import (
     MODELS,
     best_two,
     fmt_pgs,
+    load_results,
 )
 
 app = typer.Typer()
@@ -41,26 +40,6 @@ SUBSCORES = [
     ("orbit4_pgs", "Orb4."),
     ("spectral_pgs", "Eig."),
 ]
-
-
-def load_results(results_dir: Path) -> List[Dict]:
-    results = []
-    for f in sorted(results_dir.glob("*.json")):
-        with open(f) as fh:
-            results.append(json.load(fh))
-    return results
-
-
-def _reshape(result_list: List[Dict]) -> Dict[str, Dict]:
-    all_results: Dict[str, Dict] = {}
-    for r in result_list:
-        r = r.copy()
-        ds = r.pop("dataset", None)
-        model = r.pop("model", None)
-        r.pop("error", None)
-        if ds and model:
-            all_results.setdefault(ds, {})[model] = r
-    return all_results
 
 
 def generate_benchmark_table(all_results: Dict) -> str:
@@ -167,14 +146,12 @@ def generate_benchmark_table(all_results: Dict) -> str:
 def main():
     """Generate LaTeX tables from pre-computed JSON results."""
     results_dir = OUTPUT_DIR / "results" / "benchmark"
-    result_list = load_results(results_dir)
-    if not result_list:
+    all_results = load_results(results_dir)
+    if not all_results:
         logger.error(
             "No results found in {}. Run compute.py first.", results_dir
         )
         return
-
-    all_results = _reshape(result_list)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     table = generate_benchmark_table(all_results)

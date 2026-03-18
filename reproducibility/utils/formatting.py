@@ -5,12 +5,36 @@ in experiments 05--08.
 
 Usage (from any reproducibility script)::
 
-    from utils.formatting import fmt_pgs, fmt_sci, best_two
+    from utils.formatting import fmt_pgs, fmt_sci, best_two, load_results
 """
 
+import json
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import pandas as pd
+
+
+def load_results(results_dir: Path) -> Dict[str, Dict]:
+    """Load JSON result files from a directory into a nested dict.
+
+    Args:
+        results_dir: Directory containing ``*.json`` result files.
+            Each file must have ``"dataset"`` and ``"model"`` keys.
+
+    Returns:
+        Nested mapping ``{dataset: {model: result_dict}}``.
+    """
+    all_r: Dict[str, Dict] = {}
+    if not results_dir.exists():
+        return all_r
+    for f in sorted(results_dir.glob("*.json")):
+        with open(f) as fh:
+            r = json.load(fh)
+        ds, model = r.get("dataset"), r.get("model")
+        if ds and model:
+            all_r.setdefault(ds, {})[model] = r
+    return all_r
 
 
 def fmt_pgs(
