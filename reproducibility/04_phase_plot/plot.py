@@ -6,7 +6,6 @@ Reproduces: figures/phase_plot/phase_plot.pdf
 
 Usage:
     python plot.py
-    python plot.py --paper-dir /path/to/paper/figures/phase_plot/
 """
 
 import json
@@ -64,11 +63,7 @@ def load_phase_data():
 
 
 @app.command()
-def main(
-    paper_dir: Path = typer.Option(
-        None, "--paper-dir", help="Copy output into paper figures dir"
-    ),
-):
+def main():
     """Generate phase plot matching the paper exactly."""
     if STYLE_FILE.exists():
         plt.style.use(str(STYLE_FILE))
@@ -158,14 +153,6 @@ def main(
     plt.savefig(str(out_path), bbox_inches="tight")
     plt.close()
     logger.success("Saved: {}", out_path)
-
-    if paper_dir is not None:
-        import shutil
-
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(out_path, paper_dir / "phase_plot.pdf")
-        logger.success("Copied to {}", paper_dir / "phase_plot.pdf")
 
 
 if __name__ == "__main__":

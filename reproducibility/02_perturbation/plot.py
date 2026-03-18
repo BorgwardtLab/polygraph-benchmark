@@ -15,7 +15,6 @@ figures referenced in the LaTeX source:
 
 Usage:
     python plot.py
-    python plot.py --paper-dir /path/to/paper/figures/perturbation_experiments/
 """
 
 import json
@@ -766,11 +765,6 @@ def _load_results_dir(results_dir: Path) -> Dict[Tuple[str, str], dict]:
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(
-        None,
-        "--paper-dir",
-        help="Also copy outputs into this directory (e.g. paper figures/perturbation_experiments/)",
-    ),
     results_suffix: str = typer.Option(
         "",
         "--results-suffix",
@@ -850,15 +844,6 @@ def main(
             shutil.copy2(pdf, dest)
             logger.info("Saved: {}", dest)
         shutil.rmtree(tmp_dir)
-
-    if paper_dir is not None:
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        count = 0
-        for pdf in OUTPUT_DIR.glob("*.pdf"):
-            shutil.copy2(pdf, paper_dir / pdf.name)
-            count += 1
-        logger.success("Copied {} PDFs to {}", count, paper_dir)
 
     logger.success("Done.")
 

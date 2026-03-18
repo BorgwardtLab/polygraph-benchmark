@@ -5,13 +5,12 @@ Produces: tables/benchmark_results.tex (matching paper format exactly)
 
 Usage:
     python format.py
-    python format.py --paper-dir /path/to/paper/tables/
 """
 
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
 import typer
@@ -170,9 +169,6 @@ def generate_benchmark_table(all_results: Dict) -> str:
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(
-        None, "--paper-dir", help="Copy tables to paper dir"
-    ),
     results_suffix: str = typer.Option(
         "",
         "--results-suffix",
@@ -195,14 +191,6 @@ def main(
     out = OUTPUT_DIR / f"benchmark_results{results_suffix}.tex"
     out.write_text(table)
     logger.success("Table saved to: {}", out)
-
-    if paper_dir:
-        import shutil
-
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(out, paper_dir / out.name)
-        logger.success("Copied to {}", paper_dir)
 
 
 if __name__ == "__main__":

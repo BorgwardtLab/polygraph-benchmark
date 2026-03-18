@@ -5,13 +5,12 @@ Produces: tables/concatenation.tex (matching paper format)
 
 Usage:
     python format.py
-    python format.py --paper-dir /path/to/paper/tables/
 """
 
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 import pandas as pd
 import typer
@@ -123,7 +122,6 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(None, "--paper-dir"),
     results_suffix: str = typer.Option(
         "",
         "--results-suffix",
@@ -144,12 +142,6 @@ def main(
     out = OUTPUT_DIR / f"concatenation{results_suffix}.tex"
     out.write_text(table)
     logger.success("Saved: {}", out)
-
-    if paper_dir:
-        import shutil
-
-        Path(paper_dir).mkdir(parents=True, exist_ok=True)
-        shutil.copy2(out, Path(paper_dir) / out.name)
 
 
 if __name__ == "__main__":

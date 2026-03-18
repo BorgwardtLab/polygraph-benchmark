@@ -21,8 +21,6 @@
         clean clean-results help
 
 SLURM_LAUNCHER ?= slurm_cpu
-PAPER_DIR ?= /fs/pool/pool-hartout/Documents/papers/polygraph_iclr_paper
-
 # ── Top-level targets ────────────────────────────────────────────────
 
 all: figures tables
@@ -61,19 +59,19 @@ compute-tables:
 # ── Plot (lightweight figure generation from JSON results) ────────────
 
 plot-all:
-	python 01_subsampling/plot.py --paper-dir $(PAPER_DIR)/figures/subsampling
-	python 02_perturbation/plot.py --paper-dir $(PAPER_DIR)/figures/perturbation_experiments
-	python 03_model_quality/plot.py --paper-dir $(PAPER_DIR)/figures/model_quality
-	python 04_phase_plot/plot.py --paper-dir $(PAPER_DIR)/figures/phase_plot
+	python 01_subsampling/plot.py
+	python 02_perturbation/plot.py
+	python 03_model_quality/plot.py
+	python 04_phase_plot/plot.py
 
 # ── Format (lightweight LaTeX table generation from JSON results) ─────
 
 format-all:
-	python 03_model_quality/format.py --paper-dir $(PAPER_DIR)/tables
-	python 05_benchmark/format.py --paper-dir $(PAPER_DIR)/tables
-	python 06_mmd/format.py --paper-dir $(PAPER_DIR)/tables
-	python 07_concatenation/format.py --paper-dir $(PAPER_DIR)/tables
-	python 08_gklr/format.py --paper-dir $(PAPER_DIR)/tables
+	python 03_model_quality/format.py
+	python 05_benchmark/format.py
+	python 06_mmd/format.py
+	python 07_concatenation/format.py
+	python 08_gklr/format.py
 
 # ── SLURM submission (requires: pip install -e ".[cluster]") ─────────
 

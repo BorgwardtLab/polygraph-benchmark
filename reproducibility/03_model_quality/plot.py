@@ -15,7 +15,6 @@ Reads pre-computed JSON results from compute.py and produces:
 
 Usage:
     python plot.py
-    python plot.py --paper-dir /path/to/paper/figures/model_quality/
 """
 
 import json
@@ -262,11 +261,6 @@ def _plot_multi_panel(
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(
-        None,
-        "--paper-dir",
-        help="Copy outputs into paper figures/model_quality/ directory",
-    ),
     results_suffix: str = typer.Option(
         "",
         "--results-suffix",
@@ -357,19 +351,6 @@ def main(
             shutil.copy2(pdf, dest)
             logger.info("Saved: {}", dest)
         shutil.rmtree(tmp_dir)
-
-    if paper_dir is not None:
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        count = 0
-        for pdf in OUTPUT_DIR.glob("*.pdf"):
-            if results_suffix and results_suffix not in pdf.stem:
-                continue
-            if not results_suffix and any(s in pdf.stem for s in ["_tabpfn"]):
-                continue
-            shutil.copy2(pdf, paper_dir / pdf.name)
-            count += 1
-        logger.success("Copied {} PDFs to {}", count, paper_dir)
 
     logger.success("Done.")
 

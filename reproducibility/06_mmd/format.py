@@ -8,13 +8,12 @@ Produces:
 
 Usage:
     python format.py
-    python format.py --paper-dir /path/to/paper/tables/
 """
 
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
 import typer
@@ -188,11 +187,7 @@ def _generate_mmd_table(
 
 
 @app.command()
-def main(
-    paper_dir: Optional[Path] = typer.Option(
-        None, "--paper-dir", help="Copy tables to paper dir"
-    ),
-):
+def main():
     """Generate LaTeX tables from pre-computed JSON results."""
     mmd_results = load_results(MMD_RESULTS_DIR)
     bench_results = load_results(BENCHMARK_RESULTS_DIR)
@@ -222,15 +217,6 @@ def main(
     )
     (OUTPUT_DIR / "mmd_rbf_umve.tex").write_text(umve)
     logger.success("Saved: {}", OUTPUT_DIR / "mmd_rbf_umve.tex")
-
-    if paper_dir:
-        import shutil
-
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        for name in ["mmd_gtv.tex", "mmd_rbf_biased.tex", "mmd_rbf_umve.tex"]:
-            shutil.copy2(OUTPUT_DIR / name, paper_dir / name)
-        logger.success("Copied tables to {}", paper_dir)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -633,7 +633,6 @@ def plot_pgd_individual(
 def main(
     mmd_only: bool = typer.Option(False, "--mmd-only"),
     pgd_only: bool = typer.Option(False, "--pgd-only"),
-    paper_dir: Optional[Path] = typer.Option(None, "--paper-dir"),
     results_suffix: str = typer.Option(
         "",
         "--results-suffix",
@@ -731,14 +730,6 @@ def main(
             logger.info("Saved: {}", dest)
         shutil.rmtree(tmp_dir)
 
-    if paper_dir is not None:
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        count = 0
-        for pdf in OUTPUT_DIR.glob("*.pdf"):
-            shutil.copy2(pdf, paper_dir / pdf.name)
-            count += 1
-        logger.success("Copied {} PDFs to {}", count, paper_dir)
     logger.success("Done.")
 
 

@@ -11,11 +11,9 @@ Produces 6 tables:
 
 Usage:
     python format.py
-    python format.py --paper-dir /path/to/paper/tables/
 """
 
 import json
-from pathlib import Path
 from itertools import groupby
 from typing import Optional
 
@@ -346,11 +344,6 @@ def generate_denoising_pgs_table(variant: str = "jsd") -> str:
 
 @app.command()
 def main(
-    paper_dir: Optional[Path] = typer.Option(
-        None,
-        "--paper-dir",
-        help="Copy tables into paper tables/ directory",
-    ),
     results_suffix: str = typer.Option(
         "",
         "--results-suffix",
@@ -400,16 +393,6 @@ def main(
             logger.success("Saved: {}", out)
         else:
             logger.warning("No data for {}", fname)
-
-    if paper_dir is not None:
-        import shutil
-
-        paper_dir = Path(paper_dir)
-        paper_dir.mkdir(parents=True, exist_ok=True)
-        for tex in TABLES_DIR.glob("*.tex"):
-            if tex.stem in [k.replace(".tex", "") for k in table_map]:
-                shutil.copy2(tex, paper_dir / tex.name)
-        logger.success("Copied tables to {}", paper_dir)
 
     logger.success("Done.")
 
