@@ -226,11 +226,6 @@ def _compute_spearman(series: pd.Series, noise: pd.Series) -> float:
     return float(rho)  # type: ignore[arg-type]
 
 
-# ---------------------------------------------------------------------------
-# Figure 1 & 2: Correlation bar plots
-# ---------------------------------------------------------------------------
-
-
 def plot_correlation_bars(
     all_data: Dict,
     classifier: str,
@@ -327,11 +322,6 @@ def plot_correlation_bars(
     fig.savefig(str(out), bbox_inches="tight")
     plt.close(fig)
     logger.success("Saved: {}", out)
-
-
-# ---------------------------------------------------------------------------
-# Figures 3-6: Metrics vs noise level (faceted grid)
-# ---------------------------------------------------------------------------
 
 
 def plot_metrics_vs_noise(
@@ -485,11 +475,6 @@ def plot_metrics_vs_noise(
     logger.success("Saved: {}", out)
 
 
-# ---------------------------------------------------------------------------
-# Figure 7: LR vs TabPFN comparison
-# ---------------------------------------------------------------------------
-
-
 def plot_lr_vs_tabpfn(
     all_data: Dict,
     variant: str,
@@ -584,11 +569,6 @@ def plot_lr_vs_tabpfn(
     g.savefig(str(out), bbox_inches="tight")
     plt.close(g.figure)
     logger.success("Saved: {}", out)
-
-
-# ---------------------------------------------------------------------------
-# Single-dataset perturbation figures (e.g. SBM-only)
-# ---------------------------------------------------------------------------
 
 
 def plot_single_dataset_perturbation(
@@ -741,11 +721,6 @@ def plot_single_dataset_perturbation(
     g.savefig(str(out), bbox_inches="tight")
     plt.close(g.figure)
     logger.success("Saved: {}", out)
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
 
 
 def _load_results_dir(results_dir: Path) -> Dict[Tuple[str, str], dict]:

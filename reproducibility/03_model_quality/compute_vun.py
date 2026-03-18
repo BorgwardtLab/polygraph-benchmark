@@ -40,11 +40,6 @@ sys.path.insert(0, str(REPO_ROOT / "reproducibility"))
 from utils.vun import compute_vun_parallel  # noqa: E402
 
 
-# ---------------------------------------------------------------------------
-# Graph loading (mirrors compute.py)
-# ---------------------------------------------------------------------------
-
-
 def load_graphs(path: Path) -> List[nx.Graph]:
     """Load graphs from pickle file and convert to networkx."""
     if not path.exists():
@@ -87,11 +82,6 @@ def get_reference_dataset(
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
     return ds, list(ds.to_nx())
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 
 @hydra.main(

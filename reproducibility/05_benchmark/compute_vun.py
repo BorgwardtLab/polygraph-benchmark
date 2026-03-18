@@ -39,11 +39,6 @@ MODELS = ["AUTOGRAPH", "DIGRESS", "GRAN", "ESGG"]
 app = typer.Typer()
 
 
-# ---------------------------------------------------------------------------
-# Per-pair isomorphism with SIGALRM timeout
-# ---------------------------------------------------------------------------
-
-
 class _TimeoutError(Exception):
     pass
 
@@ -95,11 +90,6 @@ class _GraphSet:
             ):
                 return True
         return False
-
-
-# ---------------------------------------------------------------------------
-# Parallel novelty worker
-# ---------------------------------------------------------------------------
 
 
 def _check_novel_worker(

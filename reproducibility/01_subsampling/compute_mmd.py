@@ -41,9 +41,6 @@ from polygraph.utils.descriptors import (
 )
 from polygraph.utils.kernels import AdaptiveRBFKernel
 
-# ---------------------------------------------------------------------------
-# Paths (resolved before Hydra touches CWD; we disable chdir in the config)
-# ---------------------------------------------------------------------------
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
 EXPERIMENT_RESULTS_DIR = (
@@ -65,9 +62,6 @@ DESCRIPTOR_NAMES = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Graph loading helpers
-# ---------------------------------------------------------------------------
 def load_graphs(model: str, dataset: str) -> List[nx.Graph]:
     """Load model-generated graphs from ``data/{model}/{dataset}.pkl``."""
     pkl_path = DATA_DIR / model / f"{dataset}.pkl"
@@ -115,9 +109,6 @@ def get_reference_dataset(
     return list(classes[dataset](split=split, num_graphs=num_graphs).to_nx())
 
 
-# ---------------------------------------------------------------------------
-# Descriptor factory
-# ---------------------------------------------------------------------------
 def make_descriptor(name: str, reference_graphs: List[nx.Graph]):
     """Instantiate a descriptor by name, matching the original experiment."""
     factories = {
@@ -137,9 +128,6 @@ def make_descriptor(name: str, reference_graphs: List[nx.Graph]):
     return factories[name]()
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 @hydra.main(
     config_path="../configs",
     config_name="01_subsampling_mmd",
@@ -278,7 +266,6 @@ def main(cfg: DictConfig) -> None:
             "mmd_std": float(result.std),
             "mmd_low": float(result.low) if result.low is not None else None,
             "mmd_high": float(result.high) if result.high is not None else None,
-            "mmd_runtime_seconds": mmd_runtime_perf_seconds,
             "mmd_runtime_perf_seconds": mmd_runtime_perf_seconds,
         }
 
@@ -301,7 +288,6 @@ def main(cfg: DictConfig) -> None:
                 "status": "ok",
                 "output_path": str(out_path),
                 "result": output,
-                "mmd_runtime_seconds": mmd_runtime_perf_seconds,
                 "mmd_runtime_perf_seconds": mmd_runtime_perf_seconds,
             }
         )
@@ -329,7 +315,6 @@ def main(cfg: DictConfig) -> None:
                 "variant": variant,
                 "status": "error",
                 "error": str(e),
-                "mmd_runtime_seconds": metric_runtime_perf_seconds,
                 "mmd_runtime_perf_seconds": metric_runtime_perf_seconds,
             }
         )

@@ -15,11 +15,6 @@ import networkx as nx
 from loguru import logger
 
 
-# ---------------------------------------------------------------------------
-# Isomorphism with SIGALRM timeout
-# ---------------------------------------------------------------------------
-
-
 class _TimeoutError(Exception):
     pass
 
@@ -69,11 +64,6 @@ class GraphSet:
         return False
 
 
-# ---------------------------------------------------------------------------
-# Parallel worker functions (must be importable, not in __main__)
-# ---------------------------------------------------------------------------
-
-
 def _check_novel_worker(
     gen_graph_json: str,
     train_graphs_json: List[str],
@@ -108,11 +98,6 @@ def _check_validity_worker(graph_json: str, dataset: str) -> bool:
 
         return is_sbm_graph(g)
     return True
-
-
-# ---------------------------------------------------------------------------
-# Main VUN computation
-# ---------------------------------------------------------------------------
 
 
 def compute_vun_parallel(

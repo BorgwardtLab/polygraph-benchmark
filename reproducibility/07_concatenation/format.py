@@ -48,10 +48,6 @@ def load_results(results_dir: Path) -> Dict[str, Dict]:
     return all_r
 
 
-_fmt = fmt_pgs
-_best_two = best_two
-
-
 def generate_table(concat_results: Dict, bench_results: Dict) -> str:
     lines = []
     lines.append("\\begin{tabular}{llccc}")
@@ -65,13 +61,13 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
         ds_concat = concat_results.get(ds, {})
         ds_bench = bench_results.get(ds, {})
 
-        std_best, std_second = _best_two(
+        std_best, std_second = best_two(
             ds_concat, "pgs_standard_mean", lower=True
         )
-        cat_best, cat_second = _best_two(
+        cat_best, cat_second = best_two(
             ds_concat, "pgs_concatenated_mean", lower=True
         )
-        vun_best, vun_second = _best_two(ds_bench, "vun", lower=False)
+        vun_best, vun_second = best_two(ds_bench, "vun", lower=False)
 
         first = True
         for model in MODELS:
@@ -95,7 +91,7 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
                 row.append("-")
 
             row.append(
-                _fmt(
+                fmt_pgs(
                     cr.get("pgs_standard_mean", float("nan")),
                     cr.get("pgs_standard_std", float("nan")),
                     model == std_best,
@@ -103,7 +99,7 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
                 )
             )
             row.append(
-                _fmt(
+                fmt_pgs(
                     cr.get("pgs_concatenated_mean", float("nan")),
                     cr.get("pgs_concatenated_std", float("nan")),
                     model == cat_best,

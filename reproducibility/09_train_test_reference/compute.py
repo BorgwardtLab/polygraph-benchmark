@@ -28,9 +28,6 @@ from polygraph.utils.io import (
 sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
 
-# ---------------------------------------------------------------------------
-# Paths (resolved before Hydra touches CWD)
-# ---------------------------------------------------------------------------
 REPO_ROOT = here()
 _RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "tables" / "results"
 

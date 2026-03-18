@@ -53,9 +53,6 @@ def _make_tabpfn_classifier(weights_version: str):
     )
 
 
-# ---------------------------------------------------------------------------
-# Paths (resolved before Hydra touches CWD; we disable chdir in the config)
-# ---------------------------------------------------------------------------
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
 EXPERIMENT_RESULTS_DIR = (
@@ -63,9 +60,6 @@ EXPERIMENT_RESULTS_DIR = (
 )
 
 
-# ---------------------------------------------------------------------------
-# Graph loading helpers
-# ---------------------------------------------------------------------------
 def load_graphs(model: str, dataset: str) -> List[nx.Graph]:
     """Load model-generated graphs from ``data/{model}/{dataset}.pkl``."""
     pkl_path = DATA_DIR / model / f"{dataset}.pkl"
@@ -113,9 +107,6 @@ def get_reference_dataset(
     return list(classes[dataset](split=split, num_graphs=num_graphs).to_nx())
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 @hydra.main(
     config_path="../configs",
     config_name="01_subsampling_pgd",
@@ -238,7 +229,6 @@ def main(cfg: DictConfig) -> None:
             "num_bootstrap": num_bootstrap,
             "pgd_mean": float(result["pgd"].mean),
             "pgd_std": float(result["pgd"].std),
-            "pgd_runtime_seconds": pgd_runtime_perf_seconds,
             "pgd_runtime_perf_seconds": pgd_runtime_perf_seconds,
             "tabpfn_package_version": pkg_version("tabpfn"),
             "tabpfn_weights_version": tabpfn_weights_version,
@@ -271,7 +261,6 @@ def main(cfg: DictConfig) -> None:
                 "status": "ok",
                 "output_path": str(out_path),
                 "result": output,
-                "pgd_runtime_seconds": pgd_runtime_perf_seconds,
                 "pgd_runtime_perf_seconds": pgd_runtime_perf_seconds,
             }
         )
@@ -295,7 +284,6 @@ def main(cfg: DictConfig) -> None:
                 "subsample_size": subsample_size,
                 "status": "error",
                 "error": str(e),
-                "pgd_runtime_seconds": metric_runtime_perf_seconds,
                 "pgd_runtime_perf_seconds": metric_runtime_perf_seconds,
             }
         )

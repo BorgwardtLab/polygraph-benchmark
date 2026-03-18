@@ -96,11 +96,6 @@ def _neg_pearson(x, y) -> float:
     return -float(r)  # type: ignore[arg-type]
 
 
-# ---------------------------------------------------------------------------
-# Table 1 & 3: Pearson correlation of validity with other metrics
-# ---------------------------------------------------------------------------
-
-
 def _format_row_with_ranking(
     values: list[float], fmt: str = "{:.2f}"
 ) -> list[str]:
@@ -186,11 +181,6 @@ def generate_pearson_correlation_table(variant: str) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# Table 2 & 4: Spearman correlation with training iterations
-# ---------------------------------------------------------------------------
-
-
 def generate_spearman_training_table(variant: str) -> str:
     """Generate Spearman correlation table of metrics with training steps.
 
@@ -249,11 +239,6 @@ def generate_spearman_training_table(variant: str) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# Table 5: Denoising iterations MMD values
-# ---------------------------------------------------------------------------
-
-
 def generate_denoising_mmd_table() -> str:
     """Generate table of MMD values per denoising step."""
     df = load_results("denoising", "planar", "jsd")
@@ -287,11 +272,6 @@ def generate_denoising_mmd_table() -> str:
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
     return "\n".join(lines)
-
-
-# ---------------------------------------------------------------------------
-# Table 6: Denoising iterations PGS values
-# ---------------------------------------------------------------------------
 
 
 def generate_denoising_pgs_table(variant: str = "jsd") -> str:

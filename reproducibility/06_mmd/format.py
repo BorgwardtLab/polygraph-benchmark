@@ -51,10 +51,6 @@ def load_results(results_dir: Path) -> Dict[str, Dict]:
     return all_r
 
 
-_fmt_sci = fmt_sci
-_best_two = best_two
-
-
 def _fmt_pgs(mean: float, std: float, is_best=False, is_second=False) -> str:
     """MMD tables use 3 decimal places for PGD scores (not 1 like benchmark)."""
     if pd.isna(mean):
@@ -93,8 +89,8 @@ def generate_gtv_table(mmd_results: Dict, bench_results: Dict) -> str:
     for i, ds in enumerate(DATASETS):
         ds_mmd = mmd_results.get(ds, {})
         ds_bench = bench_results.get(ds, {})
-        pgs_best, pgs_second = _best_two(ds_bench, "pgs_mean", lower=True)
-        vun_best, vun_second = _best_two(ds_bench, "vun", lower=False)
+        pgs_best, pgs_second = best_two(ds_bench, "pgs_mean", lower=True)
+        vun_best, vun_second = best_two(ds_bench, "vun", lower=False)
 
         first = True
         for model in MODELS:
@@ -124,9 +120,9 @@ def generate_gtv_table(mmd_results: Dict, bench_results: Dict) -> str:
             )
 
             for m_key in metrics:
-                best, second = _best_two(ds_mmd, f"{m_key}_mean", lower=True)
+                best, second = best_two(ds_mmd, f"{m_key}_mean", lower=True)
                 row.append(
-                    _fmt_sci(
+                    fmt_sci(
                         mmd_r.get(f"{m_key}_mean", float("nan")),
                         mmd_r.get(f"{m_key}_std", float("nan")),
                         model == best,
@@ -168,9 +164,9 @@ def _generate_mmd_table(
             row.append(MODEL_DISPLAY.get(model, model))
 
             for m_key in metrics:
-                best, second = _best_two(ds_mmd, f"{m_key}_mean", lower=True)
+                best, second = best_two(ds_mmd, f"{m_key}_mean", lower=True)
                 row.append(
-                    _fmt_sci(
+                    fmt_sci(
                         r.get(f"{m_key}_mean", float("nan")),
                         r.get(f"{m_key}_std", float("nan")),
                         model == best,

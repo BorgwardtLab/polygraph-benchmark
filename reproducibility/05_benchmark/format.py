@@ -63,10 +63,6 @@ def _reshape(result_list: List[Dict]) -> Dict[str, Dict]:
     return all_results
 
 
-_fmt_pgs = fmt_pgs
-_best_two = best_two
-
-
 def generate_benchmark_table(all_results: Dict) -> str:
     lines = []
     lines.append(
@@ -88,8 +84,8 @@ def generate_benchmark_table(all_results: Dict) -> str:
 
     for i, dataset in enumerate(DATASETS):
         ds_results = all_results.get(dataset, {})
-        pgs_best, pgs_second = _best_two(ds_results, "pgs_mean", lower=True)
-        vun_best, vun_second = _best_two(ds_results, "vun", lower=False)
+        pgs_best, pgs_second = best_two(ds_results, "pgs_mean", lower=True)
+        vun_best, vun_second = best_two(ds_results, "vun", lower=False)
         sub_best = {}
         sub_second = {}
         for key, _ in SUBSCORES:
@@ -100,7 +96,7 @@ def generate_benchmark_table(all_results: Dict) -> str:
                 if any(mean_key in ds_results.get(m, {}) for m in ds_results)
                 else alt_key
             )
-            sub_best[key], sub_second[key] = _best_two(
+            sub_best[key], sub_second[key] = best_two(
                 ds_results, lookup, lower=True
             )
 
@@ -129,7 +125,7 @@ def generate_benchmark_table(all_results: Dict) -> str:
                 row.append("-")
 
             row.append(
-                _fmt_pgs(
+                fmt_pgs(
                     r.get("pgs_mean", float("nan")),
                     r.get("pgs_std", float("nan")),
                     model == pgs_best,
@@ -139,7 +135,7 @@ def generate_benchmark_table(all_results: Dict) -> str:
 
             for key, _ in SUBSCORES:
                 row.append(
-                    _fmt_pgs(
+                    fmt_pgs(
                         r.get(
                             f"{key}_mean",
                             r.get(

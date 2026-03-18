@@ -147,12 +147,9 @@ def _is_constant(X) -> bool:
     if issparse(X):
         if X.shape[0] <= 1:
             return True
-        first = X[0]
-        for i in range(1, X.shape[0]):
-            diff = X[i] - first
-            if diff.nnz > 0:
-                return False
-        return True
+        col_min = X.min(axis=0).toarray().ravel()
+        col_max = X.max(axis=0).toarray().ravel()
+        return bool(np.array_equal(col_min, col_max))
     return bool(np.all(X == X[0]))
 
 

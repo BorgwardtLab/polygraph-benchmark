@@ -26,9 +26,6 @@ sys.path.insert(0, str(here() / "reproducibility"))
 from utils.data import get_reference_dataset as _get_ref
 from utils.data import load_graphs as _load
 
-# ---------------------------------------------------------------------------
-# Paths (resolved before Hydra touches CWD)
-# ---------------------------------------------------------------------------
 REPO_ROOT = here()
 DATA_DIR = REPO_ROOT / "data"
 _RESULTS_DIR_BASE = REPO_ROOT / "reproducibility" / "tables" / "results"

@@ -53,10 +53,6 @@ def load_results(results_dir: Path) -> Dict[str, Dict]:
     return all_r
 
 
-_fmt = fmt_pgs
-_best_two = best_two
-
-
 def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
     lines = []
     lines.append("\\resizebox{\\columnwidth}{!}{")
@@ -80,12 +76,12 @@ def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
         ds_gklr = gklr_results.get(ds, {})
         ds_bench = bench_results.get(ds, {})
 
-        pgd_best, pgd_second = _best_two(ds_bench, "pgs_mean", lower=True)
-        gklr_best, gklr_second = _best_two(ds_gklr, "pgs_mean", lower=True)
+        pgd_best, pgd_second = best_two(ds_bench, "pgs_mean", lower=True)
+        gklr_best, gklr_second = best_two(ds_gklr, "pgs_mean", lower=True)
 
         kernel_rankings = {}
         for key, _ in KERNEL_SUBSCORES:
-            kernel_rankings[key] = _best_two(ds_gklr, f"{key}_mean", lower=True)
+            kernel_rankings[key] = best_two(ds_gklr, f"{key}_mean", lower=True)
 
         first = True
         for model in MODELS:
@@ -100,7 +96,7 @@ def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
             row.append(MODEL_DISPLAY.get(model, model))
 
             row.append(
-                _fmt(
+                fmt_pgs(
                     br.get("pgs_mean", float("nan")),
                     br.get("pgs_std", float("nan")),
                     model == pgd_best,
@@ -109,7 +105,7 @@ def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
             )
 
             row.append(
-                _fmt(
+                fmt_pgs(
                     gr.get("pgs_mean", float("nan")),
                     gr.get("pgs_std", float("nan")),
                     model == gklr_best,
@@ -120,7 +116,7 @@ def generate_table(gklr_results: Dict, bench_results: Dict) -> str:
             for key, _ in KERNEL_SUBSCORES:
                 k_best, k_second = kernel_rankings[key]
                 row.append(
-                    _fmt(
+                    fmt_pgs(
                         gr.get(f"{key}_mean", float("nan")),
                         gr.get(f"{key}_std", float("nan")),
                         model == k_best,

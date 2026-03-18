@@ -82,11 +82,6 @@ _RESULTS_DIR_BASE = (
 _RBF_BW = np.array([0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0])
 
 
-# ---------------------------------------------------------------------------
-# Perturbation functions (inline, matching original library implementations)
-# ---------------------------------------------------------------------------
-
-
 def edge_rewiring(graph: nx.Graph, noise_level: float) -> nx.Graph:
     """Rewire edges: each selected with P(noise_level), one endpoint reconnected."""
     if not (0 <= noise_level <= 1):
@@ -252,11 +247,6 @@ PERTURBATION_FNS: Dict[str, Callable[[nx.Graph, float], nx.Graph]] = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Dataset loading
-# ---------------------------------------------------------------------------
-
-
 def load_dataset(
     dataset: str, num_graphs: int, seed: int
 ) -> Tuple[List[nx.Graph], List[nx.Graph]]:
@@ -333,11 +323,6 @@ def load_dataset(
         raise ValueError(f"Dataset {dataset} not supported")
 
     return reference_graphs, perturbed_graphs
-
-
-# ---------------------------------------------------------------------------
-# Metric initialization
-# ---------------------------------------------------------------------------
 
 
 def _make_classifier(name: str, tabpfn_weights_version: str = "v2.5"):
@@ -457,11 +442,6 @@ def build_metrics(
     return metrics
 
 
-# ---------------------------------------------------------------------------
-# Evaluation
-# ---------------------------------------------------------------------------
-
-
 def evaluate_metrics(
     perturbed_graphs: List[nx.Graph],
     metrics: Dict[str, Any],
@@ -489,11 +469,6 @@ def evaluate_metrics(
             torch.cuda.empty_cache()
 
     return result
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 
 @hydra.main(
