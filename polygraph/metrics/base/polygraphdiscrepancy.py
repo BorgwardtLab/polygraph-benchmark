@@ -55,10 +55,12 @@ from typing import (
 )
 
 import numpy as np
-from scipy.sparse import csr_array, issparse, vstack as sparse_vstack
+from scipy.sparse import csr_array, issparse
+from scipy.sparse import vstack as sparse_vstack
 from sklearn.metrics import roc_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
+from packaging.version import Version
 from tabpfn import TabPFNClassifier
 
 from polygraph import GraphType
@@ -70,6 +72,7 @@ __all__ = [
     "ClassifierMetric",
     "PolyGraphDiscrepancy",
     "PolyGraphDiscrepancyInterval",
+    "default_classifier",
 ]
 
 
@@ -98,6 +101,22 @@ class ClassifierProtocol(Protocol):
             Probabilities of shape `(n_samples, 2)`
         """
         ...
+
+
+def default_classifier() -> TabPFNClassifier:
+    """Create the default TabPFN classifier used by PGD.
+
+    Returns:
+        A TabPFNClassifier with default settings (auto device, 4
+        estimators). Requires ``tabpfn >= 2.0.9``.
+    """
+    tabpfn_ver = Version(version("tabpfn"))
+    if tabpfn_ver < Version("2.0.9"):
+        raise RuntimeError(
+            "TabPFN >= 2.0.9 is required. "
+            "Install with `pip install 'tabpfn>=2.0.9'`."
+        )
+    return TabPFNClassifier(device="auto", n_estimators=4)
 
 
 class PolyGraphDiscrepancyResult(TypedDict):
@@ -289,6 +308,10 @@ def _descriptions_to_classifier_metric(
     rng: Optional[np.random.Generator] = None,
     scale: bool = True,
 ) -> Tuple[float, Union[int, float]]:
+    # scale=False is needed for kernel-based classifiers (e.g. GKLR)
+    # that operate on precomputed kernel matrices, not raw features.
+    if classifier is None:
+        classifier = default_classifier()
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
@@ -317,8 +340,7 @@ def _descriptions_to_classifier_metric(
             ),
             shape=(ref_descriptions.shape[0], num_features),  # pyright: ignore
         )
-        # Only convert to dense when needed (TabPFN or scaling)
-        if scale or classifier is None:
+        if scale or isinstance(classifier, TabPFNClassifier):
             gen_descriptions = gen_descriptions.toarray()
             ref_descriptions = ref_descriptions.toarray()
 
@@ -353,21 +375,8 @@ def _descriptions_to_classifier_metric(
     assert isinstance(test_ref_descriptions, (np.ndarray, csr_array))
     assert isinstance(test_gen_descriptions, (np.ndarray, csr_array))
 
-    if classifier is None:
-        from packaging.version import Version
-
-        tabpfn_ver = Version(version("tabpfn"))
-        if tabpfn_ver < Version("2.0.9"):
-            raise RuntimeError(
-                "TabPFN >= 2.0.9 is required. Please install it with `pip install 'tabpfn>=2.0.9'`."
-            )
-        clf = TabPFNClassifier(device="auto", n_estimators=4)
-    else:
-        clf = classifier
-
-    # Use custom cross-validation function
     scores = _classifier_cross_validation(
-        clf,
+        classifier,
         train_ref_descriptions,
         train_gen_descriptions,
         variant,
@@ -395,8 +404,8 @@ def _descriptions_to_classifier_metric(
             )
             predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
         else:
-            clf.fit(train_all_descriptions, train_labels)  # pyright: ignore[reportArgumentType]
-            predict_proba = clf.predict_proba
+            classifier.fit(train_all_descriptions, train_labels)  # pyright: ignore[reportArgumentType]
+            predict_proba = classifier.predict_proba
 
         ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
         gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
@@ -437,7 +446,8 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
         reference_graphs: Reference graphs
         descriptor: Descriptor function
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
-        classifier: Binary classifier to fit
+        classifier: Binary classifier to fit. Defaults to TabPFN
+            via ``default_classifier()``.
     """
 
     _variant: Literal["informedness", "jsd"]
@@ -544,7 +554,8 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
         reference_graphs: Reference graphs
         descriptors: Dictionary of descriptor names and descriptor functions
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
-        classifier: Binary classifier to fit
+        classifier: Binary classifier to fit. Defaults to TabPFN
+            via ``default_classifier()``.
     """
 
     _variant: Literal["informedness", "jsd"]

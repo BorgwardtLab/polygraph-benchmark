@@ -18,6 +18,7 @@ from polygraph.metrics.base.polygraphdiscrepancy import (
     ClassifierMetric,
     PolyGraphDiscrepancy,
     PolyGraphDiscrepancyInterval,
+    default_classifier,
 )
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     "GenerationMetric",
     "MetricCollection",
     "KernelLogisticRegression",
+    "default_classifier",
 ]
