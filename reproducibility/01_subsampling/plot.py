@@ -630,15 +630,7 @@ def plot_pgd_individual(
 
 
 @app.command()
-def main(
-    mmd_only: bool = typer.Option(False, "--mmd-only"),
-    pgd_only: bool = typer.Option(False, "--pgd-only"),
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
-    ),
-):
+def main():
     setup_plotting()
 
     pgd_results_dir = (
@@ -647,88 +639,63 @@ def main(
         / "figures"
         / "01_subsampling"
         / "results"
-        / f"compute_pgd{results_suffix}"
+        / "compute_pgd"
     )
 
-    # When suffix is provided, generate into a temp dir then copy with suffixed names
-    import tempfile
-    import shutil
-
-    use_tmp = bool(results_suffix)
-    tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
-    output_dir: Path = tmp_dir if tmp_dir is not None else OUTPUT_DIR
-
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_dir.mkdir(parents=True, exist_ok=True)
 
-    if not pgd_only:
-        logger.info("Loading MMD results...")
-        df_mmd = load_mmd_results()
-        if df_mmd.empty:
-            logger.error("No MMD results found in {}", MMD_RESULTS_DIR)
-        else:
-            logger.info("Loaded {} MMD result files", len(df_mmd))
-            for m in MODELS:
-                for v in VARIANTS:
-                    plot_mmd_combined(df_mmd, m, v, output_dir)
-            plot_mmd_individual(
-                df_mmd, "DIGRESS", "biased", "planar", "orbit5", output_dir
-            )
-            plot_mmd_individual(
-                df_mmd, "DIGRESS", "umve", "planar", "orbit5", output_dir
-            )
-            plot_mmd_individual(
-                df_mmd, "GRAN", "biased", "sbm", "degree", output_dir
-            )
-            plot_mmd_individual(
-                df_mmd, "GRAN", "umve", "sbm", "degree", output_dir
-            )
-    if not mmd_only:
-        logger.info("Loading PGD results from {} ...", pgd_results_dir)
-        if not pgd_results_dir.exists():
+    logger.info("Loading MMD results...")
+    df_mmd = load_mmd_results()
+    if df_mmd.empty:
+        logger.error("No MMD results found in {}", MMD_RESULTS_DIR)
+    else:
+        logger.info("Loaded {} MMD result files", len(df_mmd))
+        for m in MODELS:
+            for v in VARIANTS:
+                plot_mmd_combined(df_mmd, m, v, OUTPUT_DIR)
+        plot_mmd_individual(
+            df_mmd, "DIGRESS", "biased", "planar", "orbit5", OUTPUT_DIR
+        )
+        plot_mmd_individual(
+            df_mmd, "DIGRESS", "umve", "planar", "orbit5", OUTPUT_DIR
+        )
+        plot_mmd_individual(
+            df_mmd, "GRAN", "biased", "sbm", "degree", OUTPUT_DIR
+        )
+        plot_mmd_individual(df_mmd, "GRAN", "umve", "sbm", "degree", OUTPUT_DIR)
+
+    logger.info("Loading PGD results from {} ...", pgd_results_dir)
+    if not pgd_results_dir.exists():
+        logger.error("No PGD results found in {}", pgd_results_dir)
+    else:
+        recs = [
+            json.loads(f.read_text()) for f in pgd_results_dir.glob("*.json")
+        ]
+        df_pgd = pd.DataFrame(recs) if recs else pd.DataFrame()
+        if df_pgd.empty:
             logger.error("No PGD results found in {}", pgd_results_dir)
         else:
-            recs = [
-                json.loads(f.read_text())
-                for f in pgd_results_dir.glob("*.json")
-            ]
-            df_pgd = pd.DataFrame(recs) if recs else pd.DataFrame()
-            if df_pgd.empty:
-                logger.error("No PGD results found in {}", pgd_results_dir)
-            else:
-                logger.info("Loaded {} PGD result files", len(df_pgd))
-                df_long = _reshape_pgd_long(df_pgd)
-                # Split out test baseline if present
-                df_test = (
-                    df_long[df_long["model"].str.lower() == "test"]
-                    if "model" in df_long.columns
-                    else pd.DataFrame()
-                )
-                if not df_long.empty:
-                    test_arg = df_test if not df_test.empty else None
-                    for m in MODELS:
-                        plot_pgd_combined(
-                            df_long, m, output_dir, df_test=test_arg
-                        )
-                        # Individual per-(model, dataset, score) plots
-                        for ds in ["lobster", "planar", "sbm"]:
-                            for sk in PGD_SCORE_KEYS:
-                                plot_pgd_individual(
-                                    df_long,
-                                    m,
-                                    ds,
-                                    sk,
-                                    output_dir,
-                                    df_test=test_arg,
-                                )
-
-    # Copy from temp dir with suffixed filenames
-    if use_tmp and tmp_dir:
-        for pdf in tmp_dir.glob("*.pdf"):
-            dest = OUTPUT_DIR / (pdf.stem + results_suffix + pdf.suffix)
-            shutil.copy2(pdf, dest)
-            logger.info("Saved: {}", dest)
-        shutil.rmtree(tmp_dir)
+            logger.info("Loaded {} PGD result files", len(df_pgd))
+            df_long = _reshape_pgd_long(df_pgd)
+            df_test = (
+                df_long[df_long["model"].str.lower() == "test"]
+                if "model" in df_long.columns
+                else pd.DataFrame()
+            )
+            if not df_long.empty:
+                test_arg = df_test if not df_test.empty else None
+                for m in MODELS:
+                    plot_pgd_combined(df_long, m, OUTPUT_DIR, df_test=test_arg)
+                    for ds in ["lobster", "planar", "sbm"]:
+                        for sk in PGD_SCORE_KEYS:
+                            plot_pgd_individual(
+                                df_long,
+                                m,
+                                ds,
+                                sk,
+                                OUTPUT_DIR,
+                                df_test=test_arg,
+                            )
 
     logger.success("Done.")
 

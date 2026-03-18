@@ -260,13 +260,7 @@ def _plot_multi_panel(
 
 
 @app.command()
-def main(
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
-    ),
-):
+def main():
     """Generate all model quality figures for the paper."""
     setup_plotting()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -276,7 +270,7 @@ def main(
         / "reproducibility"
         / "figures"
         / "03_model_quality"
-        / f"results{results_suffix}"
+        / "results"
     )
 
     def _load(
@@ -291,33 +285,22 @@ def main(
             return None
         return pd.DataFrame(data["results"])
 
-    import tempfile
-    import shutil
-
-    use_tmp = bool(results_suffix)
-    tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
-    output_dir: Path = tmp_dir if tmp_dir is not None else OUTPUT_DIR
-    if use_tmp:
-        output_dir.mkdir(parents=True, exist_ok=True)
-
     for variant in ["jsd", "informedness"]:
         variant_suffix = "jsd" if variant == "jsd" else "informedness-adaptive"
         pgd_label = "PolyGraph Discrepancy"
 
-        # Denoising figure (planar only)
         df_den = _load("denoising", "planar", variant)
         if df_den is not None:
             fname = f"model-quality_denoising-iterations_validity_polyscore_all_mmd_{variant_suffix}.pdf"
             _plot_multi_panel(
                 {"planar": df_den},
                 x_label="# Denoising Steps",
-                output_path=output_dir / fname,
+                output_path=OUTPUT_DIR / fname,
                 pgd_label=pgd_label,
             )
         else:
             logger.warning("No denoising results for planar/{}", variant)
 
-        # Training figure - all datasets
         training_data = {}
         for ds in DATASETS:
             df_train = _load("training", ds, variant)
@@ -329,7 +312,7 @@ def main(
             _plot_multi_panel(
                 training_data,
                 x_label="# Epochs",
-                output_path=output_dir / fname,
+                output_path=OUTPUT_DIR / fname,
                 pgd_label=pgd_label,
             )
 
@@ -338,19 +321,11 @@ def main(
                 _plot_multi_panel(
                     {"sbm": training_data["sbm"]},
                     x_label="# Epochs",
-                    output_path=output_dir / fname_sbm,
+                    output_path=OUTPUT_DIR / fname_sbm,
                     pgd_label=pgd_label,
                 )
         else:
             logger.warning("No training results for {}", variant)
-
-    # Copy from temp dir with suffixed filenames
-    if use_tmp and tmp_dir:
-        for pdf in tmp_dir.glob("*.pdf"):
-            dest = OUTPUT_DIR / (pdf.stem + results_suffix + pdf.suffix)
-            shutil.copy2(pdf, dest)
-            logger.info("Saved: {}", dest)
-        shutil.rmtree(tmp_dir)
 
     logger.success("Done.")
 

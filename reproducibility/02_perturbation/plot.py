@@ -764,26 +764,18 @@ def _load_results_dir(results_dir: Path) -> Dict[Tuple[str, str], dict]:
 
 
 @app.command()
-def main(
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
-    ),
-):
+def main():
     """Generate all perturbation figures for the paper."""
     setup_plotting()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Full-range results (noise in [0, 1])
     results_dir_full = (
         REPO_ROOT
         / "reproducibility"
         / "figures"
         / "02_perturbation"
-        / f"results{results_suffix}"
+        / "results"
     )
-    # Cropped results (noise up to PGS saturation, dense sampling)
     results_dir_cropped = (
         REPO_ROOT
         / "reproducibility"
@@ -791,15 +783,6 @@ def main(
         / "02_perturbation"
         / "results_cropped"
     )
-
-    import tempfile
-    import shutil
-
-    use_tmp = bool(results_suffix)
-    tmp_dir = Path(tempfile.mkdtemp()) if use_tmp else None
-    output_dir: Path = tmp_dir if tmp_dir is not None else OUTPUT_DIR
-    if use_tmp:
-        output_dir.mkdir(parents=True, exist_ok=True)
 
     data_full = _load_results_dir(results_dir_full)
     data_cropped = _load_results_dir(results_dir_cropped)
@@ -811,7 +794,6 @@ def main(
         )
         return
 
-    # Fall back to full data if cropped data is unavailable
     if not data_cropped:
         logger.warning(
             "No cropped results found in {}; using full data for cropped plots.",
@@ -826,24 +808,20 @@ def main(
     )
 
     for variant in ["jsd", "informedness"]:
-        plot_correlation_bars(data_cropped, "tabpfn", variant, output_dir)
+        plot_correlation_bars(data_cropped, "tabpfn", variant, OUTPUT_DIR)
         plot_metrics_vs_noise(
-            data_full, "tabpfn", variant, cropped=False, output_dir=output_dir
+            data_full, "tabpfn", variant, cropped=False, output_dir=OUTPUT_DIR
         )
         plot_metrics_vs_noise(
-            data_cropped, "tabpfn", variant, cropped=True, output_dir=output_dir
+            data_cropped,
+            "tabpfn",
+            variant,
+            cropped=True,
+            output_dir=OUTPUT_DIR,
         )
 
     for variant in ["jsd", "informedness"]:
-        plot_lr_vs_tabpfn(data_cropped, variant, output_dir)
-
-    # Copy from temp dir with suffixed filenames
-    if use_tmp and tmp_dir:
-        for pdf in tmp_dir.glob("*.pdf"):
-            dest = OUTPUT_DIR / (pdf.stem + results_suffix + pdf.suffix)
-            shutil.copy2(pdf, dest)
-            logger.info("Saved: {}", dest)
-        shutil.rmtree(tmp_dir)
+        plot_lr_vs_tabpfn(data_cropped, variant, OUTPUT_DIR)
 
     logger.success("Done.")
 
@@ -852,11 +830,6 @@ def main(
 def single_dataset(
     dataset: str = typer.Argument(
         ..., help="Dataset name (e.g. sbm, planar, lobster)"
-    ),
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir (e.g. _tabpfn_weights_v2.5)",
     ),
     perturbation: Optional[str] = typer.Option(
         None, "--perturbation", help="Single perturbation type; omit for all"
@@ -873,7 +846,7 @@ def single_dataset(
         / "reproducibility"
         / "figures"
         / "02_perturbation"
-        / f"results{results_suffix}"
+        / "results"
     )
     all_data = _load_results_dir(results_dir)
     if not all_data:

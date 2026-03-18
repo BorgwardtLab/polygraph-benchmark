@@ -121,15 +121,9 @@ def generate_table(concat_results: Dict, bench_results: Dict) -> str:
 
 
 @app.command()
-def main(
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
-    ),
-):
-    results_dir = OUTPUT_DIR / "results" / f"concatenation{results_suffix}"
-    benchmark_dir = OUTPUT_DIR / "results" / f"benchmark{results_suffix}"
+def main():
+    results_dir = OUTPUT_DIR / "results" / "concatenation"
+    benchmark_dir = OUTPUT_DIR / "results" / "benchmark"
     concat_results = load_results(results_dir)
     bench_results = load_results(benchmark_dir)
 
@@ -139,7 +133,7 @@ def main(
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     table = generate_table(concat_results, bench_results)
-    out = OUTPUT_DIR / f"concatenation{results_suffix}.tex"
+    out = OUTPUT_DIR / "concatenation.tex"
     out.write_text(table)
     logger.success("Saved: {}", out)
 

@@ -168,15 +168,9 @@ def generate_benchmark_table(all_results: Dict) -> str:
 
 
 @app.command()
-def main(
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir and output files (e.g. _tabpfn_v6)",
-    ),
-):
+def main():
     """Generate LaTeX tables from pre-computed JSON results."""
-    results_dir = OUTPUT_DIR / "results" / f"benchmark{results_suffix}"
+    results_dir = OUTPUT_DIR / "results" / "benchmark"
     result_list = load_results(results_dir)
     if not result_list:
         logger.error(
@@ -188,7 +182,7 @@ def main(
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     table = generate_benchmark_table(all_results)
-    out = OUTPUT_DIR / f"benchmark_results{results_suffix}.tex"
+    out = OUTPUT_DIR / "benchmark_results.tex"
     out.write_text(table)
     logger.success("Table saved to: {}", out)
 

@@ -343,23 +343,8 @@ def generate_denoising_pgs_table(variant: str = "jsd") -> str:
 
 
 @app.command()
-def main(
-    results_suffix: str = typer.Option(
-        "",
-        "--results-suffix",
-        help="Suffix for results dir (e.g. _tabpfn_weights_v2.5)",
-    ),
-):
+def main():
     """Generate all model quality LaTeX tables."""
-    global RESULTS_DIR
-    RESULTS_DIR = (
-        REPO_ROOT
-        / "reproducibility"
-        / "figures"
-        / "03_model_quality"
-        / f"results{results_suffix}"
-    )
-    logger.info("Using results dir: {}", RESULTS_DIR)
 
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
