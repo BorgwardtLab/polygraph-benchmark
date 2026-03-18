@@ -11,6 +11,11 @@ from typing import Any, Mapping, Optional
 
 
 def _json_default(obj: Any) -> Any:
+    """Fallback serializer for ``json.dumps``.
+
+    Handles datetime objects, numpy scalars (via ``.item()``),
+    and Path objects. Everything else is cast to ``str``.
+    """
     if isinstance(obj, (dt.datetime, dt.date)):
         return obj.isoformat()
     if hasattr(obj, "item"):
