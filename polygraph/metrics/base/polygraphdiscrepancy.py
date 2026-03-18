@@ -304,14 +304,13 @@ def _descriptions_to_classifier_metric(
     ref_descriptions: Union[np.ndarray, csr_array],
     gen_descriptions: Union[np.ndarray, csr_array],
     variant: Literal["informedness", "jsd"] = "jsd",
-    classifier: Optional[ClassifierProtocol] = None,
+    *,
+    classifier: ClassifierProtocol,
     rng: Optional[np.random.Generator] = None,
     scale: bool = True,
 ) -> Tuple[float, Union[int, float]]:
     # scale=False is needed for kernel-based classifiers (e.g. GKLR)
     # that operate on precomputed kernel matrices, not raw features.
-    if classifier is None:
-        classifier = default_classifier()
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
@@ -451,7 +450,7 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
+    _classifier: ClassifierProtocol
 
     def __init__(
         self,
@@ -463,7 +462,9 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
-        self._classifier = classifier
+        self._classifier = (
+            classifier if classifier is not None else default_classifier()
+        )
 
     def compute(
         self, generated_graphs: Collection[GraphType]
@@ -497,7 +498,7 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
 
 class _ClassifierMetricSamples(Generic[GraphType]):
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
+    _classifier: ClassifierProtocol
 
     def __init__(
         self,
@@ -510,7 +511,9 @@ class _ClassifierMetricSamples(Generic[GraphType]):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
-        self._classifier = classifier
+        self._classifier = (
+            classifier if classifier is not None else default_classifier()
+        )
         self._scale = scale
 
     def compute(
@@ -559,7 +562,6 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
@@ -568,9 +570,12 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Optional[ClassifierProtocol] = None,
     ):
+        resolved = (
+            classifier if classifier is not None else default_classifier()
+        )
         self._sub_metrics = {
             name: ClassifierMetric(
-                reference_graphs, descriptors[name], variant, classifier
+                reference_graphs, descriptors[name], variant, resolved
             )
             for name in descriptors
         }
@@ -622,7 +627,6 @@ class PolyGraphDiscrepancyInterval(
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
@@ -639,9 +643,12 @@ class PolyGraphDiscrepancyInterval(
                 "Number of reference graphs must be at least 2 * subsample_size"
             )
 
+        resolved = (
+            classifier if classifier is not None else default_classifier()
+        )
         self._sub_metrics = {
             name: _ClassifierMetricSamples(
-                reference_graphs, descriptors[name], variant, classifier, scale
+                reference_graphs, descriptors[name], variant, resolved, scale
             )
             for name in descriptors
         }
