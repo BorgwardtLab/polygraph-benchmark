@@ -8,7 +8,6 @@ max_noise_level: 1.0
 subset: false
 tabpfn_only: false
 tabpfn_weights_version: "v2.5"
-results_suffix: ""
 classifiers:
   - tabpfn
   - lr

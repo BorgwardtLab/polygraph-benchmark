@@ -101,8 +101,7 @@ def get_reference_dataset(
 )
 def main(cfg: DictConfig) -> None:
     """Compute VUN for all denoising-iteration checkpoints and patch result JSONs."""
-    results_suffix: str = cfg.get("results_suffix", "")
-    RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
+    RESULTS_DIR = _RESULTS_DIR_BASE / "results"
 
     dataset: str = cfg.dataset
     iso_timeout: int = cfg.get("iso_timeout", 10)

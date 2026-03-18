@@ -501,9 +501,8 @@ def evaluate_metrics(
 )
 def main(cfg: DictConfig) -> None:
     """Compute perturbation metrics for one (dataset, perturbation) pair."""
-    results_suffix: str = cfg.get("results_suffix", "")
     tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
-    RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
+    RESULTS_DIR = _RESULTS_DIR_BASE / "results"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset: str = cfg.dataset

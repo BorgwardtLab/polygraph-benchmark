@@ -3,7 +3,6 @@ dataset: planar
 model: AUTOGRAPH
 subset: false
 tabpfn_weights_version: "v2.5"
-results_suffix: ""
 
 hydra:
   job:

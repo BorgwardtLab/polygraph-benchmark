@@ -6,7 +6,6 @@ num_graphs: 2048
 subset: false
 pgd_only: false
 tabpfn_weights_version: "v2.5"
-results_suffix: ""
 
 hydra:
   job:

@@ -205,9 +205,8 @@ def compute_pgs_concatenated(
 )
 def main(cfg: DictConfig) -> None:
     """Compute concatenation metrics for one (dataset, model) pair and save as JSON."""
-    results_suffix: str = cfg.get("results_suffix", "")
     tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
-    RESULTS_DIR = _RESULTS_DIR_BASE / f"concatenation{results_suffix}"
+    RESULTS_DIR = _RESULTS_DIR_BASE / "concatenation"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = cfg.dataset

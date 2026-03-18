@@ -123,11 +123,8 @@ def get_reference_dataset(
 )
 def main(cfg: DictConfig) -> None:
     """Compute PGD for one (dataset, model, subsample_size) cell."""
-    results_suffix: str = cfg.get("results_suffix", "")
     tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
-    RESULTS_DIR = (
-        EXPERIMENT_RESULTS_DIR / f"{Path(__file__).stem}{results_suffix}"
-    )
+    RESULTS_DIR = EXPERIMENT_RESULTS_DIR / Path(__file__).stem
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset: str = cfg.dataset

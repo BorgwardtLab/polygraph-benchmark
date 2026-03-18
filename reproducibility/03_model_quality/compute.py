@@ -86,9 +86,8 @@ def get_reference_dataset(
 )
 def main(cfg: DictConfig) -> None:
     """Compute PGD, MMD, and validity for all checkpoints."""
-    results_suffix: str = cfg.get("results_suffix", "")
     tabpfn_weights_version: str = cfg.get("tabpfn_weights_version", "v2.5")
-    RESULTS_DIR = _RESULTS_DIR_BASE / f"results{results_suffix}"
+    RESULTS_DIR = _RESULTS_DIR_BASE / "results"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     curve_type = cfg.curve_type
