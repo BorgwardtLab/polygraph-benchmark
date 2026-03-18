@@ -7,8 +7,7 @@ the metric baseline. This produces the PGD rows of train_test_reference_values.t
 Usage:
     python compute.py                                              # Single run
     python compute.py --multirun                                   # All datasets
-    python compute.py --multirun hydra/launcher=slurm_gpu          # On SLURM (p.hpcl8)
-    python compute.py --multirun hydra/launcher=slurm_gpu_hpcl93   # On SLURM (p.hpcl93)
+    python compute.py --multirun hydra/launcher=slurm_gpu          # On SLURM
     python compute.py --multirun subset=true                       # Quick test
 """
 

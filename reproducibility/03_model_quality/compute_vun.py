@@ -9,7 +9,7 @@ Usage:
     python compute_vun.py
 
     # Submit to SLURM via Hydra multirun
-    python compute_vun.py --multirun hydra/launcher=slurm_cpu_hpcl94c
+    python compute_vun.py --multirun hydra/launcher=slurm_cpu
 """
 
 import json

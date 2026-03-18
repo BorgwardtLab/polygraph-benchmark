@@ -1,13 +1,13 @@
 # CPU-only SLURM configuration.
-# Uses a combined partition so jobs can land on hpcl94c or hpcl8.
 #
-# Usage:
-#   python XX/compute.py --multirun hydra/launcher=slurm_cpu
+# Override partition for your cluster:
+#   python XX/compute.py --multirun hydra/launcher=slurm_cpu \
+#     hydra.launcher.partition=YOUR_PARTITION
 
 defaults:
   - submitit_slurm
 
-partition: p.hpcl93,p.hpcl94c,p.hpcl8
+partition: TODO_SET_YOUR_CPU_PARTITION
 timeout_min: 1440
 nodes: 1
 tasks_per_node: 1
