@@ -103,5 +103,5 @@ def test_smoke_molecule_pgd():
     metric = MoleculePGD(mols_a)
     metric.compute(mols_b)
 
-    metric = MoleculePGDInterval(mols_a, subsample_size=8, num_samples=4)
+    metric = MoleculePGDInterval(mols_a, subsample_size=4, num_samples=4)
     metric.compute(mols_b)
