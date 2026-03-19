@@ -64,7 +64,6 @@ def are_smiles_equivalent(smiles1, smiles2):
     return canonical_smiles1 == canonical_smiles2
 
 
-
 def smiles_with_explicit_hydrogens(smiles: str, canonical: bool = True) -> str:
     """Convert a SMILES string to a SMILES string with all hydrogens made explicit.
 

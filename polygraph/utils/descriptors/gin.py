@@ -231,9 +231,7 @@ class GIN(nn.Module):
             elif isinstance(m, nn.ModuleList):
                 pass
             else:
-                raise TypeError(
-                    f"Unexpected module type: {type(m)}"
-                )
+                raise TypeError(f"Unexpected module type: {type(m)}")
 
         self.num_layers = num_layers
         self.learn_eps = learn_eps

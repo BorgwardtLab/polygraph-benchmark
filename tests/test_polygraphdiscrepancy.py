@@ -88,9 +88,7 @@ def test_classifier_metric_tabpfn(
 
 
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_polygraphdiscrepancy_logistic(
-    variant, dense_graphs, sparse_graphs
-):
+def test_polygraphdiscrepancy_logistic(variant, dense_graphs, sparse_graphs):
     descriptors = {
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
