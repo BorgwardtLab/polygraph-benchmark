@@ -46,8 +46,7 @@ Example:
 """
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
-from typing import Any, Iterable, Union, Literal, Generic
+from typing import Any, Iterable, NamedTuple, Union, Literal, Generic
 from typing_extensions import TypeAlias
 
 import numpy as np
@@ -65,9 +64,11 @@ from polygraph.utils.descriptors import GraphDescriptor
 
 MatrixLike: TypeAlias = Union[np.ndarray, csr_array]
 
-GramBlocks = namedtuple(
-    "GramBlocks", ["ref_vs_ref", "ref_vs_gen", "gen_vs_gen"]
-)
+
+class GramBlocks(NamedTuple):
+    ref_vs_ref: np.ndarray
+    ref_vs_gen: np.ndarray
+    gen_vs_gen: np.ndarray
 
 
 class DescriptorKernel(ABC, Generic[GraphType]):
@@ -332,7 +333,7 @@ class RBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         if isinstance(x, csr_array) and isinstance(y, csr_array):
             comparison = sparse_euclidean(x, y) ** 2
         else:
-            comparison = pairwise_distances(x, y, metric="l2") ** 2
+            comparison = pairwise_distances(x, y, metric="sqeuclidean")
 
         if isinstance(self.bw, np.ndarray):
             if self.bw.ndim != 1:
@@ -398,16 +399,18 @@ class AdaptiveRBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         if isinstance(x, csr_array) and isinstance(y, csr_array):
             comparison = sparse_euclidean(x, y) ** 2
         else:
-            comparison = pairwise_distances(x, y, metric="l2") ** 2
+            comparison = pairwise_distances(x, y, metric="sqeuclidean")
         return comparison
 
     def adapt(self, blocks: GramBlocks) -> GramBlocks:
         ref_ref, ref_gen, gen_gen = blocks
 
         if self._variant == "mean":
-            mult = np.sqrt(np.mean(ref_gen)) if np.mean(ref_gen) > 0 else 1
+            center = np.mean(ref_gen)
+            mult = np.sqrt(center) if center > 0 else 1
         elif self._variant == "median":
-            mult = np.sqrt(np.median(ref_gen)) if np.median(ref_gen) > 0 else 1
+            center = np.median(ref_gen)
+            mult = np.sqrt(center) if center > 0 else 1
         else:
             raise NotImplementedError
 

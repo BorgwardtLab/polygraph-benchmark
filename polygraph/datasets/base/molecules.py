@@ -28,16 +28,6 @@ BOND_TYPES = [
     Chem.rdchem.BondType.ZERO,
 ]
 
-BOND_STEREO_TYPES = [
-    Chem.rdchem.BondStereo.STEREONONE,
-    Chem.rdchem.BondStereo.STEREOZ,
-    Chem.rdchem.BondStereo.STEREOE,
-    Chem.rdchem.BondStereo.STEREOCIS,
-    Chem.rdchem.BondStereo.STEREOTRANS,
-    Chem.rdchem.BondStereo.STEREOANY,
-    Chem.rdchem.BondStereo.STEREOATROPCCW,
-    Chem.rdchem.BondStereo.STEREOATROPCW,
-]
 
 # Generalized atom vocabulary for all molecules
 N_UNIQUE_ATOMS = 119
@@ -73,14 +63,6 @@ def are_smiles_equivalent(smiles1, smiles2):
 
     return canonical_smiles1 == canonical_smiles2
 
-
-def mol2smiles(mol, canonical: bool = False):
-    try:
-        Chem.SanitizeMol(mol)
-    except ValueError as e:
-        print(e, mol)
-        return None
-    return Chem.MolToSmiles(mol, canonical=canonical)
 
 
 def smiles_with_explicit_hydrogens(smiles: str, canonical: bool = True) -> str:

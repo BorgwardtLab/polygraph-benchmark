@@ -171,7 +171,7 @@ def _scores_to_informedness_and_threshold(
     )
     if ref_scores.ndim != 1:
         raise RuntimeError(
-            "ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report."
+            f"ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report."
         )
 
     assert ref_scores.ndim == 1 and gen_scores.ndim == 1
@@ -587,9 +587,9 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
 
         Returns:
             Typed dictionary of scores.
-                The key `"polygraphscore"` specifies the PolyGraphDiscrepancy, giving the estimated tightest lower-bound on the probability metric.
-                The key `"polygraphscore_descriptor"` specifies the descriptor that achieves this bound.
-                All descritor-wise scores are returned in the key `"subscores"`.
+                The key `"pgd"` specifies the PolyGraphDiscrepancy, giving the estimated tightest lower-bound on the probability metric.
+                The key `"pgd_descriptor"` specifies the descriptor that achieves this bound.
+                All descriptor-wise scores are returned in the key `"subscores"`.
         """
         all_metrics = {
             name: metric.compute(generated_graphs)
@@ -665,7 +665,7 @@ class PolyGraphDiscrepancyInterval(
             Typed dictionary of scores.
                 The key `"pgd"` specifies the PolyGraphDiscrepancy, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
                 The key `"pgd_descriptor"` describes which descriptors achieve this score. This is a dictionary mapping descriptor names to the ratio of samples in which the descriptor was chosen.
-                All descritor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
+                All descriptor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
         """
         if len(generated_graphs) < 2 * self._subsample_size:
             raise ValueError(

@@ -64,18 +64,6 @@ class MetricInterval:
 
         return cls(mean=mean, std=std, low=low, high=high, coverage=coverage)
 
-    def __getitem__(self, key: str) -> Optional[float]:
-        if key == "mean":
-            return self.mean
-        elif key == "std":
-            return self.std
-        elif key == "low":
-            return self.low
-        elif key == "high":
-            return self.high
-        else:
-            raise ValueError(f"Invalid key: {key}")
-
     def __repr__(self):
         if self.coverage is not None:
             return f"MetricInterval(mean={self.mean}, std={self.std}, low={self.low}, high={self.high}, coverage={self.coverage})"

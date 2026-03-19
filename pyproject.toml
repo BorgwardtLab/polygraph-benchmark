@@ -31,7 +31,8 @@ dependencies = [
     "numba>=0.60.0,<0.62.0",
     "scikit-learn>=1.6.1,<2.0",
     "tabpfn>=2.0.9",
-    "fcd~=1.2.2"
+    "fcd~=1.2.2",
+    "tqdm"
 ]
 
 [project.optional-dependencies]
@@ -60,7 +61,6 @@ dev = [
     "typer",
     "hydra-core",
     "matplotlib",
-    "tqdm",
     "pymupdf>=1.27.1,<2",
     "pillow",
 ]

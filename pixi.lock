@@ -5,8 +5,6 @@ environments:
     - url: https://conda.anaconda.org/conda-forge/
     indexes:
     - https://pypi.org/simple
-    options:
-      pypi-prerelease-mode: if-necessary-or-explicit
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -308,7 +306,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/3c/c1/d73f12f8cdb1891334a2ccf7389eed244d3941e74d80dd220badb937f3fb/wcwidth-0.5.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2d/4b/55ab404c56cd70a2cf5ecfe484838865d0fea5627365c6c8ca156bd09c8f/xxhash-3.6.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/35/9f/06b765d45c0e44e8ecf0fe15c9eacbbde342bb5b7561c46944f107bfb6c3/yarl-1.22.0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: ./
+      - pypi: .
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/_openmp_mutex-4.5-7_kmp_llvm.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/atk-1.0-2.38.0-hd03087b_2.conda
@@ -550,7 +548,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/3c/c1/d73f12f8cdb1891334a2ccf7389eed244d3941e74d80dd220badb937f3fb/wcwidth-0.5.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a3/b1/93508d9460b292c74a09b83d16750c52a0ead89c51eea9951cb97a60d959/xxhash-3.6.0-cp310-cp310-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/b8/12/5b274d8a0f30c07b91b2f02cba69152600b47830fcfb465c108880fcee9c/yarl-1.22.0-cp310-cp310-macosx_11_0_arm64.whl
-      - pypi: ./
+      - pypi: .
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
   sha256: fe51de6107f9edc7aa4f786a70f4a883943bc9d39b3bb7307c04c41410990726
@@ -4454,10 +4452,10 @@ packages:
   - pytest-benchmark ; extra == 'testing'
   - coverage ; extra == 'testing'
   requires_python: '>=3.9'
-- pypi: ./
+- pypi: .
   name: polygraph-benchmark
   version: 1.0.2
-  sha256: 47b7f448b53df0cd38caa2c426975e27fd02ffca97f684164d34eaf4e1355b54
+  sha256: 22dabd55b5971f9156be539bb4df38e0259ae2ff4c19d5c256df7f5e373ae081
   requires_dist:
   - numpy>=1.26.4,<3.0
   - torch>=2.4.0,<3.0
@@ -4476,6 +4474,7 @@ packages:
   - scikit-learn>=1.6.1,<2.0
   - tabpfn>=2.0.9
   - fcd~=1.2.2
+  - tqdm
   - hydra-submitit-launcher ; extra == 'cluster'
   - pytest ; extra == 'dev'
   - pytest-xdist ; extra == 'dev'
@@ -4498,10 +4497,10 @@ packages:
   - typer ; extra == 'dev'
   - hydra-core ; extra == 'dev'
   - matplotlib ; extra == 'dev'
-  - tqdm ; extra == 'dev'
   - pymupdf>=1.27.1,<2 ; extra == 'dev'
   - pillow ; extra == 'dev'
   requires_python: '>=3.9'
+  editable: true
 - pypi: https://files.pythonhosted.org/packages/a7/4b/e4759803793843ce2258ddef3b3a744bdf0318c77c3ac10560683a2eee60/posthog-6.9.3-py3-none-any.whl
   name: posthog
   version: 6.9.3

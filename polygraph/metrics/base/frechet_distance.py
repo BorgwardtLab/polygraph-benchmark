@@ -1,5 +1,4 @@
-from collections import namedtuple
-from typing import Callable, Collection, Generic
+from typing import Callable, Collection, Generic, NamedTuple
 
 import numpy as np
 import scipy
@@ -10,7 +9,10 @@ from polygraph.metrics.base.interface import GenerationMetric
 
 __all__ = ["FittedFrechetDistance", "FrechetDistance"]
 
-GaussianParameters = namedtuple("GaussianParameters", ["mean", "covariance"])
+
+class GaussianParameters(NamedTuple):
+    mean: np.ndarray
+    covariance: np.ndarray
 
 
 def compute_wasserstein_distance(
@@ -112,7 +114,6 @@ class FittedFrechetDistance(GenerationMetric[GraphType], Generic[GraphType]):
     ):
         self._reference_gaussian = fitted_gaussian
         self._descriptor_fn = descriptor_fn
-        self._dim = None
 
     def compute(self, generated_graphs: Collection[GraphType]) -> float:
         """Computes Frechet distance between reference and generated graphs.

@@ -50,7 +50,7 @@ class GINConv(MessagePassing):
     def forward(self, x, edge_index, edge_weight=None, edge_attr=None):
         # Handle optional edge weight
         if edge_weight is not None:
-            assert False
+            raise ValueError("edge_weight is not supported")
 
         # Propagate messages with optional edge attributes
         out = self.propagate(
@@ -92,7 +92,7 @@ class ApplyNodeFunc(nn.Module):
     """Update the node feature hv with MLP, BN and ReLU."""
 
     def __init__(self, mlp):
-        super(ApplyNodeFunc, self).__init__()
+        super().__init__()
         self.mlp = mlp
         self.bn = nn.BatchNorm1d(self.mlp.output_dim)
 
@@ -109,7 +109,7 @@ class MLP(nn.Module):
     def __init__(self, num_layers, input_dim, hidden_dim, output_dim):
         """MLP layers construction
 
-        Paramters
+        Parameters
         ---------
         num_layers: int
             The number of linear layers
@@ -121,7 +121,7 @@ class MLP(nn.Module):
             The number of classes for prediction
 
         """
-        super(MLP, self).__init__()
+        super().__init__()
         self.linear_or_not = True  # default is linear model
         self.num_layers = num_layers
         self.output_dim = output_dim
@@ -178,7 +178,7 @@ class GIN(nn.Module):
     ):
         """model parameters setting
 
-        Paramters
+        Parameters
         ---------
         num_layers: int
             The number of linear layers in the neural network
@@ -231,7 +231,9 @@ class GIN(nn.Module):
             elif isinstance(m, nn.ModuleList):
                 pass
             else:
-                raise Exception()
+                raise TypeError(
+                    f"Unexpected module type: {type(m)}"
+                )
 
         self.num_layers = num_layers
         self.learn_eps = learn_eps

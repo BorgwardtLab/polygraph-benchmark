@@ -2,7 +2,7 @@ import hashlib
 import os
 import shutil
 import urllib.request
-from typing import Any, Optional, Sequence
+from typing import Optional
 
 import filelock
 import torch
@@ -87,10 +87,3 @@ def load_from_cache(
     logger.debug(f"Loading data from {path}")
     data = torch.load(path, weights_only=True, mmap=mmap)
     return GraphStorage(**data)
-
-
-def to_list(value: Any) -> Sequence:
-    if isinstance(value, Sequence) and not isinstance(value, str):
-        return value
-    else:
-        return [value]

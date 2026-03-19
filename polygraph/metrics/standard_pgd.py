@@ -61,6 +61,23 @@ __all__ = [
 ]
 
 
+def _standard_descriptors():
+    return {
+        "orbit4": OrbitCounts(graphlet_size=4),
+        "orbit5": OrbitCounts(graphlet_size=5),
+        "clustering": ClusteringHistogram(bins=100),
+        "degree": SparseDegreeHistogram(),
+        "spectral": EigenvalueHistogram(),
+        "gin": RandomGIN(
+            node_feat_loc=None,
+            input_dim=1,
+            edge_feat_loc=None,
+            edge_feat_dim=0,
+            seed=42,
+        ),
+    }
+
+
 class StandardPGD(PolyGraphDiscrepancy[nx.Graph]):
     """PolyGraphDiscrepancy metric that combines six different graph descriptors.
 
@@ -84,20 +101,7 @@ class StandardPGD(PolyGraphDiscrepancy[nx.Graph]):
     ):
         super().__init__(
             reference_graphs=reference_graphs,
-            descriptors={
-                "orbit4": OrbitCounts(graphlet_size=4),
-                "orbit5": OrbitCounts(graphlet_size=5),
-                "clustering": ClusteringHistogram(bins=100),
-                "degree": SparseDegreeHistogram(),
-                "spectral": EigenvalueHistogram(),
-                "gin": RandomGIN(
-                    node_feat_loc=None,
-                    input_dim=1,
-                    edge_feat_loc=None,
-                    edge_feat_dim=0,
-                    seed=42,
-                ),
-            },
+            descriptors=_standard_descriptors(),
             variant=variant,
             classifier=classifier,
         )
@@ -126,20 +130,7 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
     ):
         super().__init__(
             reference_graphs=reference_graphs,
-            descriptors={
-                "orbit4": OrbitCounts(graphlet_size=4),
-                "orbit5": OrbitCounts(graphlet_size=5),
-                "clustering": ClusteringHistogram(bins=100),
-                "degree": SparseDegreeHistogram(),
-                "spectral": EigenvalueHistogram(),
-                "gin": RandomGIN(
-                    node_feat_loc=None,
-                    input_dim=1,
-                    edge_feat_loc=None,
-                    edge_feat_dim=0,
-                    seed=42,
-                ),
-            },
+            descriptors=_standard_descriptors(),
             variant="jsd",
             classifier=classifier,
             subsample_size=subsample_size,
