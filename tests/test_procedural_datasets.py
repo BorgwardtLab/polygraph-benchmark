@@ -17,6 +17,8 @@ ALL_PROCEDURAL_DATASETS = [
 ]
 
 
+@pytest.mark.slow
+@pytest.mark.xdist_group("graph_tool")
 @pytest.mark.parametrize("ds_cls", ALL_PROCEDURAL_DATASETS)
 def test_split_disjointness(ds_cls):
     train = ds_cls("train", num_graphs=20)
@@ -28,10 +30,12 @@ def test_split_disjointness(ds_cls):
     metrics = vun.compute(val.to_nx())
     assert metrics["novel"] == 1.0
     assert metrics["unique"] == 1.0
+    valid = metrics["valid"]
+    assert isinstance(valid, float)
     if ds_cls != ProceduralSBMGraphDataset:
-        assert metrics["valid"] == 1.0
+        assert valid == 1.0
     else:
-        assert metrics["valid"] >= 0.7
+        assert valid >= 0.7
 
 
 @pytest.mark.parametrize("ds_cls", ALL_PROCEDURAL_DATASETS)

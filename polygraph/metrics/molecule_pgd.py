@@ -63,6 +63,18 @@ __all__ = [
 ]
 
 
+def _molecule_descriptors():
+    return {
+        "topochemical": TopoChemicalDescriptor(),
+        "morgan_fingerprint": FingerprintDescriptor(
+            algorithm="morgan", dim=128
+        ),
+        "chemnet": ChemNetDescriptor(dim=128),
+        "molclr": MolCLRDescriptor(dim=128),
+        "lipinski": LipinskiDescriptor(),
+    }
+
+
 class MoleculePGD(PolyGraphDiscrepancy[rdkit.Chem.Mol]):
     """MoleculePGD to compare molecule distributions, combining different molecule descriptors.
 
@@ -73,15 +85,7 @@ class MoleculePGD(PolyGraphDiscrepancy[rdkit.Chem.Mol]):
     def __init__(self, reference_molecules: Collection[rdkit.Chem.Mol]):
         super().__init__(
             reference_graphs=reference_molecules,
-            descriptors={
-                "topochemical": TopoChemicalDescriptor(),
-                "morgan_fingerprint": FingerprintDescriptor(
-                    algorithm="morgan", dim=128
-                ),
-                "chemnet": ChemNetDescriptor(dim=128),
-                "molclr": MolCLRDescriptor(dim=128),
-                "lipinski": LipinskiDescriptor(),
-            },
+            descriptors=_molecule_descriptors(),
             variant="jsd",
             classifier=None,
         )
@@ -106,15 +110,7 @@ class MoleculePGDInterval(PolyGraphDiscrepancyInterval[rdkit.Chem.Mol]):
     ):
         super().__init__(
             reference_graphs=reference_molecules,
-            descriptors={
-                "topochemical": TopoChemicalDescriptor(),
-                "morgan_fingerprint": FingerprintDescriptor(
-                    algorithm="morgan", dim=128
-                ),
-                "chemnet": ChemNetDescriptor(dim=128),
-                "molclr": MolCLRDescriptor(dim=128),
-                "lipinski": LipinskiDescriptor(),
-            },
+            descriptors=_molecule_descriptors(),
             subsample_size=subsample_size,
             num_samples=num_samples,
             variant="jsd",

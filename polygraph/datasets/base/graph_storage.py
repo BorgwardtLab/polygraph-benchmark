@@ -117,7 +117,7 @@ class GraphStorage(BaseModel):
         if self.indexing_info is None:
             self._compute_indexing_info()
         if self.module_version is None:
-            self.module_version = version("polygraph")
+            self.module_version = version("polygraph-benchmark")
 
     def get_example(self, idx: int) -> Data:
         """Retrieve a single graph from the collection.

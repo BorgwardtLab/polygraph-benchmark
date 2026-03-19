@@ -1,0 +1,19 @@
+# Config for 05_benchmark/compute.py
+dataset: planar
+model: AUTOGRAPH
+subset: false
+skip_vun: false
+tabpfn_weights_version: "v2.5"
+
+hydra:
+  job:
+    name: exp05_bench
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: planar,lobster,sbm,proteins
+      model: AUTOGRAPH,DIGRESS,GRAN,ESGG

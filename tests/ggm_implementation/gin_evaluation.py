@@ -31,7 +31,9 @@ def load_feature_extractor(
         model_path = kwargs.get('model_path')
         assert model_path is not None, 'Please pass model_path if use_pretrained=True'
         print('loaded', model_path)
-        saved_model = torch.load(model_path)
+        # weights_only=False: checkpoint contains nested dicts from
+        # the reference GGM implementation, not just state_dict tensors.
+        saved_model = torch.load(model_path, weights_only=False)
         model.load_state_dict(saved_model['model_state_dict'])
 
     model.eval()

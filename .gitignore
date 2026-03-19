@@ -9,6 +9,14 @@ experiments/*/figures/*.png
 experiments/*/results/*.csv
 experiments/*/tables/*.tex
 experiments/model_benchmark/benchmark_results.tex
+multirun/
+
+# Reproducibility generated outputs
+reproducibility/figures/**/*.pdf
+reproducibility/figures/**/results/
+reproducibility/figures/**/results_*/
+reproducibility/tables/results/
+reproducibility/figure_comparison/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

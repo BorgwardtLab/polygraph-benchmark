@@ -1,0 +1,19 @@
+# GPU SLURM configuration for TabPFN acceleration.
+#
+# Override partition for your cluster:
+#   python XX/compute.py --multirun hydra/launcher=slurm_gpu \
+#     hydra.launcher.partition=YOUR_PARTITION
+
+defaults:
+  - submitit_slurm
+
+partition: TODO_SET_YOUR_GPU_PARTITION
+timeout_min: 1440
+nodes: 1
+tasks_per_node: 1
+cpus_per_task: 8
+gpus_per_node: 1
+mem_gb: 32
+setup:
+  - export TABPFN_ALLOW_CPU_LARGE_DATASET=1
+array_parallelism: 1024

@@ -7,4 +7,3 @@ dependencies:
   - graph-tool
   - pip:
       - -e .[dev]
-

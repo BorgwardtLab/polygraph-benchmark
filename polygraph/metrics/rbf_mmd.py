@@ -57,6 +57,10 @@ from polygraph.utils.descriptors import (
 from polygraph.utils.kernels import AdaptiveRBFKernel
 from polygraph.metrics.base import MetricCollection
 
+_DEFAULT_RBF_BANDWIDTHS = np.array(
+    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
+)
+
 __all__ = [
     "RBFMMD2Benchmark",
     "RBFMMD2BenchmarkInterval",
@@ -139,9 +143,7 @@ class RBFOrbitMMD2(MaxDescriptorMMD2[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=OrbitCounts(),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             variant="biased",
         )
@@ -159,9 +161,7 @@ class RBFOrbitMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=OrbitCounts(),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             subsample_size=subsample_size,
             num_samples=num_samples,
@@ -176,9 +176,7 @@ class RBFClusteringMMD2(MaxDescriptorMMD2[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=ClusteringHistogram(bins=100),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             variant="biased",
         )
@@ -196,9 +194,7 @@ class RBFClusteringMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=ClusteringHistogram(bins=100),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             subsample_size=subsample_size,
             num_samples=num_samples,
@@ -213,9 +209,7 @@ class RBFDegreeMMD2(MaxDescriptorMMD2[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=SparseDegreeHistogram(),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             variant="biased",
         )
@@ -233,9 +227,7 @@ class RBFDegreeMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=SparseDegreeHistogram(),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             subsample_size=subsample_size,
             num_samples=num_samples,
@@ -250,9 +242,7 @@ class RBFSpectralMMD2(MaxDescriptorMMD2[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=EigenvalueHistogram(),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             variant="biased",
         )
@@ -270,9 +260,7 @@ class RBFSpectralMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
             reference_graphs=reference_graphs,
             kernel=AdaptiveRBFKernel(
                 descriptor_fn=EigenvalueHistogram(),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             subsample_size=subsample_size,
             num_samples=num_samples,
@@ -304,9 +292,7 @@ class RBFGraphNeuralNetworkMMD2(MaxDescriptorMMD2[nx.Graph]):
                     ),
                     reference_graphs,
                 ),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             variant="biased",
         )
@@ -338,9 +324,7 @@ class RBFGraphNeuralNetworkMMD2Interval(MaxDescriptorMMD2Interval[nx.Graph]):
                     ),
                     reference_graphs,
                 ),
-                bw=np.array(
-                    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0]
-                ),
+                bw=_DEFAULT_RBF_BANDWIDTHS,
             ),
             subsample_size=subsample_size,
             num_samples=num_samples,

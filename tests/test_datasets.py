@@ -38,7 +38,7 @@ ALL_DATASETS = [
 def ds_instance(request):
     ds_cls = request.param
     if issubclass(ds_cls, ProceduralGraphDataset):
-        ds = ds_cls(split="train", num_graphs=10)
+        ds = ds_cls(split="train", num_graphs=10)  # type: ignore[call-arg]
     else:
         ds = ds_cls(split="train")
     return ds

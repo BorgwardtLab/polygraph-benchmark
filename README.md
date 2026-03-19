@@ -243,6 +243,172 @@ The following results mirror the tables from [our paper](https://arxiv.org/abs/2
 
 <sub>* AutoGraph* denotes a variant that leverages additional training heuristics as described in the [paper](https://arxiv.org/abs/2510.06122).</sub>
 
+## Reproducibility
+
+The [`reproducibility/`](reproducibility/) directory contains scripts to reproduce all tables and figures from the paper.
+
+### Quick Start
+
+```bash
+# 1. Install dependencies
+pixi install
+
+# 2. Download the graph data (~3GB)
+cd reproducibility
+python download_data.py
+
+# 3. Generate all tables and figures
+make all
+```
+
+### Data Download
+
+The generated graph data (~3GB) is hosted on [Proton Drive](https://drive.proton.me/urls/VM4NWYBQD0#3sqmZtmSgWTB). After downloading, extract to `data/polygraph_graphs/` in the repository root.
+
+```bash
+# Full dataset (required for complete reproducibility)
+python download_data.py
+
+# Small subset for testing/CI (~50 graphs per model)
+python download_data.py --subset
+```
+
+Expected data structure after extraction:
+
+```
+data/polygraph_graphs/
+├── AUTOGRAPH/
+│   ├── planar.pkl
+│   ├── lobster.pkl
+│   ├── sbm.pkl
+│   └── proteins.pkl
+├── DIGRESS/
+│   ├── planar.pkl
+│   ├── lobster.pkl
+│   ├── sbm.pkl
+│   ├── proteins.pkl
+│   ├── denoising-iterations/
+│   │   └── {15,30,45,60,75,90}_steps.pkl
+│   └── training-iterations/
+│       └── {119,209,...,3479}_steps.pkl
+├── ESGG/
+│   └── *.pkl
+├── GRAN/
+│   └── *.pkl
+└── molecule_eval/
+    └── *.smiles
+```
+
+### Scripts Overview
+
+#### Table Generation
+
+| Script | Output | Description |
+|--------|--------|-------------|
+| `generate_benchmark_tables.py` | `tables/benchmark_results.tex` | Main PGD benchmark (Table 1) comparing AUTOGRAPH, DiGress, GRAN, ESGG |
+| `generate_mmd_tables.py` | `tables/mmd_gtv.tex`, `tables/mmd_rbf_biased.tex` | MMD² metrics with GTV and RBF kernels |
+| `generate_gklr_tables.py` | `tables/gklr.tex` | PGD with Kernel Logistic Regression using WL and SP kernels |
+| `generate_concatenation_tables.py` | `tables/concatenation.tex` | Ablation comparing individual vs concatenated descriptors |
+
+#### Figure Generation
+
+| Script | Output | Description |
+|--------|--------|-------------|
+| `generate_subsampling_figures.py` | `figures/subsampling/` | Bias-variance tradeoff as function of sample size |
+| `generate_perturbation_figures.py` | `figures/perturbation/` | Metric sensitivity to edge perturbations |
+| `generate_model_quality_figures.py` | `figures/model_quality/` | PGD vs training/denoising steps for DiGress |
+| `generate_phase_plot.py` | `figures/phase_plot/` | Training dynamics showing PGD vs VUN |
+
+Each script can be run independently with `--subset` for quick testing:
+
+```bash
+# Tables (full computation)
+python generate_benchmark_tables.py
+python generate_mmd_tables.py
+python generate_gklr_tables.py
+python generate_concatenation_tables.py
+
+# Tables (quick testing with --subset)
+python generate_benchmark_tables.py --subset
+python generate_mmd_tables.py --subset
+
+# Figures (full computation)
+python generate_subsampling_figures.py
+python generate_perturbation_figures.py
+python generate_model_quality_figures.py
+python generate_phase_plot.py
+
+# Figures (quick testing)
+python generate_subsampling_figures.py --subset
+python generate_perturbation_figures.py --subset
+```
+
+### Make Targets
+
+```bash
+make download        # Download full dataset (manual step required)
+make download-subset # Create small subset for CI testing
+make tables          # Generate all LaTeX tables
+make figures         # Generate all figures
+make all             # Generate everything
+make tables-submit   # Submit table jobs to SLURM cluster
+make tables-collect  # Collect results from completed SLURM jobs
+make clean           # Remove generated outputs
+make help            # Show available targets
+```
+
+### Hardware Requirements
+
+- **Memory:** 16GB RAM recommended for full dataset
+- **Storage:** ~4GB for data + outputs
+- **Time:** Full generation takes ~2-4 hours on a modern CPU
+
+The `--subset` flag uses ~50 graphs per model, runs in minutes, and verifies code correctness (results are not publication-quality).
+
+### Cluster Submission
+
+Table generation scripts support SLURM cluster submission via [submitit](https://github.com/facebookincubator/submitit). Install the cluster extras first:
+
+```bash
+pip install -e ".[cluster]"
+```
+
+SLURM parameters are configured in YAML files (see `reproducibility/configs/slurm_default.yaml`):
+
+```yaml
+slurm:
+  partition: "cpu"
+  timeout_min: 360
+  cpus_per_task: 8
+  mem_gb: 32
+```
+
+Submit jobs, then collect results after completion:
+
+```bash
+cd reproducibility
+
+# Submit all table jobs to SLURM
+python generate_benchmark_tables.py --slurm-config configs/slurm_default.yaml
+
+# After jobs complete, collect results and generate tables
+python generate_benchmark_tables.py --collect
+
+# Or use Make targets
+make tables-submit                                        # submit all
+make tables-submit SLURM_CONFIG=configs/my_cluster.yaml   # custom config
+make tables-collect                                       # collect all
+```
+
+Use `--local` with `--slurm-config` to test the submission pipeline in-process without SLURM.
+
+### Troubleshooting
+
+**Memory issues:** Use `--subset` flag for testing, process one dataset at a time, or increase system swap space.
+
+**Missing data:** Verify `data/polygraph_graphs/` exists in repo root, run `python download_data.py` to check data status, or download manually from Proton Drive.
+
+**TabPFN issues:** TabPFN is pinned to v2.0.0 for reproducibility: `pip install tabpfn==2.0.0`.
 
 ## Citing
 
@@ -250,12 +416,12 @@ To cite our paper:
 
 ```latex
 @misc{krimmel2025polygraph,
-  title={PolyGraph Discrepancy: a classifier-based metric for graph generation}, 
+  title={PolyGraph Discrepancy: a classifier-based metric for graph generation},
   author={Markus Krimmel and Philip Hartout and Karsten Borgwardt and Dexiong Chen},
   year={2025},
   eprint={2510.06122},
   archivePrefix={arXiv},
   primaryClass={cs.LG},
-  url={https://arxiv.org/abs/2510.06122}, 
+  url={https://arxiv.org/abs/2510.06122},
 }
 ```

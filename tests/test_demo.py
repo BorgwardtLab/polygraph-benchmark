@@ -9,9 +9,11 @@ from pathlib import Path
 # Add the parent directory to the path so we can import polygraph_demo
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import pytest
 import polygraph_demo
 
 
+@pytest.mark.slow
 def test_demo_main():
     """Test that the main function runs without errors."""
     # This should run the full demo without crashing

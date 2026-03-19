@@ -46,8 +46,7 @@ Example:
 """
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
-from typing import Any, Iterable, Union, Literal, Generic
+from typing import Any, Iterable, NamedTuple, Union, Literal, Generic
 from typing_extensions import TypeAlias
 
 import numpy as np
@@ -65,9 +64,11 @@ from polygraph.utils.descriptors import GraphDescriptor
 
 MatrixLike: TypeAlias = Union[np.ndarray, csr_array]
 
-GramBlocks = namedtuple(
-    "GramBlocks", ["ref_vs_ref", "ref_vs_gen", "gen_vs_gen"]
-)
+
+class GramBlocks(NamedTuple):
+    ref_vs_ref: np.ndarray
+    ref_vs_gen: np.ndarray
+    gen_vs_gen: np.ndarray
 
 
 class DescriptorKernel(ABC, Generic[GraphType]):
@@ -86,6 +87,11 @@ class DescriptorKernel(ABC, Generic[GraphType]):
 
     @abstractmethod
     def pre_gram_block(self, x: Any, y: Any) -> np.ndarray: ...
+
+    @abstractmethod
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        """Compute diagonal elements k(x_i, x_i) from featurized data."""
+        ...
 
     @abstractmethod
     def get_subkernel(self, idx: int) -> "DescriptorKernel": ...
@@ -188,6 +194,10 @@ class LaplaceKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         assert isinstance(self.lbd, np.ndarray)
         return LaplaceKernel(self._descriptor_fn, self.lbd[idx])
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.lbd, np.ndarray):
@@ -246,6 +256,10 @@ class GaussianTV(DescriptorKernel[GraphType], Generic[GraphType]):
         assert isinstance(self.bw, np.ndarray)
         return GaussianTV(self._descriptor_fn, self.bw[idx])
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
@@ -302,6 +316,10 @@ class RBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         assert isinstance(idx, int), type(idx)
         return RBFKernel(self._descriptor_fn, self.bw[idx])
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
@@ -315,7 +333,7 @@ class RBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         if isinstance(x, csr_array) and isinstance(y, csr_array):
             comparison = sparse_euclidean(x, y) ** 2
         else:
-            comparison = pairwise_distances(x, y, metric="l2") ** 2
+            comparison = pairwise_distances(x, y, metric="sqeuclidean")
 
         if isinstance(self.bw, np.ndarray):
             if self.bw.ndim != 1:
@@ -366,6 +384,10 @@ class AdaptiveRBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
             self._descriptor_fn, self.bw[idx], variant=self._variant
         )
 
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        n_samples: int = features.shape[0]  # type: ignore[index]
+        return np.ones(n_samples)
+
     @property
     def num_kernels(self) -> int:
         if isinstance(self.bw, np.ndarray):
@@ -377,16 +399,18 @@ class AdaptiveRBFKernel(DescriptorKernel[GraphType], Generic[GraphType]):
         if isinstance(x, csr_array) and isinstance(y, csr_array):
             comparison = sparse_euclidean(x, y) ** 2
         else:
-            comparison = pairwise_distances(x, y, metric="l2") ** 2
+            comparison = pairwise_distances(x, y, metric="sqeuclidean")
         return comparison
 
     def adapt(self, blocks: GramBlocks) -> GramBlocks:
         ref_ref, ref_gen, gen_gen = blocks
 
         if self._variant == "mean":
-            mult = np.sqrt(np.mean(ref_gen)) if np.mean(ref_gen) > 0 else 1
+            center = np.mean(ref_gen)
+            mult = np.sqrt(center) if center > 0 else 1
         elif self._variant == "median":
-            mult = np.sqrt(np.median(ref_gen)) if np.median(ref_gen) > 0 else 1
+            center = np.median(ref_gen)
+            mult = np.sqrt(center) if center > 0 else 1
         else:
             raise NotImplementedError
 
@@ -427,6 +451,12 @@ class LinearKernel(DescriptorKernel[GraphType], Generic[GraphType]):
     def get_subkernel(self, idx: int) -> DescriptorKernel[GraphType]:
         assert idx == 0, idx
         return LinearKernel(self._descriptor_fn)
+
+    def kernel_diag(self, features: MatrixLike) -> np.ndarray:
+        if isinstance(features, csr_array):
+            sq_norms = features.multiply(features).sum(axis=1)
+            return np.asarray(sq_norms, dtype=np.float64).flatten()
+        return np.einsum("ij,ij->i", features, features)
 
     def pre_gram_block(self, x: MatrixLike, y: MatrixLike) -> np.ndarray:
         assert x.ndim == 2 and y.ndim == 2

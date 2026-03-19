@@ -1,0 +1,18 @@
+# Config for 07_concatenation/compute.py
+dataset: planar
+model: AUTOGRAPH
+subset: false
+tabpfn_weights_version: "v2.5"
+
+hydra:
+  job:
+    name: exp07_concat
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: planar,lobster,sbm,proteins
+      model: AUTOGRAPH,DIGRESS,GRAN,ESGG

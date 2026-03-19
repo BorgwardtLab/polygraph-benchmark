@@ -32,22 +32,22 @@ We also provide classes that implement individual [`ClassifierMetric`][polygraph
 - [`GraphNeuralNetworkClassifierMetric`][polygraph.metrics.standard_pgd.GraphNeuralNetworkClassifierMetric]: Classifier metric based on [`RandomGIN`][polygraph.utils.descriptors.RandomGIN]
 """
 
-from typing import Collection, Literal, Optional, List, Union
+from typing import Collection, List, Literal, Optional, Union
 
 import networkx as nx
 
 from polygraph.metrics.base.polygraphdiscrepancy import (
     ClassifierMetric,
+    ClassifierProtocol,
     PolyGraphDiscrepancy,
     PolyGraphDiscrepancyInterval,
-    ClassifierProtocol,
 )
 from polygraph.utils.descriptors import (
-    OrbitCounts,
     ClusteringHistogram,
-    SparseDegreeHistogram,
     EigenvalueHistogram,
+    OrbitCounts,
     RandomGIN,
+    SparseDegreeHistogram,
 )
 
 __all__ = [
@@ -61,35 +61,49 @@ __all__ = [
 ]
 
 
+def _standard_descriptors():
+    return {
+        "orbit4": OrbitCounts(graphlet_size=4),
+        "orbit5": OrbitCounts(graphlet_size=5),
+        "clustering": ClusteringHistogram(bins=100),
+        "degree": SparseDegreeHistogram(),
+        "spectral": EigenvalueHistogram(),
+        "gin": RandomGIN(
+            node_feat_loc=None,
+            input_dim=1,
+            edge_feat_loc=None,
+            edge_feat_dim=0,
+            seed=42,
+        ),
+    }
+
+
 class StandardPGD(PolyGraphDiscrepancy[nx.Graph]):
     """PolyGraphDiscrepancy metric that combines six different graph descriptors.
 
-    By default, we use TabPFN for binary classification and evaluate it by data log-likelihood, obtaining a PolyGraphDiscrepancy that provides an estimated lower bound on the Jensen-Shannon
-    distance between the generated and true graph distribution.
+    By default, we use TabPFN for binary classification and evaluate it by
+    data log-likelihood, obtaining a PolyGraphDiscrepancy that provides an
+    estimated lower bound on the Jensen-Shannon distance between the
+    generated and true graph distribution.
 
     Args:
         reference_graphs: Collection of reference networkx graphs.
+        variant: Probability metric to approximate.
+        classifier: Binary classifier to fit. Defaults to TabPFN
+            via ``default_classifier()``.
     """
 
-    def __init__(self, reference_graphs: Collection[nx.Graph]):
+    def __init__(
+        self,
+        reference_graphs: Collection[nx.Graph],
+        variant: Literal["informedness", "jsd"] = "jsd",
+        classifier: Optional[ClassifierProtocol] = None,
+    ):
         super().__init__(
             reference_graphs=reference_graphs,
-            descriptors={
-                "orbit4": OrbitCounts(graphlet_size=4),
-                "orbit5": OrbitCounts(graphlet_size=5),
-                "clustering": ClusteringHistogram(bins=100),
-                "degree": SparseDegreeHistogram(),
-                "spectral": EigenvalueHistogram(),
-                "gin": RandomGIN(
-                    node_feat_loc=None,
-                    input_dim=1,
-                    edge_feat_loc=None,
-                    edge_feat_dim=0,
-                    seed=42,
-                ),
-            },
-            variant="jsd",
-            classifier=None,
+            descriptors=_standard_descriptors(),
+            variant=variant,
+            classifier=classifier,
         )
 
 
@@ -98,10 +112,13 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
 
     Args:
         reference_graphs: Collection of reference networkx graphs.
-        subsample_size: Size of each subsample, should be consistent with the number
-            of reference and generated graphs passed to [`PolyGraphDiscrepancy`][polygraph.metrics.base.polygraphdiscrepancy.PolyGraphDiscrepancy]
-            for point estimates.
-        num_samples: Number of samples to draw for uncertainty quantification.
+        subsample_size: Size of each subsample, should be consistent with
+            the number of reference and generated graphs passed to
+            ``PolyGraphDiscrepancy`` for point estimates.
+        num_samples: Number of samples to draw for uncertainty
+            quantification.
+        classifier: Binary classifier to fit. Defaults to TabPFN
+            via ``default_classifier()``.
     """
 
     def __init__(
@@ -109,25 +126,13 @@ class StandardPGDInterval(PolyGraphDiscrepancyInterval[nx.Graph]):
         reference_graphs: Collection[nx.Graph],
         subsample_size: int,
         num_samples: int = 10,
+        classifier: Optional[ClassifierProtocol] = None,
     ):
         super().__init__(
             reference_graphs=reference_graphs,
-            descriptors={
-                "orbit4": OrbitCounts(graphlet_size=4),
-                "orbig5": OrbitCounts(graphlet_size=5),
-                "clustering": ClusteringHistogram(bins=100),
-                "degree": SparseDegreeHistogram(),
-                "spectral": EigenvalueHistogram(),
-                "gin": RandomGIN(
-                    node_feat_loc=None,
-                    input_dim=1,
-                    edge_feat_loc=None,
-                    edge_feat_dim=0,
-                    seed=42,
-                ),
-            },
+            descriptors=_standard_descriptors(),
             variant="jsd",
-            classifier=None,
+            classifier=classifier,
             subsample_size=subsample_size,
             num_samples=num_samples,
         )

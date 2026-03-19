@@ -8,6 +8,7 @@ def run_code_snippet(code, context=None):
     exec(code, context)
 
 
+@pytest.mark.slow
 def test_docstring_snippet_runs(doc_snippet):
     """Each code snippet from a docstring should run without error."""
     snippet_id, code = doc_snippet
@@ -18,6 +19,7 @@ def test_docstring_snippet_runs(doc_snippet):
         pytest.fail(f"Snippet failed: {snippet_id}\n\n{traceback.format_exc()}")
 
 
+@pytest.mark.slow
 def test_markdown_snippet_runs(md_snippet):
     snippet_id, code = md_snippet
     try:

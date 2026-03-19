@@ -44,6 +44,7 @@ def _create_tst_fn(kernel):
     return _bootstrap_tst_function
 
 
+@pytest.mark.slow
 def test_bootstrap_test(datasets, degree_linear_kernel):
     planar, sbm = datasets
     tst = BootStrapMMDTest(sbm.to_nx(), degree_linear_kernel)
@@ -54,7 +55,7 @@ def test_bootstrap_test(datasets, degree_linear_kernel):
     assert p > 0.05
 
 
-@pytest.mark.skipif("config.getoption('--skip-slow')")
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"]
 )
@@ -71,7 +72,7 @@ def test_multi_bootstrap_test(request, datasets, kernel):
     assert 0 <= p_value and p_value <= 1
 
 
-@pytest.mark.skipif("config.getoption('--skip-slow')")
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "kernel", ["degree_rbf_kernel", "degree_adaptive_rbf_kernel"]
 )

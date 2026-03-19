@@ -15,7 +15,7 @@ import re
 import warnings
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Optional, Union
+from typing import Iterator, List, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -112,6 +112,11 @@ class NetworkXView:
 
     def __init__(self, base_dataset: AbstractDataset):
         self._base_dataset = base_dataset
+
+    def __iter__(self) -> Iterator[nx.Graph]:
+        """Iterates over all graphs in the dataset."""
+        for i in range(len(self)):
+            yield self[i]
 
     def __len__(self) -> int:
         """Gets the number of graphs in the dataset."""

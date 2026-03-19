@@ -1,0 +1,28 @@
+# Config for 01_subsampling/{compute_mmd,compute_pgd}.py
+#
+# compute_mmd.py uses: dataset, model, subsample_size, descriptor, variant, num_bootstrap, subset
+# compute_pgd.py uses: dataset, model, subsample_size, num_bootstrap, subset
+dataset: planar
+model: AUTOGRAPH
+subsample_size: 128
+descriptor: orbit4          # only used by compute_mmd.py
+variant: biased             # only used by compute_mmd.py
+num_bootstrap: 100
+subset: false
+tabpfn_weights_version: "v2.5"
+
+hydra:
+  job:
+    name: exp01_sub
+    chdir: false
+  run:
+    dir: logs/runs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: logs/sweeps/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweeper:
+    params:
+      dataset: planar,lobster,sbm
+      model: AUTOGRAPH,DIGRESS,GRAN,ESGG,test
+      subsample_size: 8,16,32,64,128,256,512,1024,2048,4096
+      descriptor: orbit4,orbit5,degree,spectral,clustering,gin
+      variant: biased,umve

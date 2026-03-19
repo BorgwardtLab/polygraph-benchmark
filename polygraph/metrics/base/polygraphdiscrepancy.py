@@ -55,11 +55,12 @@ from typing import (
 )
 
 import numpy as np
-import torch
-from scipy.sparse import csr_array
+from scipy.sparse import csr_array, issparse
+from scipy.sparse import vstack as sparse_vstack
 from sklearn.metrics import roc_curve
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
+from packaging.version import Version
 from tabpfn import TabPFNClassifier
 
 from polygraph import GraphType
@@ -71,6 +72,7 @@ __all__ = [
     "ClassifierMetric",
     "PolyGraphDiscrepancy",
     "PolyGraphDiscrepancyInterval",
+    "default_classifier",
 ]
 
 
@@ -101,6 +103,22 @@ class ClassifierProtocol(Protocol):
         ...
 
 
+def default_classifier() -> TabPFNClassifier:
+    """Create the default TabPFN classifier used by PGD.
+
+    Returns:
+        A TabPFNClassifier with default settings (auto device, 4
+        estimators). Requires ``tabpfn >= 2.0.9``.
+    """
+    tabpfn_ver = Version(version("tabpfn"))
+    if tabpfn_ver < Version("2.0.9"):
+        raise RuntimeError(
+            "TabPFN >= 2.0.9 is required. "
+            "Install with `pip install 'tabpfn>=2.0.9'`."
+        )
+    return TabPFNClassifier(device="auto", n_estimators=4)
+
+
 class PolyGraphDiscrepancyResult(TypedDict):
     """Return type for PolyGraphDiscrepancy.compute method."""
 
@@ -115,6 +133,24 @@ class PolyGraphDiscrepancyIntervalResult(TypedDict):
     pgd: MetricInterval
     subscores: Dict[str, MetricInterval]
     pgd_descriptor: Dict[str, float]
+
+
+def _vstack(arrays):
+    """Stack arrays vertically, handling both dense and sparse."""
+    if any(issparse(a) for a in arrays):
+        return sparse_vstack(arrays, format="csr")
+    return np.concatenate(arrays, axis=0)
+
+
+def _is_constant(X) -> bool:
+    """Check if all rows of X are identical."""
+    if issparse(X):
+        if X.shape[0] <= 1:
+            return True
+        col_min = X.min(axis=0).toarray().ravel()
+        col_max = X.max(axis=0).toarray().ravel()
+        return bool(np.array_equal(col_min, col_max))
+    return bool(np.all(X == X[0]))
 
 
 def _scores_to_jsd(ref_scores, gen_scores, eps: float = 1e-10) -> float:
@@ -135,7 +171,7 @@ def _scores_to_informedness_and_threshold(
     )
     if ref_scores.ndim != 1:
         raise RuntimeError(
-            "ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report."
+            f"ref_scores must be 1-dimensional, got shape {ref_scores.shape}. This should not happen, please file a bug report."
         )
 
     assert ref_scores.ndim == 1 and gen_scores.ndim == 1
@@ -162,8 +198,8 @@ def _scores_and_threshold_to_informedness(
 
 def _classifier_cross_validation(
     classifier: ClassifierProtocol,
-    train_ref_descriptions: np.ndarray,
-    train_gen_descriptions: np.ndarray,
+    train_ref_descriptions: Union[np.ndarray, csr_array],
+    train_gen_descriptions: Union[np.ndarray, csr_array],
     variant: Literal["informedness", "jsd"],
     n_folds: int = 4,
 ):
@@ -181,11 +217,13 @@ def _classifier_cross_validation(
         List of scores for each fold
     """
     # Combine data and create labels
-    X = np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
+    X = _vstack([train_ref_descriptions, train_gen_descriptions])
+    n_ref = train_ref_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
+    n_gen = train_gen_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
     y = np.concatenate(
         [
-            np.ones(len(train_ref_descriptions)),
-            np.zeros(len(train_gen_descriptions)),
+            np.ones(n_ref),
+            np.zeros(n_gen),
         ]
     )
 
@@ -193,52 +231,66 @@ def _classifier_cross_validation(
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=0)
     scores = []
 
-    for train_idx, val_idx in skf.split(X, y):
+    for train_idx, val_idx in skf.split(
+        X if not issparse(X) else np.zeros((X.shape[0], 1)),  # pyright: ignore[reportOptionalSubscript]
+        y,
+    ):
         # Split data
-        X_train, X_val = X[train_idx], X[val_idx]
+        X_train, X_val = X[train_idx], X[val_idx]  # pyright: ignore[reportIndexIssue]
         y_train, y_val = y[train_idx], y[val_idx]
 
-        # Train model
-        if np.all(X_train == X_train[0]):
+        try:
+            # Train model
+            if _is_constant(X_train):
+                warnings.warn(
+                    "Input to classifier is constant, setting all scores to 0.5"
+                )
+                predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
+            else:
+                classifier.fit(X_train, y_train)
+                predict_proba = classifier.predict_proba
+
+            # Get validation predictions
+            val_pred = predict_proba(X_val)[:, 1]
+
+            # Get reference and generated indices in validation set
+            val_ref_idx = np.where(y_val == 1)[0]
+            val_gen_idx = np.where(y_val == 0)[0]
+
+            # Get predictions for reference and generated samples
+            val_ref_pred = val_pred[val_ref_idx]
+            val_gen_pred = val_pred[val_gen_idx]
+
+            if variant == "informedness":
+                train_pred = predict_proba(X_train)[:, 1]
+                train_ref_idx = np.where(y_train == 1)[0]
+                train_gen_idx = np.where(y_train == 0)[0]
+                train_ref_pred = train_pred[train_ref_idx]
+                train_gen_pred = train_pred[train_gen_idx]
+
+                # Get threshold from training data
+                _, threshold = _scores_to_informedness_and_threshold(
+                    train_ref_pred, train_gen_pred
+                )
+
+                # Apply threshold to validation data
+                score = _scores_and_threshold_to_informedness(
+                    val_ref_pred, val_gen_pred, threshold
+                )
+            elif variant == "jsd":
+                score = _scores_to_jsd(val_ref_pred, val_gen_pred)
+            else:
+                raise ValueError(f"Invalid variant: {variant}")
+        except (ValueError, RuntimeError) as e:
+            # TabPFN v2.0.9 can raise ValueError with NaN in encoder when
+            # features are near-constant (see github.com/PriorLabs/TabPFN/issues/108).
+            # Near-constant features mean distributions are indistinguishable,
+            # so the correct score is 0.
             warnings.warn(
-                "Input to classifier is constant, setting all scores to 0.5"
+                f"Classifier failed in CV fold ({e}), treating as "
+                f"indistinguishable (score=0)."
             )
-            predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
-        else:
-            classifier.fit(X_train, y_train)
-            predict_proba = classifier.predict_proba
-
-        # Get validation predictions
-        val_pred = predict_proba(X_val)[:, 1]
-
-        # Get reference and generated indices in validation set
-        val_ref_idx = np.where(y_val == 1)[0]
-        val_gen_idx = np.where(y_val == 0)[0]
-
-        # Get predictions for reference and generated samples
-        val_ref_pred = val_pred[val_ref_idx]
-        val_gen_pred = val_pred[val_gen_idx]
-
-        if variant == "informedness":
-            train_pred = predict_proba(X_train)[:, 1]
-            train_ref_idx = np.where(y_train == 1)[0]
-            train_gen_idx = np.where(y_train == 0)[0]
-            train_ref_pred = train_pred[train_ref_idx]
-            train_gen_pred = train_pred[train_gen_idx]
-
-            # Get threshold from training data
-            _, threshold = _scores_to_informedness_and_threshold(
-                train_ref_pred, train_gen_pred
-            )
-
-            # Apply threshold to validation data
-            score = _scores_and_threshold_to_informedness(
-                val_ref_pred, val_gen_pred, threshold
-            )
-        elif variant == "jsd":
-            score = _scores_to_jsd(val_ref_pred, val_gen_pred)
-        else:
-            raise ValueError(f"Invalid variant: {variant}")
+            score = 0.0
 
         scores.append(score)
 
@@ -249,14 +301,18 @@ def _descriptions_to_classifier_metric(
     ref_descriptions: Union[np.ndarray, csr_array],
     gen_descriptions: Union[np.ndarray, csr_array],
     variant: Literal["informedness", "jsd"] = "jsd",
-    classifier: Optional[ClassifierProtocol] = None,
+    *,
+    classifier: ClassifierProtocol,
     rng: Optional[np.random.Generator] = None,
+    scale: bool = True,
 ) -> Tuple[float, Union[int, float]]:
+    # scale=False is needed for kernel-based classifiers (e.g. GKLR)
+    # that operate on precomputed kernel matrices, not raw features.
     rng = np.random.default_rng(0) if rng is None else rng
 
     if isinstance(ref_descriptions, csr_array):
         assert isinstance(gen_descriptions, csr_array)
-        # Convert to dense array
+        # Align sparse dimensions
         num_features = (
             max(
                 ref_descriptions.indices.max(),
@@ -271,7 +327,7 @@ def _descriptions_to_classifier_metric(
                 gen_descriptions.indptr,
             ),
             shape=(gen_descriptions.shape[0], num_features),  # pyright: ignore
-        ).toarray()
+        )
         ref_descriptions = csr_array(
             (
                 ref_descriptions.data,
@@ -279,50 +335,44 @@ def _descriptions_to_classifier_metric(
                 ref_descriptions.indptr,
             ),
             shape=(ref_descriptions.shape[0], num_features),  # pyright: ignore
-        ).toarray()
+        )
+        if scale or isinstance(classifier, TabPFNClassifier):
+            gen_descriptions = gen_descriptions.toarray()
+            ref_descriptions = ref_descriptions.toarray()
 
+    n_ref = ref_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
+    n_gen = gen_descriptions.shape[0]  # pyright: ignore[reportOptionalSubscript]
     ref_train_idx = rng.choice(
-        len(ref_descriptions),
-        size=len(ref_descriptions) // 2,
+        n_ref,
+        size=n_ref // 2,
         replace=False,
     )
-    ref_test_idx = np.setdiff1d(np.arange(len(ref_descriptions)), ref_train_idx)
-    gen_train_idx = rng.choice(
-        len(gen_descriptions), size=len(gen_descriptions) // 2, replace=False
-    )
-    gen_test_idx = np.setdiff1d(np.arange(len(gen_descriptions)), gen_train_idx)
+    ref_test_idx = np.setdiff1d(np.arange(n_ref), ref_train_idx)
+    gen_train_idx = rng.choice(n_gen, size=n_gen // 2, replace=False)
+    gen_test_idx = np.setdiff1d(np.arange(n_gen), gen_train_idx)
 
-    scaler = StandardScaler()
     train_ref_descriptions = ref_descriptions[ref_train_idx]
     train_gen_descriptions = gen_descriptions[gen_train_idx]
     test_ref_descriptions = ref_descriptions[ref_test_idx]
     test_gen_descriptions = gen_descriptions[gen_test_idx]
-    scaler.fit(
-        np.concatenate([train_ref_descriptions, train_gen_descriptions], axis=0)
-    )
-    test_ref_descriptions = scaler.transform(test_ref_descriptions)
-    test_gen_descriptions = scaler.transform(test_gen_descriptions)
-    train_ref_descriptions = scaler.transform(train_ref_descriptions)
-    train_gen_descriptions = scaler.transform(train_gen_descriptions)
-    assert isinstance(train_ref_descriptions, np.ndarray)
-    assert isinstance(train_gen_descriptions, np.ndarray)
-    assert isinstance(test_ref_descriptions, np.ndarray)
-    assert isinstance(test_gen_descriptions, np.ndarray)
-
-    if classifier is None:
-        if version("tabpfn") != "2.0.9":
-            raise RuntimeError(
-                "TabPFN version 2.0.9 is required for this classifier. Please install it with `pip install tabpfn==2.0.9`."
+    if scale:
+        scaler = StandardScaler()
+        scaler.fit(
+            np.concatenate(
+                [train_ref_descriptions, train_gen_descriptions], axis=0
             )
-        clf = TabPFNClassifier(
-            device="cuda" if torch.cuda.is_available() else "cpu"
         )
-    else:
-        clf = classifier
+        test_ref_descriptions = scaler.transform(test_ref_descriptions)
+        test_gen_descriptions = scaler.transform(test_gen_descriptions)
+        train_ref_descriptions = scaler.transform(train_ref_descriptions)
+        train_gen_descriptions = scaler.transform(train_gen_descriptions)
+    assert isinstance(train_ref_descriptions, (np.ndarray, csr_array))
+    assert isinstance(train_gen_descriptions, (np.ndarray, csr_array))
+    assert isinstance(test_ref_descriptions, (np.ndarray, csr_array))
+    assert isinstance(test_gen_descriptions, (np.ndarray, csr_array))
 
-    # Use custom cross-validation function
     scores = _classifier_cross_validation(
-        clf,
+        classifier,
         train_ref_descriptions,
         train_gen_descriptions,
         variant,
@@ -332,42 +382,53 @@ def _descriptions_to_classifier_metric(
     train_metric = np.mean(scores).item()
 
     # Refit on all training data
-    train_all_descriptions = np.concatenate(
-        [train_ref_descriptions, train_gen_descriptions], axis=0
+    train_all_descriptions = _vstack(
+        [train_ref_descriptions, train_gen_descriptions]
     )
     train_labels = np.concatenate(
         [
-            np.ones(len(train_ref_descriptions)),
-            np.zeros(len(train_gen_descriptions)),
+            np.ones(train_ref_descriptions.shape[0]),  # pyright: ignore[reportOptionalSubscript]
+            np.zeros(train_gen_descriptions.shape[0]),  # pyright: ignore[reportOptionalSubscript]
         ]
     )
 
     # Check if train_all_descriptions is constant across rows
-    if np.all(train_all_descriptions == train_all_descriptions[0]):
+    try:
+        if _is_constant(train_all_descriptions):
+            warnings.warn(
+                "Input to classifier is constant, setting all scores to 0.5"
+            )
+            predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
+        else:
+            classifier.fit(train_all_descriptions, train_labels)  # pyright: ignore[reportArgumentType]
+            predict_proba = classifier.predict_proba
+
+        ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
+        gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
+
+        if variant == "informedness":
+            ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
+            gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]  # pyright: ignore[reportArgumentType]
+            _, threshold = _scores_to_informedness_and_threshold(
+                ref_train_pred, gen_train_pred
+            )
+            test_metric = _scores_and_threshold_to_informedness(
+                ref_test_pred, gen_test_pred, threshold
+            )
+        elif variant == "jsd":
+            test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
+        else:
+            raise ValueError(f"Invalid variant: {variant}")
+    except (ValueError, RuntimeError) as e:
+        # TabPFN v2.0.9 can raise ValueError with NaN in encoder when
+        # features are near-constant (see github.com/PriorLabs/TabPFN/issues/108).
+        # Near-constant features mean distributions are indistinguishable,
+        # so the correct metric is 0.
         warnings.warn(
-            "Input to classifier is constant, setting all scores to 0.5"
+            f"Classifier failed during refit ({e}), treating as "
+            f"indistinguishable (metric=0)."
         )
-        predict_proba = lambda x: np.ones((x.shape[0], 2)) * 0.5
-    else:
-        clf.fit(train_all_descriptions, train_labels)
-        predict_proba = clf.predict_proba
-
-    ref_test_pred = predict_proba(test_ref_descriptions)[:, 1]
-    gen_test_pred = predict_proba(test_gen_descriptions)[:, 1]
-
-    if variant == "informedness":
-        ref_train_pred = predict_proba(train_ref_descriptions)[:, 1]
-        gen_train_pred = predict_proba(train_gen_descriptions)[:, 1]
-        _, threshold = _scores_to_informedness_and_threshold(
-            ref_train_pred, gen_train_pred
-        )
-        test_metric = _scores_and_threshold_to_informedness(
-            ref_test_pred, gen_test_pred, threshold
-        )
-    elif variant == "jsd":
-        test_metric = _scores_to_jsd(ref_test_pred, gen_test_pred)
-    else:
-        raise ValueError(f"Invalid variant: {variant}")
+        test_metric = 0.0
 
     assert isinstance(train_metric, float)
     assert isinstance(test_metric, float)
@@ -381,11 +442,12 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
         reference_graphs: Reference graphs
         descriptor: Descriptor function
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
-        classifier: Binary classifier to fit
+        classifier: Binary classifier to fit. Defaults to TabPFN
+            via ``default_classifier()``.
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
+    _classifier: ClassifierProtocol
 
     def __init__(
         self,
@@ -397,7 +459,9 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
-        self._classifier = classifier
+        self._classifier = (
+            classifier if classifier is not None else default_classifier()
+        )
 
     def compute(
         self, generated_graphs: Collection[GraphType]
@@ -431,7 +495,7 @@ class ClassifierMetric(GenerationMetric[GraphType], Generic[GraphType]):
 
 class _ClassifierMetricSamples(Generic[GraphType]):
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
+    _classifier: ClassifierProtocol
 
     def __init__(
         self,
@@ -439,11 +503,15 @@ class _ClassifierMetricSamples(Generic[GraphType]):
         descriptor: GraphDescriptor[GraphType],
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Optional[ClassifierProtocol] = None,
+        scale: bool = True,
     ):
         self._descriptor = descriptor
         self._reference_descriptions = self._descriptor(reference_graphs)
         self._variant = variant
-        self._classifier = classifier
+        self._classifier = (
+            classifier if classifier is not None else default_classifier()
+        )
+        self._scale = scale
 
     def compute(
         self,
@@ -472,6 +540,7 @@ class _ClassifierMetricSamples(Generic[GraphType]):
                     variant=self._variant,
                     rng=rng,
                     classifier=self._classifier,
+                    scale=self._scale,
                 )
             )
         samples = np.array(samples)
@@ -485,11 +554,11 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
         reference_graphs: Reference graphs
         descriptors: Dictionary of descriptor names and descriptor functions
         variant: Classifier metric to compute. To estimate the Jensen-Shannon distance, use "jsd". To estimate total variation distance, use "informedness".
-        classifier: Binary classifier to fit
+        classifier: Binary classifier to fit. Defaults to TabPFN
+            via ``default_classifier()``.
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
@@ -498,9 +567,12 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Optional[ClassifierProtocol] = None,
     ):
+        resolved = (
+            classifier if classifier is not None else default_classifier()
+        )
         self._sub_metrics = {
             name: ClassifierMetric(
-                reference_graphs, descriptors[name], variant, classifier
+                reference_graphs, descriptors[name], variant, resolved
             )
             for name in descriptors
         }
@@ -515,9 +587,9 @@ class PolyGraphDiscrepancy(GenerationMetric[GraphType], Generic[GraphType]):
 
         Returns:
             Typed dictionary of scores.
-                The key `"polygraphscore"` specifies the PolyGraphDiscrepancy, giving the estimated tightest lower-bound on the probability metric.
-                The key `"polygraphscore_descriptor"` specifies the descriptor that achieves this bound.
-                All descritor-wise scores are returned in the key `"subscores"`.
+                The key `"pgd"` specifies the PolyGraphDiscrepancy, giving the estimated tightest lower-bound on the probability metric.
+                The key `"pgd_descriptor"` specifies the descriptor that achieves this bound.
+                All descriptor-wise scores are returned in the key `"subscores"`.
         """
         all_metrics = {
             name: metric.compute(generated_graphs)
@@ -552,7 +624,6 @@ class PolyGraphDiscrepancyInterval(
     """
 
     _variant: Literal["informedness", "jsd"]
-    _classifier: Optional[ClassifierProtocol]
 
     def __init__(
         self,
@@ -562,15 +633,19 @@ class PolyGraphDiscrepancyInterval(
         num_samples: int = 10,
         variant: Literal["informedness", "jsd"] = "jsd",
         classifier: Optional[ClassifierProtocol] = None,
+        scale: bool = True,
     ):
         if len(reference_graphs) < 2 * subsample_size:
             raise ValueError(
                 "Number of reference graphs must be at least 2 * subsample_size"
             )
 
+        resolved = (
+            classifier if classifier is not None else default_classifier()
+        )
         self._sub_metrics = {
             name: _ClassifierMetricSamples(
-                reference_graphs, descriptors[name], variant, classifier
+                reference_graphs, descriptors[name], variant, resolved, scale
             )
             for name in descriptors
         }
@@ -590,7 +665,7 @@ class PolyGraphDiscrepancyInterval(
             Typed dictionary of scores.
                 The key `"pgd"` specifies the PolyGraphDiscrepancy, giving mean and standard deviation as [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
                 The key `"pgd_descriptor"` describes which descriptors achieve this score. This is a dictionary mapping descriptor names to the ratio of samples in which the descriptor was chosen.
-                All descritor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
+                All descriptor-wise scores are returned in the key `"subscores"`. These are [`MetricInterval`][polygraph.metrics.base.metric_interval.MetricInterval] objects.
         """
         if len(generated_graphs) < 2 * self._subsample_size:
             raise ValueError(

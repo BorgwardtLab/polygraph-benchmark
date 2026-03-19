@@ -131,7 +131,7 @@
 \begin{tikzpicture}[scale=1]
   % Coordinates
   \path (0,0) coordinate (c);
-  \foreach \i [evaluate=\i as \ang using 90 + 60*(\i-1)] in {1,...,6} {\path (\ang:\HexagonRadius) coordinate (v\i);} 
+  \foreach \i [evaluate=\i as \ang using 90 + 60*(\i-1)] in {1,...,6} {\path (\ang:\HexagonRadius) coordinate (v\i);}
 
   % Lane drawers
   \newcommand{\DrawRedEdge}[2]{\DrawOffsetEdge{#1}{#2}{0pt}{draw=edgeAColor, line width=\IconEdgeThickness, line cap=round, line join=round}}

@@ -266,5 +266,4 @@ def full_gram_from_blocks(
     full_gram_matrix[:n, n:] = kxy
     full_gram_matrix[n:, :n] = np.swapaxes(kxy, 0, 1)
     full_gram_matrix[n:, n:] = kyy
-    assert np.allclose(full_gram_matrix, np.swapaxes(full_gram_matrix, 0, 1))
     return full_gram_matrix

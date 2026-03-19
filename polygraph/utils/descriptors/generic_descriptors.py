@@ -4,27 +4,29 @@ from collections import Counter
 from hashlib import blake2b
 from typing import (
     Callable,
+    Generic,
     Iterable,
     List,
+    Literal,
     Optional,
     Tuple,
     Union,
-    Literal,
-    Generic,
 )
 
 import networkx as nx
 import numpy as np
 import orbit_count
 import torch
-from scipy.sparse import csr_array
+from scipy.sparse import csgraph, csr_array
+from scipy.sparse.linalg import eigsh
+from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 from torch_geometric.data import Batch
 from torch_geometric.utils import degree, from_networkx
 
 from polygraph import GraphType
-from polygraph.utils.descriptors.interface import GraphDescriptor
 from polygraph.utils.descriptors.gin import GIN
+from polygraph.utils.descriptors.interface import GraphDescriptor
 from polygraph.utils.parallel import batched_distribute_function, flatten_lists
 
 
@@ -224,14 +226,24 @@ class EigenvalueHistogram(GraphDescriptor[nx.Graph]):
         else:
             self._bins = None
 
+    _SPARSE_THRESHOLD = 500
+
     def __call__(
         self, graphs: Iterable[nx.Graph]
     ) -> Union[np.ndarray, csr_array]:
         all_eigs = []
         for g in graphs:
-            eigs = np.linalg.eigvalsh(
-                nx.normalized_laplacian_matrix(g).todense()
-            )
+            n = g.number_of_nodes()
+            laplacian = nx.normalized_laplacian_matrix(g)
+            if n > self._SPARSE_THRESHOLD:
+                k = min(n - 2, self._n_bins)
+                eigs = eigsh(
+                    laplacian.astype(np.float64),
+                    k=k,
+                    return_eigenvectors=False,
+                )
+            else:
+                eigs = np.linalg.eigvalsh(laplacian.todense())
             all_eigs.append(eigs)
 
         if self._sparse:
@@ -537,4 +549,397 @@ class WeisfeilerLehmanDescriptor(GraphDescriptor[nx.Graph]):
                 np.array(indptr, dtype=np.int32),
             ),
             shape=(n_graphs, 2**31),
+        )
+
+
+class ShortestPathHistogramDescriptor(GraphDescriptor[nx.Graph]):
+    """Shortest-path kernel feature map.
+
+    For each graph, counts unordered node pairs by the triple
+    (label(u), label(v), quantized shortest-path length(u,v)) and returns
+    a sparse count vector in a large, fixed hashed feature space,
+    suitable for use with LinearKernel (dot product).
+
+    Args:
+        node_label_key: Node attribute to use as discrete label; if None, ignores labels.
+        weight_key: Edge attribute for path lengths; if None, unweighted distances.
+        bin_width: Optional distance bin width for weighted graphs; uses floor(d/bin_width).
+        distance_decimals: Number of decimals to round distances if bin_width is None (weighted).
+        digest_size: Bytes for hashing keys (1-4). Controls collision rate.
+        n_jobs: Number of workers for parallel computation.
+        n_graphs_per_job: Number of graphs per worker.
+        show_progress: Whether to show a progress bar.
+        seed: Random seed for TruncatedSVD projection.
+        project_dim: Number of dimensions to project the descriptor to. If None, no projection is performed.
+    """
+
+    def __init__(
+        self,
+        node_label_key: Optional[str] = None,
+        weight_key: Optional[str] = None,
+        bin_width: Optional[float] = None,
+        distance_decimals: int = 3,
+        digest_size: int = 4,
+        n_jobs: int = 1,
+        n_graphs_per_job: int = 100,
+        show_progress: bool = False,
+        seed: int = 42,
+        project_dim: Optional[int] = None,
+    ):
+        if digest_size > 4:
+            raise ValueError("digest_size must be <= 4")
+
+        self.node_label_key = node_label_key
+        self.weight_key = weight_key
+        self.bin_width = bin_width
+        self.distance_decimals = distance_decimals
+        self._digest_size = digest_size
+        self._n_jobs = n_jobs
+        self._n_graphs_per_job = n_graphs_per_job
+        self._show_progress = show_progress
+        self.project_dim = project_dim
+        self._seed = seed
+
+        if self.project_dim is not None:
+            self._validate_project_dim()
+            self._projector = TruncatedSVD(
+                n_components=self.project_dim, random_state=self._seed
+            )
+            self._fitted = False
+
+    def __call__(
+        self, graphs: Iterable[nx.Graph]
+    ) -> Union[csr_array, np.ndarray]:
+        graph_list = list(graphs)
+
+        if self._n_jobs == 1:
+            features = [
+                self._compute_graph_features(graph) for graph in graph_list
+            ]
+        else:
+            features = batched_distribute_function(
+                self._compute_graph_features_worker,
+                graph_list,
+                n_jobs=self._n_jobs,
+                show_progress=self._show_progress,
+                batch_size=self._n_graphs_per_job,
+            )
+
+        sparse_array = self._create_sparse_matrix(features)
+
+        if self.project_dim is None:
+            return sparse_array
+        else:
+            if not self._fitted:
+                sparse_array = self._projector.fit_transform(sparse_array)
+                self._fitted = True
+            else:
+                sparse_array = self._projector.transform(sparse_array)
+            return sparse_array
+
+    def _compute_graph_features(self, graph: nx.Graph) -> dict:
+        """Compute shortest-path features for a single graph."""
+        n = graph.number_of_nodes()
+        if n <= 1:
+            return {}
+
+        nodes = list(graph.nodes())
+
+        dists, rows, cols = self._compute_shortest_paths_vectorized(
+            graph, nodes
+        )
+        if dists is None or rows is None or cols is None:
+            return {}
+
+        q_dists = self._quantize_distances_vectorized(dists)
+
+        feats: dict[int, int] = {}
+        labels = self._get_node_labels(graph)
+
+        if labels is None:
+            self._process_unlabeled_features(q_dists, feats)
+        else:
+            self._process_labeled_features(
+                q_dists, rows, cols, labels, nodes, feats
+            )
+
+        return feats
+
+    def _validate_project_dim(self) -> None:
+        if self.project_dim is None or self.project_dim <= 0:
+            raise ValueError("project_dim must be a positive integer")
+        if self.project_dim > 2**31:
+            raise ValueError("project_dim must be less than 2**31")
+
+    def _compute_graph_features_worker(
+        self, graphs: List[nx.Graph]
+    ) -> List[dict]:
+        return [self._compute_graph_features(graph) for graph in graphs]
+
+    def _get_node_labels(self, graph: nx.Graph) -> Optional[dict]:
+        if self.node_label_key is None:
+            return None
+        return {
+            u: str(graph.nodes[u][self.node_label_key]) for u in graph.nodes()
+        }
+
+    def _hash_feature_key(
+        self, label_u: str, label_v: str, quantized_dist: Union[int, float]
+    ) -> int:
+        lu, lv = (
+            (label_u, label_v) if label_u <= label_v else (label_v, label_u)
+        )
+        key = f"{lu}|{lv}|{quantized_dist}".encode()
+        h = (
+            int(blake2b(key, digest_size=self._digest_size).hexdigest(), 16)
+            & 0x7FFFFFFF
+        )
+        return h
+
+    def _compute_shortest_paths_vectorized(
+        self, graph: nx.Graph, nodes: list
+    ) -> tuple[
+        Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
+    ]:
+        n = len(nodes)
+        weight_kwargs = (
+            {"weight": self.weight_key} if self.weight_key is not None else {}
+        )
+        adj = nx.to_scipy_sparse_array(
+            graph, nodelist=nodes, format="csr", **weight_kwargs
+        )
+        dist_matrix = csgraph.shortest_path(
+            adj, directed=False, unweighted=(self.weight_key is None)
+        )
+        rows, cols = np.triu_indices(n, k=1)
+        dists = dist_matrix[rows, cols]
+        finite_mask = np.isfinite(dists)
+        if not np.any(finite_mask):
+            return None, None, None
+        return dists[finite_mask], rows[finite_mask], cols[finite_mask]
+
+    def _quantize_distances_vectorized(self, dists: np.ndarray) -> np.ndarray:
+        if self.bin_width is not None:
+            return np.floor(dists / self.bin_width).astype(int)
+        elif self.weight_key is None:
+            return np.round(dists).astype(int)
+        else:
+            return np.round(dists, self.distance_decimals)
+
+    def _process_unlabeled_features(
+        self, q_dists: np.ndarray, feats: dict
+    ) -> None:
+        unique_dists, counts = np.unique(q_dists, return_counts=True)
+        for d, count in zip(unique_dists, counts):
+            k = self._hash_feature_key("*", "*", d)
+            feats[k] = feats.get(k, 0) + int(count)
+
+    def _process_labeled_features(
+        self,
+        q_dists: np.ndarray,
+        rows: np.ndarray,
+        cols: np.ndarray,
+        labels: dict,
+        nodes: list,
+        feats: dict,
+    ) -> None:
+        node_labels = np.array([labels[u] for u in nodes])
+        unique_lbls, labels_inv = np.unique(node_labels, return_inverse=True)
+        l_u_idx = labels_inv[rows]
+        l_v_idx = labels_inv[cols]
+        mask_swap = l_u_idx > l_v_idx
+        idx1 = np.where(mask_swap, l_v_idx, l_u_idx)
+        idx2 = np.where(mask_swap, l_u_idx, l_v_idx)
+        triplets = np.column_stack((idx1, idx2, q_dists))
+        unique_rows, counts = np.unique(triplets, axis=0, return_counts=True)
+        for row, count in zip(unique_rows, counts):
+            i1, i2, d_val = row
+            lab1 = unique_lbls[int(i1)]
+            lab2 = unique_lbls[int(i2)]
+            if self.bin_width is not None or self.weight_key is None:
+                d_val = int(d_val)
+            k = self._hash_feature_key(lab1, lab2, d_val)
+            feats[k] = feats.get(k, 0) + int(count)
+
+    def _create_sparse_matrix(self, all_features: list) -> csr_array:
+        n_graphs = len(all_features)
+        data = []
+        indices = []
+        indptr = [0]
+        for features in all_features:
+            sorted_features = sorted(features.items(), key=lambda x: x[0])
+            for feature_idx, count in sorted_features:
+                indices.append(feature_idx)
+                data.append(count)
+            indptr.append(len(indices))
+        return csr_array(
+            (
+                np.array(data, dtype=np.float32),
+                np.array(indices, dtype=np.int32),
+                np.array(indptr, dtype=np.int32),
+            ),
+            shape=(n_graphs, 2**31),
+        )
+
+
+class PyramidMatchDescriptor(GraphDescriptor[nx.Graph]):
+    """Pyramid Match Kernel descriptor.
+
+    Computes a histogram of node features at multiple resolutions (pyramid).
+    The features are quantized into bins of increasing size $2^l \\delta$.
+    The resulting vector is a concatenation of weighted histograms at each level.
+
+    When used with a LinearKernel, this approximates the Pyramid Match Kernel.
+
+    Args:
+        num_levels: Number of levels in the pyramid (L).
+        bin_width: Base bin width (delta) for level 0.
+        node_label_key: Node attribute to use as feature. If None, uses node degree.
+        digest_size: Number of bytes for hashing.
+        n_jobs: Number of parallel jobs.
+        n_graphs_per_job: Batch size for parallel jobs.
+        show_progress: Show progress bar.
+        project_dim: Number of dimensions to project the descriptor to. If None, no projection is performed.
+        seed: Random seed for projection.
+    """
+
+    def __init__(
+        self,
+        num_levels: int = 4,
+        bin_width: float = 1.0,
+        node_label_key: Optional[str] = None,
+        digest_size: int = 4,
+        n_jobs: int = 1,
+        n_graphs_per_job: int = 100,
+        show_progress: bool = False,
+        seed: int = 42,
+        project_dim: Optional[int] = None,
+    ):
+        self.num_levels = num_levels
+        self.bin_width = bin_width
+        self.node_label_key = node_label_key
+        self._digest_size = digest_size
+        self._n_jobs = n_jobs
+        self._n_graphs_per_job = n_graphs_per_job
+        self._show_progress = show_progress
+        self.project_dim = project_dim
+        self._seed = seed
+
+        if self._digest_size >= 4:
+            self._feature_dim = 2**31
+        else:
+            self._feature_dim = 2 ** (8 * self._digest_size)
+
+        if self.project_dim is not None:
+            self._validate_project_dim()
+            self._projector = TruncatedSVD(
+                n_components=self.project_dim, random_state=self._seed
+            )
+            self._fitted = False
+
+    def __call__(
+        self, graphs: Iterable[nx.Graph]
+    ) -> Union[csr_array, np.ndarray]:
+        graph_list = list(graphs)
+        if self._n_jobs == 1:
+            features = [self._compute_features(g) for g in graph_list]
+        else:
+            features = batched_distribute_function(
+                self._compute_features_worker,
+                graph_list,
+                n_jobs=self._n_jobs,
+                show_progress=self._show_progress,
+                batch_size=self._n_graphs_per_job,
+            )
+
+        sparse_array = self._create_sparse_matrix(features)
+
+        if self.project_dim is None:
+            return sparse_array
+        else:
+            if not self._fitted:
+                sparse_array = self._projector.fit_transform(sparse_array)
+                self._fitted = True
+            else:
+                sparse_array = self._projector.transform(sparse_array)
+            return sparse_array
+
+    def _validate_project_dim(self) -> None:
+        if self.project_dim is None or self.project_dim <= 0:
+            raise ValueError("project_dim must be a positive integer")
+        if self.project_dim > 2**31:
+            raise ValueError("project_dim must be less than 2**31")
+
+    def _compute_features_worker(self, graphs: List[nx.Graph]) -> List[dict]:
+        return [self._compute_features(g) for g in graphs]
+
+    def _compute_features(self, graph: nx.Graph) -> dict:
+        if self.node_label_key is None:
+            feats = [d for _, d in graph.degree()]
+            feats = np.array(feats).reshape(-1, 1)
+        else:
+            feats_list = []
+            for _, data in graph.nodes(data=True):
+                val = data[self.node_label_key]
+                if isinstance(val, (list, np.ndarray)):
+                    feats_list.append(val)
+                else:
+                    feats_list.append([val])
+            feats = np.array(feats_list)
+
+        if len(feats) == 0:
+            return {}
+
+        histogram: dict[int, float] = {}
+        quantized = np.floor(feats / self.bin_width).astype(np.int64)
+        unique_rows, counts = np.unique(quantized, axis=0, return_counts=True)
+
+        for level in range(self.num_levels + 1):
+            if level < self.num_levels:
+                weight = np.sqrt(1.0 / (2 ** (level + 1)))
+            else:
+                weight = np.sqrt(1.0 / (2**level))
+
+            level_bytes = level.to_bytes(4, "little")
+
+            for row, count in zip(unique_rows, counts):
+                key_bytes = level_bytes + row.tobytes()
+                h = (
+                    int(
+                        blake2b(
+                            key_bytes, digest_size=self._digest_size
+                        ).hexdigest(),
+                        16,
+                    )
+                    & 0x7FFFFFFF
+                )
+                histogram[h] = histogram.get(h, 0.0) + float(count) * weight
+
+            if level < self.num_levels:
+                unique_rows //= 2
+                unique_rows, inverse_indices = np.unique(
+                    unique_rows, axis=0, return_inverse=True
+                )
+                counts = np.bincount(inverse_indices, weights=counts)
+
+        return histogram
+
+    def _create_sparse_matrix(self, all_features: list) -> csr_array:
+        n_graphs = len(all_features)
+        data = []
+        indices = []
+        indptr = [0]
+        for features in all_features:
+            sorted_features = sorted(features.items(), key=lambda x: x[0])
+            for feature_idx, val in sorted_features:
+                indices.append(feature_idx)
+                data.append(val)
+            indptr.append(len(indices))
+        return csr_array(
+            (
+                np.array(data, dtype=np.float32),
+                np.array(indices, dtype=np.int32),
+                np.array(indptr, dtype=np.int32),
+            ),
+            shape=(n_graphs, self._feature_dim),
         )

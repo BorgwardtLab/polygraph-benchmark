@@ -21,6 +21,7 @@ from polygraph.datasets import (
     SmallEgoGraphDataset,
 )
 from polygraph.datasets.base import AbstractDataset
+from polygraph.datasets.base.dataset import GraphDataset
 from polygraph.datasets.base.caching import clear_cache, identifier_to_path
 from polygraph.metrics import VUN
 
@@ -43,6 +44,7 @@ SYNTHETIC_DATASETS = [
 ]
 
 
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     [PlanarGraphDataset, SBMGraphDataset],
@@ -66,6 +68,8 @@ def test_sample_graph_size(ds_cls):
         _ = ds_val.sample_graph_size()
 
 
+@pytest.mark.slow
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -82,6 +86,7 @@ def test_cache(ds_cls):
     _ = ds_cls("train")
 
 
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -92,6 +97,7 @@ def test_loading(ds_cls, sample_size):
         assert isinstance(ds, AbstractDataset), (
             "Should inherit from AbstractDataset"
         )
+        assert isinstance(ds, GraphDataset)
         assert len(ds) > 0, "Dataset should have at least one item"
 
         sample_size = min(sample_size, len(ds))
@@ -128,6 +134,8 @@ def test_graph_properties_slow(ds_cls):
         )
 
 
+@pytest.mark.slow
+@pytest.mark.xdist_group("graph_tool")
 @pytest.mark.parametrize("ds_cls", SYNTHETIC_DATASETS)
 def test_graph_properties_fast(ds_cls, sample_size):
     for split in ["train", "val", "test"]:
@@ -168,6 +176,7 @@ def test_invalid_inputs():
         SBMGraphDataset("invalid_split")
 
 
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     ALL_DATASETS,
@@ -186,6 +195,7 @@ def test_dataset_consistency(ds_cls):
 
 
 # Ego datasets have non-unique graphs, which is apparently okay (?)
+@pytest.mark.xdist_group("datasets")
 @pytest.mark.parametrize(
     "ds_cls",
     [

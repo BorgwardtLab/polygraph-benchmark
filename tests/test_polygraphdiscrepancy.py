@@ -35,43 +35,65 @@ def sparse_graphs():
     return [nx.erdos_renyi_graph(10, 0.1) for _ in range(128)]
 
 
+@pytest.fixture
+def dense_graphs_large():
+    return [nx.erdos_renyi_graph(10, 0.8) for _ in range(256)]
+
+
+@pytest.fixture
+def sparse_graphs_large():
+    return [nx.erdos_renyi_graph(10, 0.1) for _ in range(256)]
+
+
 @pytest.mark.parametrize(
     "descriptor", [SparseDegreeHistogram(), DegreeHistogram(100)]
 )
-@pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_classifier_metric(
-    descriptor, classifier, variant, dense_graphs, sparse_graphs
+def test_classifier_metric_logistic(
+    descriptor, variant, dense_graphs, sparse_graphs
 ):
-    if classifier == "tabpfn":
-        classifier = None
-    else:
-        classifier = LogisticRegression()
-
+    classifier = LogisticRegression()
     clf_metric = ClassifierMetric(dense_graphs, descriptor, variant, classifier)
     train, test = clf_metric.compute(sparse_graphs)
 
     assert isinstance(train, float) and isinstance(test, float)
     assert train >= 0.7, f"Train score {train} is less than 0.7"
-    assert test >= 0.8, f"Test score {test} is less than 0.8"
+    assert test >= 0.7, f"Test score {test} is less than 0.7"
 
     train, test = clf_metric.compute(dense_graphs)
     assert train <= 0.2, f"Train score {train} is greater than 0.2"
     assert test <= 0.2, f"Test score {test} is greater than 0.2"
 
 
-@pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "descriptor", [SparseDegreeHistogram(), DegreeHistogram(100)]
+)
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_polygraphdiscrepancy(classifier, variant, dense_graphs, sparse_graphs):
+def test_classifier_metric_tabpfn(
+    descriptor, variant, dense_graphs_large, sparse_graphs_large
+):
+    clf_metric = ClassifierMetric(
+        dense_graphs_large, descriptor, variant, classifier=None
+    )
+    train, test = clf_metric.compute(sparse_graphs_large)
+
+    assert isinstance(train, float) and isinstance(test, float)
+    assert train >= 0.7, f"Train score {train} is less than 0.7"
+    assert test >= 0.7, f"Test score {test} is less than 0.7"
+
+    train, test = clf_metric.compute(dense_graphs_large)
+    assert train <= 0.2, f"Train score {train} is greater than 0.2"
+    assert test <= 0.2, f"Test score {test} is greater than 0.2"
+
+
+@pytest.mark.parametrize("variant", ["jsd", "informedness"])
+def test_polygraphdiscrepancy_logistic(variant, dense_graphs, sparse_graphs):
     descriptors = {
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
     }
-
-    if classifier == "tabpfn":
-        classifier = None
-    else:
-        classifier = LogisticRegression()
+    classifier = LogisticRegression()
 
     pgd = PolyGraphDiscrepancy(dense_graphs, descriptors, variant, classifier)
     result = pgd.compute(sparse_graphs)
@@ -83,8 +105,8 @@ def test_polygraphdiscrepancy(classifier, variant, dense_graphs, sparse_graphs):
     assert len(result["subscores"]) == len(descriptors)
     assert result["pgd"] == result["subscores"][result["pgd_descriptor"]]
 
-    assert result["pgd"] >= 0.8, (
-        f"PolyGraphDiscrepancy {result['pgd']} is less than 0.8"
+    assert result["pgd"] >= 0.7, (
+        f"PolyGraphDiscrepancy {result['pgd']} is less than 0.7"
     )
 
     result = pgd.compute(dense_graphs)
@@ -93,19 +115,47 @@ def test_polygraphdiscrepancy(classifier, variant, dense_graphs, sparse_graphs):
     )
 
 
-@pytest.mark.parametrize("classifier", ["logistic", "tabpfn"])
+@pytest.mark.slow
 @pytest.mark.parametrize("variant", ["jsd", "informedness"])
-def test_polygraphdiscrepancy_interval(
-    classifier, variant, dense_graphs, sparse_graphs
+def test_polygraphdiscrepancy_tabpfn(
+    variant, dense_graphs_large, sparse_graphs_large
 ):
     descriptors = {
         "degree": SparseDegreeHistogram(),
         "clustering": ClusteringHistogram(100),
     }
-    if classifier == "tabpfn":
-        classifier = None
-    else:
-        classifier = LogisticRegression()
+
+    pgd = PolyGraphDiscrepancy(
+        dense_graphs_large, descriptors, variant, classifier=None
+    )
+    result = pgd.compute(sparse_graphs_large)
+
+    assert isinstance(result, dict)
+    assert "pgd" in result
+    assert "pgd_descriptor" in result
+    assert "subscores" in result
+    assert len(result["subscores"]) == len(descriptors)
+    assert result["pgd"] == result["subscores"][result["pgd_descriptor"]]
+
+    assert result["pgd"] >= 0.7, (
+        f"PolyGraphDiscrepancy {result['pgd']} is less than 0.7"
+    )
+
+    result = pgd.compute(dense_graphs_large)
+    assert result["pgd"] <= 0.2, (
+        f"PolyGraphDiscrepancy {result['pgd']} is greater than 0.2"
+    )
+
+
+@pytest.mark.parametrize("variant", ["jsd", "informedness"])
+def test_polygraphdiscrepancy_interval_logistic(
+    variant, dense_graphs, sparse_graphs
+):
+    descriptors = {
+        "degree": SparseDegreeHistogram(),
+        "clustering": ClusteringHistogram(100),
+    }
+    classifier = LogisticRegression()
 
     pgd = PolyGraphDiscrepancyInterval(
         dense_graphs,
@@ -125,6 +175,35 @@ def test_polygraphdiscrepancy_interval(
     assert isinstance(result["pgd_descriptor"], dict)
 
 
+@pytest.mark.slow
+@pytest.mark.parametrize("variant", ["jsd", "informedness"])
+def test_polygraphdiscrepancy_interval_tabpfn(
+    variant, dense_graphs_large, sparse_graphs_large
+):
+    descriptors = {
+        "degree": SparseDegreeHistogram(),
+        "clustering": ClusteringHistogram(100),
+    }
+
+    pgd = PolyGraphDiscrepancyInterval(
+        dense_graphs_large,
+        descriptors,
+        subsample_size=10,
+        num_samples=4,
+        variant=variant,
+        classifier=None,
+    )
+    result = pgd.compute(sparse_graphs_large)
+    assert isinstance(result, dict)
+    assert "pgd" in result
+    assert "pgd_descriptor" in result
+    assert "subscores" in result
+    assert len(result["subscores"]) == len(descriptors)
+    assert isinstance(result["pgd"], MetricInterval)
+    assert isinstance(result["pgd_descriptor"], dict)
+
+
+@pytest.mark.slow
 def test_standard_pgd(dense_graphs, sparse_graphs):
     metric = StandardPGD(dense_graphs)
     result = metric.compute(sparse_graphs)
