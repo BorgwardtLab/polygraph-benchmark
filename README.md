@@ -428,7 +428,7 @@ Use `--local` with `--slurm-config` to test the submission pipeline in-process w
 
 **Missing data:** Verify `data/polygraph_graphs/` exists in repo root, run `python download_data.py` to check data status, or download manually from Proton Drive.
 
-**TabPFN issues:** TabPFN is pinned to v2.0.0 for reproducibility: `pip install tabpfn==2.0.0`.
+**TabPFN issues:** TabPFN requires v2.0.9 or later: `pip install tabpfn>=2.0.9`.
 
 ## Citing
 
