@@ -142,6 +142,26 @@ print(pgd.compute(generated)) # {'pgd': ..., 'pgd_descriptor': ..., 'subscores':
 
 `pgd_descriptor` provides the best descriptor used to report the final score.
 
+By default, PGD uses TabPFN v2 weights. To use TabPFN v2.5 weights instead, pass a custom classifier. The v2.5 weights are hosted on a gated Hugging Face repository ([Prior-Labs/tabpfn_2_5](https://huggingface.co/Prior-Labs/tabpfn_2_5)) and require authentication:
+
+```bash
+pip install huggingface_hub
+huggingface-cli login
+```
+
+Then:
+
+```python
+from tabpfn import TabPFNClassifier
+from polygraph.metrics import StandardPGD
+
+classifier = TabPFNClassifier.create_default_for_version(
+    "v2.5", device="auto", n_estimators=4
+)
+pgd = StandardPGD(reference, classifier=classifier)
+print(pgd.compute(generated))
+```
+
 #### Validity, uniqueness and novelty
 VUN values follow a similar interface:
 ```python
