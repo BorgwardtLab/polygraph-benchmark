@@ -62,6 +62,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from packaging.version import Version
 from tabpfn import TabPFNClassifier
+from tabpfn.classifier import ModelVersion
 
 from polygraph import GraphType
 from polygraph.metrics.base.interface import GenerationMetric
@@ -107,7 +108,7 @@ def default_classifier() -> TabPFNClassifier:
     """Create the default TabPFN classifier used by PGD.
 
     Returns:
-        A TabPFNClassifier with default settings (auto device, 4
+        A TabPFNClassifier with v2.5 weights (auto device, 4
         estimators). Requires ``tabpfn >= 2.0.9``.
     """
     tabpfn_ver = Version(version("tabpfn"))
@@ -116,7 +117,11 @@ def default_classifier() -> TabPFNClassifier:
             "TabPFN >= 2.0.9 is required. "
             "Install with `pip install 'tabpfn>=2.0.9'`."
         )
-    return TabPFNClassifier(device="auto", n_estimators=4)
+    return TabPFNClassifier.create_default_for_version(
+        ModelVersion.V2_5,
+        device="auto",
+        n_estimators=4,
+    )
 
 
 class PolyGraphDiscrepancyResult(TypedDict):
