@@ -142,24 +142,30 @@ print(pgd.compute(generated)) # {'pgd': ..., 'pgd_descriptor': ..., 'subscores':
 
 `pgd_descriptor` provides the best descriptor used to report the final score.
 
-By default, PGD uses TabPFN v2 weights. To use TabPFN v2.5 weights instead, pass a custom classifier. The v2.5 weights are hosted on a gated Hugging Face repository ([Prior-Labs/tabpfn_2_5](https://huggingface.co/Prior-Labs/tabpfn_2_5)) and require authentication:
+By default, PGD uses TabPFN v2.5 weights. The v2.5 weights are hosted on a gated Hugging Face repository ([Prior-Labs/tabpfn_2_5](https://huggingface.co/Prior-Labs/tabpfn_2_5)) and require authentication:
 
 ```bash
 pip install huggingface_hub
 huggingface-cli login
 ```
 
-Then:
+Alternatively, you can use TabPFN v2.0 weights, which are licensed under the Prior Labs License (Apache 2.0 with an additional attribution clause) and permit commercial use. The v2.5 weights, in contrast, use a non-commercial license that prohibits commercial and production use without a separate enterprise license from Prior Labs:
 
 ```python
 from tabpfn import TabPFNClassifier
 from polygraph.metrics import StandardPGD
 
-classifier = TabPFNClassifier.create_default_for_version(
-    "v2.5", device="auto", n_estimators=4
-)
+classifier = TabPFNClassifier(device="auto", n_estimators=4)
 pgd = StandardPGD(reference, classifier=classifier)
-print(pgd.compute(generated))
+```
+
+A logistic regression classifier can also be used as a lightweight alternative, although it yields a looser bound in practice:
+
+```python
+from sklearn.linear_model import LogisticRegression
+from polygraph.metrics import StandardPGD
+
+pgd = StandardPGD(reference, classifier=LogisticRegression())
 ```
 
 #### Validity, uniqueness and novelty
