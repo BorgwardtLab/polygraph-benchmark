@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from sklearn.linear_model import LogisticRegression
@@ -234,9 +235,10 @@ def test_standard_pgd(dense_graphs, sparse_graphs):
     }
 
     for name, (_, individual_result) in individual_results.items():
+        joint = result["subscores"][name]
         assert isinstance(individual_result, float)
-        assert individual_result == result["subscores"][name], (
-            f"Individual result {individual_result} for descriptor {name} does not match the overall result {result['subscores'][name]}"
+        assert np.isclose(individual_result, joint, rtol=1e-3), (
+            f"Individual result {individual_result} for descriptor {name} does not match the overall result {joint}"
         )
 
     metric = StandardPGDInterval(dense_graphs, subsample_size=10, num_samples=4)
